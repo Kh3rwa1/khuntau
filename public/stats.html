@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Khuntau numbers</title>
+<style>
+  :root { --bg: #fbf7f1; --fg: #2a140c; --mute: #7a6456; --line: #e6dccf; --good: #2f7a46; --warn: #b8302a; --chip: #f1e7da; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a0f0a; --fg: #f6eedd; --mute: #b9a493; --line: #3a2a20; --good: #7ed39a; --warn: #ff8a7a; --chip: #2a1a12; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: var(--mute); }
+  .funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .step { background: var(--chip); border-radius: 12px; padding: 10px 12px; }
+  .step b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .step small { color: var(--mute); }
+  .rate { font-size: 13px; font-weight: 600; }
+  .rate.low { color: var(--warn); } .rate.ok { color: var(--good); }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  td { font-family: inherit; }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--bg); }
+  th { font-size: 12px; color: var(--mute); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  .note { color: var(--mute); font-size: 13px; margin-top: 14px; }
+  select { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Khuntau numbers</h1>
+  <p class="sub">Anonymous counts, one per visit per step (India time). <select id="range"><option value="7">Last 7 days</option><option value="14" selected>Last 14 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></p>
+  <div class="funnel" id="funnel"></div>
+  <div class="wrap"><table id="tbl"></table></div>
+  <p class="note">Ready = seconds from opening the link until PLAY works. Return = came back on a later day (d1 = the next day). Challenge = opened a "beat my score" link. Counts start on the day this page went live.</p>
+</main>
+<script>
+const COLS = [
+  ['open', 'Visits'], ['open.new', 'New'], ['open.return', 'Return'], ['ret.d1', 'Back d1'], ['ret.d7', 'Back d7'],
+  ['ready.lt3', 'Ready <3s'], ['ready.3_6', '3-6s'], ['ready.6_10', '6-10s'], ['ready.10_20', '10-20s'], ['ready.gt20', '>20s'],
+  ['play', 'Play'], ['round_end', 'Rounds done'], ['story', 'Story'], ['ch.5', 'Story done'],
+  ['share.score', 'Shared score'], ['open.challenge', 'Challenge opens'], ['share.room', 'Room invites'], ['open.room', 'Invite opens'],
+  ['room.create', 'Rooms made'], ['room.ask', 'Asked to join'], ['online.play', 'Online rounds'], ['open.app', 'From app'],
+];
+const pct = (a, b) => b ? Math.round(a / b * 100) : null;
+async function load() {
+  const days = document.getElementById('range').value;
+  let d = {}; try { d = (await (await fetch('/api/stats?days=' + days)).json()).days || {}; } catch (e) {}
+  const dates = Object.keys(d).sort().reverse(), sum = k => dates.reduce((a, day) => a + (d[day][k] || 0), 0);
+  const steps = [
+    ['Visits', sum('open'), null, ''],
+    ['Pressed PLAY or Story', sum('play') + sum('story'), pct(sum('play') + sum('story'), sum('open')), 'of visits'],
+    ['Finished a round', sum('round_end'), pct(sum('round_end'), sum('play')), 'of PLAY presses'],
+    ['Shared a score', sum('share.score'), pct(sum('share.score'), sum('round_end')), 'of finished rounds'],
+    ['Challenge links opened', sum('open.challenge'), pct(sum('open.challenge'), sum('share.score')), 'per share'],
+    ['Came back next day', sum('ret.d1'), pct(sum('ret.d1'), sum('open.new')), 'of new players'],
+    ['Ready in under 6 s', sum('ready.lt3') + sum('ready.3_6'), pct(sum('ready.lt3') + sum('ready.3_6'), sum('open')), 'of visits'],
+  ];
+  document.getElementById('funnel').innerHTML = steps.map(([name, n, p, of]) =>
+    `<div class="step"><small>${name}</small><b>${n}</b>${p === null ? '' : `<span class="rate ${p < 20 ? 'low' : 'ok'}">${p}% ${of}</span>`}</div>`).join('');
+  document.getElementById('tbl').innerHTML = '<tr><th>Day</th>' + COLS.map(c => `<th>${c[1]}</th>`).join('') + '</tr>' +
+    (dates.length ? dates.map(day => '<tr><td>' + day + '</td>' + COLS.map(c => `<td>${d[day][c[0]] || ''}</td>`).join('') + '</tr>').join('')
+      : `<tr><td colspan="${COLS.length + 1}">No visits counted yet.</td></tr>`);
+}
+document.getElementById('range').addEventListener('change', load);
+load();
+</script>
+</body>
+</html>

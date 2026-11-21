@@ -1164,8 +1164,11 @@ async function setAnimal(id, keep = true) {
 }
 $('animalBtn').addEventListener('click', () => { if (!bull || game.online) return; setAnimal(ANIMALS[(ANIMALS.indexOf(animal) + 1) % ANIMALS.length].id); });
 
-function onAllLoaded() {
-  for (const g of Object.values(loaded)) { g.scene.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(g.scene, true); g.userData.fit = { h: box.max.y - box.min.y, minY: box.min.y, scale: g.scene.scale.clone(), y: g.scene.position.y }; }
+// fit one model on arrival (size and floor offset), before anything is built from it
+function fitModel(g) { g.scene.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(g.scene, true); g.userData.fit = { h: box.max.y - box.min.y, minY: box.min.y, scale: g.scene.scale.clone(), y: g.scene.position.y }; }
+const nCrowd = [6, 8, 12][QUALITY];
+// the ring is playable with just the bull and the player; the villagers arrive a moment later
+function onCoreLoaded() {
   bull = makeAnimal('bull'); scene.add(bull.wrap); tint(bull, animal.tint);
   if (animal.model !== 'bull') setAnimal(animal.id); $('animalName').textContent = animal.name;
 
@@ -1173,13 +1176,26 @@ function onAllLoaded() {
   tint(player, { Skin: 0x7a5038, Shirt: 0xf3ede2, Pants: 0x2f6b3a, Belt: 0xc8372d, Hair: 0x15100c });
   shadows(player); scene.add(player.wrap); giveHide(player); applyShirt();
 
+  applyStage(START_STAGE);
+  player.mixer.addEventListener('finished', e => { if (game.p.state === 'free') player.play('Idle'); });
+  buildDrummers(nCrowd);
+  resetGame();
+  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play';
+  { const t = performance.now() / 1000; track('ready.' + (t < 3 ? 'lt3' : t < 6 ? '3_6' : t < 10 ? '6_10' : t < 20 ? '10_20' : 'gt20')); } // seconds from opening the link to PLAY
+  $('createBtn').disabled = false; $('joinBtn').disabled = false;
+  const q = new URLSearchParams(location.search).get('room');
+  if (q && /^[A-Za-z0-9]{4}$/.test(q)) { $('onlineBox').hidden = false; $('codeIn').value = q.toUpperCase(); $('joinBtn').classList.remove('ghost'); $('createBtn').classList.add('ghost'); $('joinBtn').textContent = 'Join ' + q.toUpperCase(); }
+  $('loadBar').hidden = true;
+  // the textured title font (200 KB) comes after the game is playable; until then titles use Baloo 2
+  try { const ff = new FontFace('Rubik Dirt', 'url(/fonts/rubik-dirt-latin.woff2) format("woff2")', { display: 'swap', unicodeRange: 'U+0000-00FF, U+2000-206F, U+20B9, U+2212' }); document.fonts.add(ff); ff.load().catch(() => {}); } catch (e) {}
+}
+function onCrowdLoaded() {
   const looks = [
     ['woman', { Skin: 0x704428, Shirt: 0xf1ead9, Pants: 0xb8302a, Belt: 0xb8302a, Hair: 0x120c08 }],
     ['worker', { Skin: 0x5e3a22, Shirt: 0x2f7a46, Vest: 0xf1ead9, Pants: 0x2f7a46, Hat: 0xf1ead9, Hair: 0x120c08 }],
     ['man', { Skin: 0x5a3720, Shirt: 0xf1ead9, Pants: 0x8a5a2b, Belt: 0xe0b552, Hair: 0x1a120c }],
     ['woman', { Skin: 0x5f3b23, Shirt: 0xe8c547, Pants: 0x1f5e8a, Belt: 0x1f5e8a, Hair: 0x120c08 }],
   ];
-  const nCrowd = [6, 8, 12][QUALITY];
   for (let i = 0; i < nCrowd; i++) {
     const [kind, colors] = looks[i % looks.length];
     const c = actor(loaded[kind], rand(1.55, 1.75), true);
@@ -1192,24 +1208,17 @@ function onAllLoaded() {
     c.mixer.addEventListener('finished', () => { if (!c.busy && !c.goingHome) c.play('Idle', { fade: 0.4 }); });
     scene.add(c.wrap); crowd.push(c);
   }
-  applyStage(START_STAGE);
-  player.mixer.addEventListener('finished', e => { if (game.p.state === 'free') player.play('Idle'); });
-  buildDrummers(nCrowd);
-  resetGame();
+  crowdBudget();
+  setTimeout(registerSW, 1500);
   import('./story.js').then(m => {
     story = m.initStory({ THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       musicLevel: v => { MUSIC_VOL.intro = v; refreshMusicVol(); },
-      startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
+      track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
       toMenu: () => { game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
     });
     $('storyBtn').disabled = false; renderStoryBtn();
   }).catch(err => { console.error(err); $('storyBtn').hidden = true; });
-  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play';
-  $('createBtn').disabled = false; $('joinBtn').disabled = false;
-  const q = new URLSearchParams(location.search).get('room');
-  if (q && /^[A-Za-z0-9]{4}$/.test(q)) { $('onlineBox').hidden = false; $('codeIn').value = q.toUpperCase(); $('joinBtn').classList.remove('ghost'); $('createBtn').classList.add('ghost'); $('joinBtn').textContent = 'Join ' + q.toUpperCase(); }
-  $('loadBar').hidden = true;
 }
 // Models ship as glTF JSON with the binary embedded. The artifact frame blocks fetching data: URLs,
 // so decode the buffer here and hand GLTFLoader an in-memory GLB instead.
@@ -1230,16 +1239,16 @@ async function loadModel(url) {
   out.set(bin, 28 + jl);
   return new Promise((resolve, reject) => loader.parse(out.buffer, '', resolve, reject));
 }
-for (const [k, url] of Object.entries(files)) {
-  loadModel(url).then(g => {
-    mergeChar(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (loadedCount / 4 * 100) + '%';
-    if (loadedCount === 4) onAllLoaded();
-  }).catch(err => {
-    console.error(err);
-    $('startBtn').textContent = 'Could not load. Refresh to retry';
-    $('loadErr').textContent = String(err && err.message || err).slice(0, 140);
-  });
+// bull and player first, alone, so they get all the bandwidth; then the villagers
+let coreDone = false, crowdDone = false;
+function loadSet(keys) {
+  return Promise.all(keys.map(k => loadModel(files[k]).then(g => {
+    mergeChar(g); fitModel(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (Math.min(loadedCount, 2) / 2 * 100) + '%';
+  })));
 }
+const loadFail = (err) => { console.error(err); $('startBtn').textContent = 'Could not load. Refresh to retry'; $('loadErr').textContent = String(err && err.message || err).slice(0, 140); };
+loadSet(['bull', 'man']).then(() => { coreDone = true; onCoreLoaded(); return loadSet(['woman', 'worker']); })
+  .then(() => { crowdDone = true; onCrowdLoaded(); }).catch(loadFail);
 
 /* ---------- game state ---------- */
 const game = {
@@ -1262,6 +1271,22 @@ function renderBestLine() { const el = $('bestLine'); el.hidden = best <= 0; el.
 renderBestLine();
 /* ---------- reasons to come back: daily board, streak, missions, levels ---------- */
 const istDay = (off = 0) => new Date(Date.now() + 5.5 * 3600e3 + off * 86400e3).toISOString().slice(0, 10);
+/* ---------- counting (anonymous, no ids, no cookies): each step once per visit, sent in small batches. See /stats.html ---------- */
+const seenEv = new Set(), evQ = []; let evT = 0;
+function track(k) { if (seenEv.has(k)) return; seenEv.add(k); evQ.push(k); clearTimeout(evT); evT = setTimeout(flushEv, 5000); }
+function flushEv() {
+  clearTimeout(evT); if (!evQ.length || !navigator.onLine) return; const body = JSON.stringify({ k: evQ.splice(0, 30) });
+  try { if (!(navigator.sendBeacon && navigator.sendBeacon('/api/ev', new Blob([body], { type: 'application/json' })))) fetch('/api/ev', { method: 'POST', body, keepalive: true }).catch(() => {}); } catch (e) {}
+}
+addEventListener('pagehide', flushEv); document.addEventListener('visibilitychange', () => { if (document.hidden) flushEv(); });
+{ // where this visit came from, and whether the player came back
+  const q = new URLSearchParams(location.search); track('open');
+  if (q.has('beat')) track('open.challenge'); if (q.has('room')) track('open.room'); if (q.get('src') === 'app') track('open.app');
+  let first = null, old = false; try { first = localStorage.getItem('khuntau-first'); old = !!localStorage.getItem('khuntau-played'); if (!first) localStorage.setItem('khuntau-first', istDay()); } catch (e) {}
+  if (!first && !old) track('open.new');
+  else { track('open.return'); const d = first ? Math.round((Date.parse(istDay()) - Date.parse(first)) / 864e5) : -1;
+    if (d === 1) track('ret.d1'); else if (d === 2 || d === 3) track('ret.d2_3'); else if (d >= 7 && d <= 9) track('ret.d7'); }
+}
 const meta = (() => { let m = {}; try { m = JSON.parse(localStorage.getItem('khuntau-meta') || '{}') || {}; } catch (e) {} 
   if (!/^[a-z0-9]{10,24}$/.test(m.pid || '')) m.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(36).padStart(2, '0')).join('').slice(0, 16);
   return Object.assign({ xp: 0, streak: 0, bestStreak: 0, lastDay: '', day: '', cnt: {}, done: {}, shirt: 0 }, m); })();
@@ -1388,7 +1413,9 @@ $('restoreBtn').addEventListener('click', async () => { const code = $('restoreI
   } catch (e) { $('keepNote').textContent = 'Could not restore. Check your connection.'; } });
 // daily reminder (web push). Phones only allow it after a tap, and iPhones only once the game is on the home screen.
 const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+// the offline copy (about 7 MB) is fetched only after the game is up, so it never competes with the first load
+const registerSW = () => { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {}); };
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) registerSW(); // returning players: check for updates at once
 // offline: solo play still works; hide what needs the internet, bring it back when the connection returns
 function netState() {
   const off = !navigator.onLine; $('offlineNote').hidden = !off;
@@ -1428,7 +1455,7 @@ async function loadRooms() { if (!navigator.onLine || document.hidden || game.mo
   try { const r = await fetch('/api/rooms'); if (r.ok) { roomsCache = (await r.json()).rooms || []; renderRooms(roomsCache); } } catch (e) {} }
 setInterval(loadRooms, 7000); loadRooms(); netState();
 function cancelKnock() { if (knockOut.ws) { try { knockOut.ws.close(); } catch (e) {} } knockOut.ws = null; knockOut.id = null; renderRooms(roomsCache); }
-function askToJoin(r) {
+function askToJoin(r) { track('room.ask');
   const name = $('nameIn').value.trim().slice(0, 14) || savedName;
   if (!name) { $('onlineBox').hidden = false; $('nameIn').focus(); $('netNote').textContent = 'Type your name, then tap Ask to join again.'; return; }
   try { localStorage.setItem('khuntau-name', name); } catch (e) {} if (!$('nameIn').value) $('nameIn').value = name;
@@ -1522,6 +1549,7 @@ function gameOver() {
   tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
   if (game.storyRun && story) { const won = game.pitha >= 3; setTimeout(() => { if (game.storyRun) story.afterRing(won); }, 1700); return; }
   const pts = game.score, isBest = pts > best;
+  track('round_end'); track('score.' + (pts === 0 ? '0' : pts < 5 ? '1_4' : pts < 15 ? '5_14' : pts < 30 ? '15_29' : '30p'));
   setTimeout(() => { setMusic('intro'); if (isBest && pts > 0) sfx.cheer(); }, 1500);
   if (isBest) { best = pts; try { localStorage.setItem('khuntau-best', best); } catch (e) {} }
   // freeze this moment for the share card
@@ -1580,9 +1608,9 @@ async function scoreCard(pts, rank) {
   x.font = '600 34px "Baloo 2", sans-serif'; x.fillStyle = 'rgba(246,238,221,.75)'; x.fillText(location.host, W / 2, 1260);
   return await new Promise(r => c.toBlob(r, 'image/png'));
 }
-$('shareScoreBtn').addEventListener('click', shareScore);
-$('startBtn').addEventListener('click', () => { game.storyRun = false; startGame(); });
-$('storyBtn').addEventListener('click', () => { if (!story || game.online) return; initAudio(); game.storyRun = false; story.start(); });
+$('shareScoreBtn').addEventListener('click', () => { track('share.score'); shareScore(); });
+$('startBtn').addEventListener('click', () => { track('play'); game.storyRun = false; startGame(); });
+$('storyBtn').addEventListener('click', () => { if (!story || game.online) return; track('story'); initAudio(); game.storyRun = false; story.start(); });
 $('friendsBtn').addEventListener('click', () => { const box = $('onlineBox'); box.hidden = !box.hidden; if (!box.hidden) $('nameIn').focus(); });
 $('creditsBtn').addEventListener('click', () => { $('credits').hidden = !$('credits').hidden; });
 $('menuBtn').addEventListener('click', () => { game.mode = 'menu'; resetGame(); $('overScreen').hidden = true; $('startScreen').hidden = false; renderBestLine(); renderToday(); loadBoard(); applyShirt(); setMusic('intro'); });
@@ -2200,7 +2228,7 @@ function onNet(m) {
 }
 function onNetEvent(m) {
   switch (m.e) {
-    case 'start': { game.storyRun = false; ringLabels();
+    case 'start': { track('online.play'); game.storyRun = false; ringLabels();
       resetGame(); game.mode = 'play'; game.online = true; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
       const sp = m.spawn.find(s => s[0] === net.id);
       const inRound = !!sp;
@@ -2261,8 +2289,8 @@ function updateOverButtons() {
   $('againBtn').disabled = !amHost; $('againBtn').textContent = amHost ? 'Play again' : 'Waiting for host…';
 }
 
-$('createBtn').addEventListener('click', () => { let c = ''; for (let i = 0; i < 4; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; connect(c); });
-$('joinBtn').addEventListener('click', () => {
+$('createBtn').addEventListener('click', () => { track('room.create'); let c = ''; for (let i = 0; i < 4; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; connect(c); });
+$('joinBtn').addEventListener('click', () => { track('room.join');
   const c = $('codeIn').value.trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(c)) { $('netNote').textContent = 'Room codes have 4 letters or numbers.'; $('codeIn').focus(); return; }
   connect(c);
@@ -2271,7 +2299,7 @@ $('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('joinBtn
 $('hostStartBtn').addEventListener('click', () => netSend({ t: 'start' }));
 $('leaveBtn').addEventListener('click', () => leaveOnline(false));
 $('outLobbyBtn').addEventListener('click', () => { gallop(false); showLobby(); toast(net.phase === 'play' ? 'The round is finishing. The next one starts from here.' : 'Back in the lobby', 2200); });
-$('shareBtn').addEventListener('click', () => {
+$('shareBtn').addEventListener('click', () => { track('share.room');
   const text = `Come play Khuntau with me this Sohrai! Snatch the pitha before the bull gets you. Room ${net.code}: ${roomLink()}`;
   if (navigator.share) { navigator.share({ title: 'Khuntau', text }).catch(() => {}); return; }
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');

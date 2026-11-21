@@ -63,6 +63,9 @@ check(score > 0 && await ev((s) => document.getElementById('overScore').textCont
 check(await ev(() => document.querySelectorAll('#lamps svg.out').length === 3), 'all three lamps shown out');
 await shot('4-over');
 if (API) check(await until((s) => __k.boardData && __k.boardData.me && __k.boardData.me.p === s, 8000, score), 'the score is accepted by the daily board');
+if (API) { // the anonymous step counter got this visit: opened, ready time, PLAY, a finished round, a score bucket
+  await sleep(6500); const t = Object.values((await (await fetch(BASE + '/api/stats?days=1')).json()).days)[0] || {};
+  check(t.open >= 1 && t.play >= 1 && t.round_end >= 1 && Object.keys(t).some(k => k.startsWith('ready.')) && Object.keys(t).some(k => k.startsWith('score.')), 'the game reports its steps to /api/stats'); }
 await ev(() => document.getElementById('againBtn').click());
 check(await until(() => __k.game.mode === 'play' && __k.game.lives === 3 && __k.game.score === 0), 'PLAY AGAIN starts a fresh run');
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 4).join(' | ') : '')); }

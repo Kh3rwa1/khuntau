@@ -17,7 +17,7 @@ export function initStory(C) {
   // the daily round: four village activities, each worth XP once a day, so there is a reason to walk in again tomorrow
   function today() { const d = new Date(), k = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); if (save.day !== k || !save.td) { save.day = k; save.td = { drum: 0, arch: 0, fish: 0, jale: 0, jv: [0, 0, 0] }; persist(); } return save.td; }
   const doneToday = () => { const t = today(); return t.drum + t.arch + t.fish + t.jale; };
-  function daily(k, note) { const t = today(); if (t[k]) return; t[k] = 1; persist(); C.addXp(15, note); C.markPlayedToday(); S.objKey = ''; setTimeout(() => pop('+15 XP', note), 1700); }
+  function daily(k, note) { const t = today(); if (t[k]) return; t[k] = 1; persist(); if (C.track) C.track('daily.' + k); C.addXp(15, note); C.markPlayedToday(); S.objKey = ''; setTimeout(() => pop('+15 XP', note), 1700); }
 
   /* ---------- words (one table, ready to translate) ---------- */
   const T_EN = {
@@ -372,7 +372,7 @@ export function initStory(C) {
   }
   $('dlg').addEventListener('pointerdown', (e) => { e.preventDefault(); nextLine(); });
 
-  function setChapter(n) { save.ch = n; persist(); S.objKey = ''; applyPaint(false); }
+  function setChapter(n) { if (n > save.ch && C.track) C.track('ch.' + n); save.ch = n; persist(); S.objKey = ''; applyPaint(false); }
 
   /* ---------- things you can do ---------- */
   function interactions() {

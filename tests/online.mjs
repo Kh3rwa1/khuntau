@@ -30,6 +30,14 @@ check(typeof t1 === 'string' && t1.split('.').length === 3, 'run ticket issued')
 { const r = await j('/api/save', { pid, data: { x: 'y'.repeat(3000) } }); check(r.s === 413, 'oversized save refused'); }
 { const r = await j('/api/push/sub', { pid, endpoint: 'https://evil.example.com/x' }); check(r.s === 400, 'push to a non-push host refused'); }
 
+// ---------- anonymous step counts ----------
+{ const r = await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: ['open', 'play', 'evil<script>', 'open', 'ch.5'] }) }); check(r.status === 204, 'step counts accepted');
+  const st = (await j('/api/stats?days=1')).d.days, today = Object.keys(st)[0], t = st[today] || {};
+  check(t.open >= 1 && t.play >= 1 && t['ch.5'] >= 1, 'counts appear in /api/stats');
+  check(!Object.keys(t).some(k => /evil|script/.test(k)), 'unknown step names are dropped');
+  const before = t.open; await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: ['open', 'open', 'open'] }) });
+  check(((await j('/api/stats?days=1')).d.days[today] || {}).open === before + 1, 'a step repeated in one batch counts once'); }
+
 // ---------- abuse limits (per IP; Cloudflare sets cf-connecting-ip, the local run trusts the header) ----------
 const jip = async (ip, path, body) => (await fetch(BASE + path, { method: 'POST', headers: { 'cf-connecting-ip': ip }, body: JSON.stringify(body) })).status;
 { const ip = '10.9.' + (Math.random() * 250 | 0) + '.1'; let last = 0; for (let i = 0; i < 45; i++) last = await jip(ip, '/api/restore', { code: 'QQQQQQ' });

@@ -33,6 +33,7 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 - `public/index.html`: the whole ring game (Three.js, self-hosted under `public/vendor/three/`). One big file.
 - `public/story.js`: story mode "Sohrai Day", loaded with `import()` after the game boots. It receives what it
   needs from index.html as one object `C` (see `initStory(C)`); keep it that way instead of reaching into globals.
+- `public/stats.html`: funnel of the anonymous step counts (visits, PLAY, rounds, shares, challenge opens, returns, load time).
 - `public/sw.js`: offline cache. `VERSION` must change on every deploy that changes files (it is a hash of
   `public/`; recompute it, see "Deploy checklist"). New files must be added to its precache list.
 - `public/models/*.json`: Quaternius CC0 glTF models with embedded buffers (bull, cow, casual_male/female).
@@ -102,6 +103,8 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Customs order and details | needs Dulor | `design/customs-check.md`: 10 questions, one per custom shown; answer OK / wrong / in my village |
 | Story mode multiplayer | design choice | single-player by design; the ring is the online mode |
 | Play Store (TWA, `com.tumdah.khuntau`) | ready to build, needs Dulor's account | manifest has id, description, maskable icon; Chrome says installable (`offline.mjs`). `twa/twa-manifest.json` + `twa/README.md` (build, signing, assetlinks). Dulor: Play developer account type + creation date (personal accounts after Nov 2023 need a 12-tester, 14-day closed test), then build once on the Mac |
+| Know what players do | built + tested | anonymous step counts (no ids/cookies): `track()` in index.html, `/api/ev` + `/api/stats` in the Worker (whitelisted names, per-IP limit), funnel page `/stats.html`. `online.mjs` + `ring.mjs` (against wrangler) prove the game reports its steps |
+| First load on a phone | faster + measured | PLAY waits only for bull + player models (villagers load after); offline copy (~7 MB) downloads after the game is up instead of during boot; 300 KB title font subset to 200 KB and loaded after PLAY. Local uncompressed fast-3G: 27.9 s -> 20.3 s to PLAY. Live before: 9.2 s fast 3G, 5.1 s slow 4G |
 | Archery was a timing bar with a picture glued on | rebuilt | drag-to-aim: crosshair follows the drag (thumb never covers the target), held-bow sway that grows if you hold too long, release to shoot, arrow lands where you aimed; arrow keys + Space on laptops. `story3.mjs` aims with real pointer drags; `drag-*.jpg` at 1280x720 and 780x390 |
 
 ## Promo videos (`promo/`)

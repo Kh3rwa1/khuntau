@@ -377,6 +377,8 @@ export class Room extends DurableObject {
 // Daily leaderboard: one global object. Scores are kept per day (India time) so the board is fresh every morning.
 const istDay = (offsetDays = 0) => new Date(Date.now() + 5.5 * 3600e3 + offsetDays * 86400e3).toISOString().slice(0, 10);
 const cleanName = (n) => String(n || "").replace(/[^\p{L}\p{N} ._-]/gu, "").trim().slice(0, 14) || "Player";
+// the only step names the counter accepts (anything else is dropped)
+const EV_KEY = /^(open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum))$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
@@ -392,6 +394,7 @@ export class Board extends DurableObject {
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS used (tok TEXT PRIMARY KEY, at INTEGER NOT NULL)");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS saves (pid TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, data TEXT NOT NULL, at INTEGER NOT NULL)");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS subs (endpoint TEXT PRIMARY KEY, pid TEXT NOT NULL, played TEXT NOT NULL, sent TEXT NOT NULL, at INTEGER NOT NULL)");
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS stats (day TEXT NOT NULL, k TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, k))");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS alltime (pid TEXT PRIMARY KEY, name TEXT NOT NULL, pts INTEGER NOT NULL, lvl INTEGER NOT NULL DEFAULT 1, at INTEGER NOT NULL)");
     });
   }
@@ -455,6 +458,21 @@ export class Board extends DurableObject {
     if (path === "/internal/push") { await this.ctx.storage.setAlarm(Date.now() + 1000); return this.json({ ok: 1 }); }
 
     if (path === "/api/board") return this.json(this.board(url.searchParams.get("pid")));
+
+    // anonymous step counts (no ids): the game sends which steps happened this visit; one row per day and step
+    if (path === "/api/ev" && request.method === "POST") {
+      if (this.flood("e" + ip, 40)) return new Response("slow down", { status: 429 });
+      const keys = [...new Set(Array.isArray(m.k) ? m.k : [])].filter(k => typeof k === "string" && EV_KEY.test(k)).slice(0, 30), day = istDay();
+      for (const k of keys) sql.exec("INSERT INTO stats (day, k, n) VALUES (?, ?, 1) ON CONFLICT(day, k) DO UPDATE SET n = n + 1", day, k);
+      if (Math.random() < 0.01) sql.exec("DELETE FROM stats WHERE day < ?", istDay(-120));
+      return new Response(null, { status: 204 });
+    }
+    if (path === "/api/stats") {
+      const days = clamp(parseInt(url.searchParams.get("days"), 10) || 14, 1, 90);
+      const rows = sql.exec("SELECT day, k, n FROM stats WHERE day >= ? ORDER BY day DESC", istDay(-(days - 1))).toArray();
+      const out = {}; for (const r of rows) (out[r.day] ||= {})[r.k] = r.n;
+      return this.json({ days: out });
+    }
 
     // a solo run starts by asking for a ticket; the score is only accepted with that ticket, once, and only if
     // enough time has passed to have earned it. This stops typed-in scores; it cannot stop a patient cheat.
