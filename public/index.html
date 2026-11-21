@@ -1126,7 +1126,10 @@ const garland = new THREE.Group();
 {
   const marigold = [0xff8a1c, 0xffc21c].map(c => Mat({ color: c, roughness: 0.6, emissive: c, emissiveIntensity: 0.12 }));
   const g = new THREE.IcosahedronGeometry(0.075, 0);
-  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; const m = new THREE.Mesh(g, marigold[i % 2]); m.position.set(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.3); garland.add(m); }
+  // 22 flowers in two colours, merged into one mesh per colour: 2 draw calls instead of 22, wherever the animal is seen
+  const parts = [[], []];
+  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; parts[i % 2].push(g.clone().translate(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.3)); }
+  parts.forEach((p, k) => { garland.add(new THREE.Mesh(mergeGeometries(p, false), marigold[k])); p.forEach(x => x.dispose()); });
   scene.add(garland);
 }
 

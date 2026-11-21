@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs'; import { check, finish } from './check.mjs';
 // Draw-call budget per view at q=low (a budget phone dies on draw calls, not triangles). Raise only on purpose.
-const BUDGET = { ring: 90, yard: 60, akhra: 130, edge: 110 };
+const BUDGET = { ring: 60, yard: 40, akhra: 105, edge: 80 };
 const within = (name, i) => check(i.calls <= BUDGET[name], `${name}: ${i.calls} draw calls (budget ${BUDGET[name]}), ${i.tris} triangles`); fs.mkdirSync('tests/out', { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...(process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), '--no-sandbox', '--mute-audio'] });
