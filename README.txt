@@ -20,6 +20,8 @@ Audio:
 - Intro and gameplay music (public/audio/intro.mp3, gameplay.mp3) and trailer music
   (promo/trailer/music/sohrai.mp3): composed by Dulor (Tumdah). All rights reserved;
   not covered by the CC0/CC BY terms of the other files and not free to reuse.
+- Promo voice-overs and comedy SFX (promo/real/vo, vo_en, sfx): generated with ElevenLabs on a
+  paid plan by Dulor (Tumdah) for Khuntau promos. Not free to reuse.
 - Sound effects found through Openverse (openverse.org), hosted on Freesound:
   Horse(snort)_2 by o_ciz (CC0), bull 6 (C) by confusion_music (CC BY 4.0,
   https://freesound.org/people/confusion_music/sounds/103428), R14-05 Horses Gallop By
