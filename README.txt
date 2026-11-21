@@ -17,7 +17,9 @@ Free plan is enough for a hobby game. Rooms run on Durable Objects
 Credits: bull, cow and villager models by Quaternius (CC0).
 
 Audio:
-- Intro and gameplay music: supplied by the game's owner.
+- Intro and gameplay music (public/audio/intro.mp3, gameplay.mp3) and trailer music
+  (promo/trailer/music/sohrai.mp3): composed by Dulor (Tumdah). All rights reserved;
+  not covered by the CC0/CC BY terms of the other files and not free to reuse.
 - Sound effects found through Openverse (openverse.org), hosted on Freesound:
   Horse(snort)_2 by o_ciz (CC0), bull 6 (C) by confusion_music (CC BY 4.0,
   https://freesound.org/people/confusion_music/sounds/103428), R14-05 Horses Gallop By
