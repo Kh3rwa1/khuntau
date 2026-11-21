@@ -80,6 +80,7 @@ await until(() => __k.game.b.state !== 'charge', 6000); await sleep(300);
 check(charged && await ev(() => window.__rolled > 0), 'the bull charged and the player rolled');
 check(await ev(() => __k.life.active().prints), 'the charge leaves hoof prints in the dust');
 check(await ev((n) => __k.game.lives === n, before), 'a well-timed ROLL dodges the charge');
+await ev(() => { window.__rolled = 99; }); // switch the perfect dodger off, or on a slow runner it keeps rolling out of the hits below
 
 // handi: a life back
 await ev(() => { __k.game.p.pos.set(0, 0, 0.9); __k.game.b.state = 'recover'; __k.game.b.t = 0; __k.hs.next = 0; }); // at the post: a pot never spawns within reach, so it can't be drunk before we look
