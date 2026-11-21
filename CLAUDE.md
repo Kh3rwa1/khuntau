@@ -83,7 +83,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Ring game end to end | tested | `tests/ring.mjs`: grab, refill, bait+hit, roll dodge, handi, game over, score on the board, play again |
 | Drum timing | fixed + tested | `tests/drum.mjs`: clicks booked on the audio clock minus speaker delay; taps use the touch time; late taps no longer marked Miss before they land; oldest open note gets the tap; each phone learns its offset (`khuntau-drumlag`) |
 | Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
-| In-game credits text, banana leaves | todo | |
+| In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
 | Deploy from cloud | blocked | Dulor: add `CLOUDFLARE_API_TOKEN` (Workers edit) to the cloud environment secrets |
 | Real-phone feel (A34 fps, drum timing by touch) | blocked | Dulor: play the village and drum on the A34, report fps feel and early/late |
 | Santali story text | blocked | needs a Santali speaker to write/check; never machine-invent it |

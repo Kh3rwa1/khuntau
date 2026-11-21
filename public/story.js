@@ -273,7 +273,9 @@ export function initStory(C) {
     // painted face, big enough to read on a phone: white, red, white, red bull (radii match the hit zone)
     [[0.62, paste], [0.47, red], [0.3, paste], [0.13, red]].forEach(([r, m], i) => mesh(new THREE.CircleGeometry(r, 28), m, 0, FACE_Y, 0.31 + i * 0.006, tg));
     mesh(new THREE.CircleGeometry(0.66, 28), dark, 0, FACE_Y, 0.305, tg);
-    for (let i = 0; i < 4; i++) { const lf = mesh(new THREE.PlaneGeometry(0.5, 1.5), leaf, 0, 2.9, 0, tg); lf.rotation.set(0.9, i * Math.PI / 2, 0); lf.position.x = Math.sin(i * Math.PI / 2) * 0.5; lf.position.z = Math.cos(i * Math.PI / 2) * 0.5; }
+    // banana leaves: each turns to its side first, then leans out from the top of the trunk (YXZ), lit a little from within
+    const bLeaf = Mat({ color: 0x6fa046, emissive: 0x1f3d12, roughness: 0.8, side: THREE.DoubleSide });
+    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5 + 0.3, lean = 0.85, lf = mesh(new THREE.PlaneGeometry(0.42, 1.4), bLeaf, Math.sin(a) * 0.62 * Math.sin(lean), 2.55 + 0.7 * Math.cos(lean), Math.cos(a) * 0.62 * Math.sin(lean), tg); lf.rotation.set(lean, a, 0, 'YXZ'); }
     const gold = Mat({ color: 0xffc23a, roughness: 0.6, side: THREE.DoubleSide });
     W.arrows = []; for (let i = 0; i < 5; i++) { const a = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.85, 6).rotateX(Math.PI / 2), wood, 0, 0, 0, a); mesh(new THREE.ConeGeometry(0.055, 0.14, 6).rotateX(Math.PI / 2), dark, 0, 0, 0.48, a); for (const r of [0, Math.PI / 2]) mesh(new THREE.PlaneGeometry(0.2, 0.24), gold, 0, 0, -0.34, a).rotation.set(0, Math.PI / 2, r); a.visible = false; scene.add(a); W.arrows.push(a); }
 
