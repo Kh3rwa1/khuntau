@@ -1568,7 +1568,7 @@ $('openBtn').addEventListener('click', () => netSend({ t: 'open', on: !net.open 
 
 let popTimer;
 // the story finale in Hindi: while game.storyRun, the ring's own lines go through the story's translator
-const L = (s) => ((game.storyRun || game.villageRun || game.mode === 'story') && story && story.tr && s != null ? story.tr(s) : s); // story finale and rounds started in the village
+const L = (s) => ((game.ringLang || game.storyRun || game.villageRun || game.mode === 'story') && story && story.tr && s != null ? story.tr(s) : s); // ringLang: the last round began in the village, so its late lines (a bonk after the end) stay in the player's language // story finale and rounds started in the village
 function pop(big, small) {
   const el = $('pop'); $('popBig').textContent = L(big); $('popSmall').textContent = L(small) || '';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -1619,7 +1619,7 @@ function resetGame() {
   game.hintsShown = {};
 }
 // ring buttons speak the story's language only during the story finale (online and normal rounds stay English)
-function ringLabels() { for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w); }
+function ringLabels() { game.ringLang = !!(game.storyRun || game.villageRun); for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w); }
 function startGame() {
   game.menuOpen = false; $('pauseScreen').hidden = true;
   ringLabels();
