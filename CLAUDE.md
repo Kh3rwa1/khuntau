@@ -66,7 +66,6 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 
 ## Known weak points (open)
 - Real-phone feel is unverified: frame rate in the village and touch drum timing on the Galaxy A34.
-- Archery target is thin and far; hits are hard to see on a small screen.
 - Story is English and Hindi only; Santali text not done (needs a Santali speaker to check).
 - Customs: the order and details of activities are a best guess; only horn oiling/vermilion and wall painting are
   documented in sources found so far. Dulor should correct anything wrong for his village.

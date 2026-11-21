@@ -93,8 +93,9 @@ export function initStory(C) {
   // the shed and the drum ground sit in the gaps between houses, between the ring and the house row
   const GA = 0.35 + (2 * Math.PI / 9) * 3.5, AA = 0.35 + (2 * Math.PI / 9) * 6.5;
   const GOHAL = polar(GA, 19), AKHRA = polar(AA, 19.4);
+  const FACE_Y = 1.45;
   const gap = (i) => 0.35 + (2 * Math.PI / 9) * i;
-  const ARCH = polar(gap(1.5), 18.5), TARGET = polar(gap(1.5), 29.4), POND = polar(gap(4.5), 24.6), FSTAND = polar(gap(4.5), 20.7);
+  const ARCH = polar(gap(1.5), 18.5), TARGET = polar(gap(1.5), 25.5), POND = polar(gap(4.5), 24.6), FSTAND = polar(gap(4.5), 20.7);
   const JALE = [2, 5, 7].map(i => { const h = C.houses[i], f = h.d / 2 + 1.1; return { stand: V(h.x + Math.sin(h.rot) * f, 0, h.z + Math.cos(h.rot) * f), yaw: h.rot + Math.PI }; });
   const RING_SPOT = V(0, 0, -3.5);
   const VILLAGE_R = 30.5;
@@ -250,12 +251,16 @@ export function initStory(C) {
     const aDir = t1.copy(TARGET).sub(ARCH).setY(0).normalize().clone(); W.aDir = aDir; W.aSide = V(aDir.z, 0, -aDir.x);
     const line = mesh(new THREE.BoxGeometry(2.6, 0.02, 0.1), paste, ARCH.x + aDir.x * 0.6, 0.02, ARCH.z + aDir.z * 0.6, scene); line.rotation.y = Math.atan2(aDir.x, aDir.z);
     const flag = (pos, col) => { const g2 = new THREE.Group(); g2.position.copy(pos); mesh(new THREE.CylinderGeometry(0.03, 0.04, 3.2, 6), wood, 0, 1.6, 0, g2); const f = mesh(new THREE.PlaneGeometry(0.9, 0.5), Mat({ color: col, roughness: 0.8, side: THREE.DoubleSide }), 0.48, 2.9, 0, g2); f.name = 'cloth'; scene.add(g2); return g2; };
-    W.flags = [flag(ARCH.clone().addScaledVector(W.aSide, 1.7), 0xffb347), flag(FSTAND.clone().addScaledVector(V(-FSTAND.z, 0, FSTAND.x).normalize(), 1.6), 0x3f8fb8)];
+    W.flags = [flag(ARCH.clone().addScaledVector(W.aSide, -2.4).addScaledVector(W.aDir, -0.6), 0xffb347), flag(FSTAND.clone().addScaledVector(V(-FSTAND.z, 0, FSTAND.x).normalize(), 1.6), 0x3f8fb8)];
     const tg = new THREE.Group(); tg.position.copy(TARGET); scene.add(tg); W.target = tg;
-    const trunk = mesh(new THREE.CylinderGeometry(0.2, 0.25, 2.5, 10), Mat({ color: 0xb7c48a, roughness: 0.8 }), 0, 1.25, 0, tg); trunk.castShadow = true;
-    for (const y of [1.15, 1.75]) { const b = mesh(new THREE.TorusGeometry(0.225, 0.035, 6, 14), red, 0, y, 0, tg); b.rotation.x = Math.PI / 2; }
+    tg.rotation.y = Math.atan2(-aDir.x, -aDir.z); // local +z faces the shooter
+    const trunk = mesh(new THREE.CylinderGeometry(0.3, 0.36, 2.6, 12), Mat({ color: 0xb7c48a, roughness: 0.8 }), 0, 1.3, 0, tg); trunk.castShadow = true;
+    // painted face, big enough to read on a phone: white, red, white, red bull (radii match the hit zone)
+    [[0.62, paste], [0.47, red], [0.3, paste], [0.13, red]].forEach(([r, m], i) => mesh(new THREE.CircleGeometry(r, 28), m, 0, FACE_Y, 0.31 + i * 0.006, tg));
+    mesh(new THREE.CircleGeometry(0.66, 28), dark, 0, FACE_Y, 0.305, tg);
     for (let i = 0; i < 4; i++) { const lf = mesh(new THREE.PlaneGeometry(0.5, 1.5), leaf, 0, 2.9, 0, tg); lf.rotation.set(0.9, i * Math.PI / 2, 0); lf.position.x = Math.sin(i * Math.PI / 2) * 0.5; lf.position.z = Math.cos(i * Math.PI / 2) * 0.5; }
-    W.arrows = []; for (let i = 0; i < 5; i++) { const a = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.85, 5).rotateX(Math.PI / 2), wood, 0, 0, 0, a); mesh(new THREE.ConeGeometry(0.03, 0.1, 5).rotateX(Math.PI / 2), dark, 0, 0, 0.46, a); mesh(new THREE.PlaneGeometry(0.1, 0.16), red, 0, 0, -0.38, a).rotation.y = Math.PI / 2; a.visible = false; scene.add(a); W.arrows.push(a); }
+    const gold = Mat({ color: 0xffc23a, roughness: 0.6, side: THREE.DoubleSide });
+    W.arrows = []; for (let i = 0; i < 5; i++) { const a = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.85, 6).rotateX(Math.PI / 2), wood, 0, 0, 0, a); mesh(new THREE.ConeGeometry(0.055, 0.14, 6).rotateX(Math.PI / 2), dark, 0, 0, 0.48, a); for (const r of [0, Math.PI / 2]) mesh(new THREE.PlaneGeometry(0.2, 0.24), gold, 0, 0, -0.34, a).rotation.set(0, Math.PI / 2, r); a.visible = false; scene.add(a); W.arrows.push(a); }
 
     /* --- the pond --- */
     mesh(new THREE.CircleGeometry(3.9, 28).rotateX(-Math.PI / 2), Mat({ color: 0x5a4632, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2 }), POND.x, 0.015, POND.z, scene);
@@ -545,7 +550,8 @@ export function initStory(C) {
   function archStart() {
     const p = game.p; p.pos.copy(ARCH); p.yaw = Math.atan2(W.aDir.x, W.aDir.z);
     Object.assign(arch, { n: 0, hits: 0, t: rand(0, 6), fly: null, wait: 0.4, over: false }); for (const a of W.arrows) a.visible = false;
-    S.focus = { pos: ARCH.clone().addScaledVector(W.aDir, -3.4).addScaledVector(W.aSide, 0.9).setY(2.3), look: TARGET.clone().setY(1.2) };
+    S.focus = { pos: ARCH.clone().addScaledVector(W.aDir, -2.2).addScaledVector(W.aSide, 1.15).setY(2.3), look: TARGET.clone().addScaledVector(W.aSide, 0.35).setY(FACE_Y - 0.15) };
+    $('hint').classList.remove('show');
     tapOpen('aim', 'Tap on the green'); $('tapScore').textContent = '0/5';
   }
   function archUpdate(dt) {
@@ -554,15 +560,16 @@ export function initStory(C) {
     if (arch.fly) {
       const f = arch.fly; f.k = Math.min(1, f.k + dt / 0.42); f.a.position.lerpVectors(f.from, f.to, f.k); f.a.position.y += Math.sin(f.k * Math.PI) * 0.5;
       if (f.k >= 1) { arch.fly = null; arch.wait = 0.55;
-        if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = 0.06; } else { f.a.visible = false; toast('Missed', 700); }
+        if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = f.bull ? 0.16 : 0.09; } else { f.a.visible = false; toast('Missed', 700); }
         $('tapScore').textContent = arch.hits + '/5';
         if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); } }
     } else if (arch.wait > 0) arch.wait -= dt;
     else if (S.tap && !arch.over) {
       const hit = Math.abs(x) < 0.17, a = W.arrows[arch.n++], pl = C.player();
       pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); C.sfx.whoosh();
-      const from = game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5), to = TARGET.clone().addScaledVector(W.aSide, hit ? x * 0.9 : x * 2.6 + Math.sign(x || 1) * 0.3).setY(hit ? rand(1.0, 1.9) : 1.2);
-      if (hit) to.addScaledVector(W.aDir, -0.45); else to.addScaledVector(W.aDir, 3);
+      const from = game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5), k = x / 0.17, ang = rand(0, Math.PI * 2), rad = Math.min(Math.abs(k), 1) * 0.56;
+      const to = hit ? TARGET.clone().addScaledVector(W.aSide, Math.sign(k || 1) * Math.abs(Math.cos(ang)) * rad).setY(FACE_Y + Math.sin(ang) * rad).addScaledVector(W.aDir, -(0.32 + 0.4))
+        : TARGET.clone().addScaledVector(W.aSide, x * 2.6 + Math.sign(x || 1) * 0.6).setY(1.0).addScaledVector(W.aDir, 3);
       a.visible = true; a.position.copy(from); a.lookAt(to); arch.fly = { a, from, to, k: 0, hit, bull: Math.abs(x) < 0.06 };
     }
     W.target.rotation.z *= Math.pow(0.02, dt); S.tap = false;
