@@ -30,6 +30,31 @@ check(typeof t1 === 'string' && t1.split('.').length === 3, 'run ticket issued')
 { const r = await j('/api/save', { pid, data: { x: 'y'.repeat(3000) } }); check(r.s === 413, 'oversized save refused'); }
 { const r = await j('/api/push/sub', { pid, endpoint: 'https://evil.example.com/x' }); check(r.s === 400, 'push to a non-push host refused'); }
 
+// ---------- village vs village ----------
+const vtag = 'Test' + Math.random().toString(36).slice(2, 7).replace(/[0-9]/g, 'q'); // a fresh village name per run
+const play = async (p, pts = 3) => { const t = (await j('/api/run?pid=' + p)).d.tok; return (await j('/api/score', { pid: p, name: 'V', pts, tok: t })).s; };
+const setV = (p, name, dist = 'Dumka') => j('/api/village', { pid: p, name, dist });
+{ const vp = Array.from({ length: 12 }, rid), spell = [`${vtag} Tola`, `${vtag.toLowerCase()}tola`, `  ${vtag.toUpperCase()}   TOLA!!`];
+  const first = await setV(vp[0], spell[0]); check(first.s === 200 && first.d.v === `${vtag} Tola` && first.d.from === 'today', 'set a village: it counts from today');
+  for (let i = 1; i < 12; i++) await setV(vp[i], spell[i % 3]);
+  const sug = await j('/api/villages?dist=Dumka'); check((sug.d.villages || []).some(v => v.v === `${vtag} Tola` && v.n === 12), 'spelling variants join one village (12 players), shown with its first spelling');
+  const two = [rid(), rid()]; for (const p of two) { await setV(p, `${vtag} Small`); await play(p); }
+  await play(vp[0]); await play(vp[1]);
+  let vb = (await j('/api/vboard?pid=' + vp[0])).d;
+  check(!vb.today.top.some(v => v.v === `${vtag} Tola`) && vb.today.me && vb.today.me.n === 2 && vb.today.me.rank === 0, 'a village with only 2 players is not on the board yet (but its players see their count)');
+  for (let i = 2; i < 12; i++) await play(vp[i]);
+  await new Promise(r => setTimeout(r, 31000)); // the village table is cached for 30 s
+  vb = (await j('/api/vboard?pid=' + vp[0])).d; const row = vb.today.top.find(v => v.v === `${vtag} Tola`);
+  check(!!row && row.n === 12 && row.p === 30, `village score is the best 10 players (12 played x 3 points -> ${row && row.p})`);
+  check(vb.today.me && vb.today.me.rank >= 1 && vb.mine && vb.mine.d === 'Dumka', 'players see their village rank');
+  check(!vb.today.top.some(v => v.v === `${vtag} Small`), 'two-player village stays off the board');
+  const mv = await setV(vp[0], `${vtag} Other`); check(mv.d.from === 'tomorrow', 'changing village waits until tomorrow');
+  await play(vp[0], 3); check(((await j('/api/vboard?pid=' + vp[0])).d.mine || {}).v === `${vtag} Tola`, "today's points still go to today's village");
+  const bad = await setV(rid(), '<script>x</script>'); check(bad.s === 200 && bad.d.v === 'script x script', 'village names are cleaned to letters and spaces');
+  check((await setV(rid(), '!!')).s === 400, 'empty village names are refused');
+  check((await setV(rid(), 'आमगाछी', 'Dumka')).d.v === 'आमगाछी' && (await setV(rid(), 'ᱟᱢᱜᱟᱪᱷᱤ', 'Dumka')).d.v === 'ᱟᱢᱜᱟᱪᱷᱤ', 'Devanagari and Ol Chiki village names work');
+  globalThis.__vtag = vtag; }
+
 // ---------- anonymous step counts ----------
 { const r = await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: ['open', 'play', 'evil<script>', 'open', 'ch.5'] }) }); check(r.status === 204, 'step counts accepted');
   const st = (await j('/api/stats?days=1')).d.days, today = Object.keys(st)[0], t = st[today] || {};
@@ -58,6 +83,7 @@ function player(name, url = `${WS}/ws/${code}`) {
 }
 const A = player('Asha'), B = player('Biru');
 await Promise.all([A.open, B.open]);
+await setV(pid, `${vtag} Room`);
 A.send({ t: 'hello', name: 'Asha<script>' }); B.send({ t: 'hello', name: 'Biru' });
 A.send({ t: 'me', pid, lvl: 3 }); B.send({ t: 'me', pid: rid(), lvl: 1 });
 await sleep(400);
@@ -98,6 +124,7 @@ const ov = await A.wait(m => m.t === 'ev' && m.e === 'over', 4000);
 check(!!ov && ov.why === 'horned' && ov.results[0].id === A.id, 'all lamps out ends the round; Asha (1 pitha) is first');
 clearInterval(keep); await sleep(400);
 { const r = await j('/api/board?pid=' + pid); check(r.d.me && r.d.me.p >= 3, 'room result reached the daily board'); }
+{ const r = await j('/api/vboard?pid=' + pid); check(r.d.mine && r.d.mine.v === `${vtag} Room` && r.d.today.me && r.d.today.me.p >= 1, "room scores count for the player's village"); }
 // room full at 6
 const extra = []; for (let i = 0; i < 4; i++) { const P = player('P' + i); extra.push(P); await P.open; }
 await sleep(300); const F = player('Seventh'); await F.open; await sleep(400);

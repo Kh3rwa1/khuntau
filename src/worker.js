@@ -377,8 +377,18 @@ export class Room extends DurableObject {
 // Daily leaderboard: one global object. Scores are kept per day (India time) so the board is fresh every morning.
 const istDay = (offsetDays = 0) => new Date(Date.now() + 5.5 * 3600e3 + offsetDays * 86400e3).toISOString().slice(0, 10);
 const cleanName = (n) => String(n || "").replace(/[^\p{L}\p{N} ._-]/gu, "").trim().slice(0, 14) || "Player";
+// villages: names in any script (Latin, Devanagari, Ol Chiki, Bengali, Odia...), letters and spaces only, 2-24 characters
+const cleanVillage = (n) => { const v = String(n || "").normalize("NFKC").replace(/[^\p{L}\p{M} ]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 24); return v.length >= 2 ? v : ""; };
+// one key per village and district, so "Sido Kanhu Tola" and "sidokanhu  tola" are the same team
+const villageKey = (name, dist) => { const a = name.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{M}]/gu, ""), b = dist.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{M}]/gu, ""); return a && b ? a + "|" + b : ""; };
+// villages taken off the board (abusive or joke names). Add the key (villageKey(name, district)) and deploy.
+const HIDDEN_VILLAGES = new Set([]);
+// districts offered in the game's list (kept in step with DISTRICTS in index.html); anything else is a typed "other" district
+const DISTRICTS = new Set(["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "East Singhbhum", "Garhwa", "Giridih", "Godda", "Gumla", "Hazaribagh", "Jamtara", "Khunti", "Koderma", "Latehar", "Lohardaga", "Pakur", "Palamu", "Ramgarh", "Ranchi", "Sahibganj", "Seraikela Kharsawan", "Simdega", "West Singhbhum",
+  "Bankura", "Birbhum", "Purulia", "Jhargram", "Paschim Medinipur", "Paschim Bardhaman", "Purba Bardhaman", "Dakshin Dinajpur", "Uttar Dinajpur", "Malda", "Hooghly", "Murshidabad",
+  "Mayurbhanj", "Balasore", "Keonjhar", "Sundargarh", "Banka", "Bhagalpur", "Jamui", "Katihar", "Purnia", "Kokrajhar", "Chirang", "Udalguri", "Sonitpur"]);
 // the only step names the counter accepts (anything else is dropped)
-const EV_KEY = /^(open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum))$/;
+const EV_KEY = /^(open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
@@ -394,6 +404,11 @@ export class Board extends DurableObject {
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS used (tok TEXT PRIMARY KEY, at INTEGER NOT NULL)");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS saves (pid TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, data TEXT NOT NULL, at INTEGER NOT NULL)");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS subs (endpoint TEXT PRIMARY KEY, pid TEXT NOT NULL, played TEXT NOT NULL, sent TEXT NOT NULL, at INTEGER NOT NULL)");
+      // villages: a player's village (a change waits until the next day), the first spelling of each village, and each player's best per day for their village
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS pvil (pid TEXT PRIMARY KEY, vkey TEXT NOT NULL, since TEXT NOT NULL, nxt TEXT, nxt_since TEXT, at INTEGER NOT NULL)");
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS vnames (vkey TEXT PRIMARY KEY, vname TEXT NOT NULL, dist TEXT NOT NULL, at INTEGER NOT NULL)");
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS vday (day TEXT NOT NULL, pid TEXT NOT NULL, vkey TEXT NOT NULL, pts INTEGER NOT NULL, PRIMARY KEY (day, pid))");
+      this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS vday_v ON vday (day, vkey)");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS stats (day TEXT NOT NULL, k TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, k))");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS alltime (pid TEXT PRIMARY KEY, name TEXT NOT NULL, pts INTEGER NOT NULL, lvl INTEGER NOT NULL DEFAULT 1, at INTEGER NOT NULL)");
     });
@@ -412,7 +427,39 @@ export class Board extends DurableObject {
     sql.exec("INSERT INTO daily (day, pid, name, pts, lvl, at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(day, pid) DO UPDATE SET name = excluded.name, lvl = excluded.lvl, at = CASE WHEN excluded.pts > daily.pts THEN excluded.at ELSE daily.at END, pts = MAX(daily.pts, excluded.pts)", day, pid, name, pts, lvl, t);
     sql.exec("INSERT INTO alltime (pid, name, pts, lvl, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(pid) DO UPDATE SET name = excluded.name, lvl = excluded.lvl, at = CASE WHEN excluded.pts > alltime.pts THEN excluded.at ELSE alltime.at END, pts = MAX(alltime.pts, excluded.pts)", pid, name, pts, lvl, t);
     sql.exec("UPDATE subs SET played = ? WHERE pid = ?", day, pid);
-    if (Math.random() < 0.02) { sql.exec("DELETE FROM daily WHERE day < ?", istDay(-8)); sql.exec("DELETE FROM used WHERE at < ?", t - 3 * 3600e3); }
+    const vk = this.villageOf(pid); // room and solo scores both count for the player's village
+    if (vk) sql.exec("INSERT INTO vday (day, pid, vkey, pts) VALUES (?, ?, ?, ?) ON CONFLICT(day, pid) DO UPDATE SET pts = MAX(vday.pts, excluded.pts), vkey = excluded.vkey", day, pid, vk, pts);
+    if (Math.random() < 0.02) { sql.exec("DELETE FROM vday WHERE day < ?", istDay(-8)); sql.exec("DELETE FROM daily WHERE day < ?", istDay(-8)); sql.exec("DELETE FROM used WHERE at < ?", t - 3 * 3600e3); }
+  }
+  // the village a player plays for today (a change made yesterday becomes active today)
+  villageOf(pid) {
+    const sql = this.ctx.storage.sql, day = istDay(), r = sql.exec("SELECT vkey, nxt, nxt_since FROM pvil WHERE pid = ?", pid).toArray()[0];
+    if (!r) return null;
+    if (r.nxt && r.nxt_since <= day) { sql.exec("UPDATE pvil SET vkey = nxt, since = nxt_since, nxt = NULL, nxt_since = NULL WHERE pid = ?", pid); return r.nxt; }
+    return r.vkey;
+  }
+  // village table for a period: score = sum of the 10 best players' daily bests; shown only with 3+ different players
+  vtable(fromDay) {
+    const t = Date.now(); this._vt ||= {}; const c = this._vt[fromDay]; if (c && t - c.at < 30000) return c.rows;
+    const rows = this.ctx.storage.sql.exec(`WITH r AS (SELECT day, vkey, pid, pts, ROW_NUMBER() OVER (PARTITION BY day, vkey ORDER BY pts DESC) rn FROM vday WHERE day >= ?)
+      SELECT r.vkey, SUM(CASE WHEN rn <= 10 THEN pts ELSE 0 END) AS s, COUNT(DISTINCT pid) AS n, v.vname, v.dist FROM r JOIN vnames v ON v.vkey = r.vkey
+      GROUP BY r.vkey ORDER BY s DESC`, fromDay).toArray().filter(x => !HIDDEN_VILLAGES.has(x.vkey));
+    this._vt[fromDay] = { at: t, rows }; return rows;
+  }
+  vboard(pid) {
+    const mine = okPid(pid) ? this.villageOf(pid) : null, out = {};
+    for (const [k, from] of [["today", istDay()], ["week", istDay(-6)]]) {
+      const all = this.vtable(from), shown = all.filter(x => x.n >= 3 && x.vkey !== mine);
+      const row = (x) => ({ v: x.vname, d: x.dist, p: x.s, n: x.n, me: x.vkey === mine ? 1 : 0 });
+      // the player's own village is always fresh (the top list may be up to 30 s old)
+      const me = mine ? this.ctx.storage.sql.exec(`WITH r AS (SELECT day, pid, pts, ROW_NUMBER() OVER (PARTITION BY day ORDER BY pts DESC) rn FROM vday WHERE day >= ? AND vkey = ?)
+        SELECT ? AS vkey, COALESCE(SUM(CASE WHEN rn <= 10 THEN pts ELSE 0 END), 0) AS s, COUNT(DISTINCT pid) AS n, v.vname, v.dist FROM vnames v LEFT JOIN r ON 1 WHERE v.vkey = ?`, from, mine, mine, mine).toArray()[0] : null;
+      if (me && me.n >= 3 && !HIDDEN_VILLAGES.has(mine)) { const i = shown.findIndex(x => x.s < me.s); shown.splice(i < 0 ? shown.length : i, 0, me); }
+      const rank = me ? shown.indexOf(me) + 1 : 0, above = rank > 1 ? shown[rank - 2] : null;
+      out[k] = { top: shown.slice(0, 20).map(row), total: shown.length, me: me ? { ...row(me), rank, above: above ? row(above) : null } : null };
+    }
+    if (mine) { const n = this.ctx.storage.sql.exec("SELECT vname, dist FROM vnames WHERE vkey = ?", mine).toArray()[0]; if (n) out.mine = { v: n.vname, d: n.dist }; }
+    return out;
   }
   board(pid) {
     const sql = this.ctx.storage.sql, day = istDay(), yd = istDay(-1);
@@ -458,6 +505,29 @@ export class Board extends DurableObject {
     if (path === "/internal/push") { await this.ctx.storage.setAlarm(Date.now() + 1000); return this.json({ ok: 1 }); }
 
     if (path === "/api/board") return this.json(this.board(url.searchParams.get("pid")));
+
+    // villages: set yours, find existing ones in a district (so spellings don't split a village), see the village board
+    if (path === "/api/village" && request.method === "POST") {
+      if (!okPid(m.pid)) return new Response("bad pid", { status: 400 });
+      if (this.flood("vs" + m.pid, 6) || this.flood("vs" + ip, 40)) return new Response("slow down", { status: 429 });
+      const name = cleanVillage(m.name), dist = DISTRICTS.has(m.dist) ? m.dist : cleanVillage(m.dist);
+      if (!name || !dist) return new Response("bad village", { status: 400 });
+      const vk = villageKey(name, dist), t = Date.now(), day = istDay();
+      if (!vk || HIDDEN_VILLAGES.has(vk)) return new Response("bad village", { status: 400 });
+      sql.exec("INSERT INTO vnames (vkey, vname, dist, at) VALUES (?, ?, ?, ?) ON CONFLICT(vkey) DO NOTHING", vk, name, dist, t);
+      const cur = this.villageOf(m.pid); let from = "today";
+      if (!cur) sql.exec("INSERT INTO pvil (pid, vkey, since, at) VALUES (?, ?, ?, ?)", m.pid, vk, day, t);
+      else if (cur === vk) { sql.exec("UPDATE pvil SET nxt = NULL, nxt_since = NULL WHERE pid = ?", m.pid); }
+      else { sql.exec("UPDATE pvil SET nxt = ?, nxt_since = ?, at = ? WHERE pid = ?", vk, istDay(1), t, m.pid); from = "tomorrow"; } // today's points stay with today's village
+      const n = sql.exec("SELECT vname, dist FROM vnames WHERE vkey = ?", vk).toArray()[0];
+      return this.json({ v: n.vname, d: n.dist, from });
+    }
+    if (path === "/api/villages") {
+      const dist = String(url.searchParams.get("dist") || "").slice(0, 40);
+      const rows = sql.exec("SELECT v.vkey, v.vname, COUNT(p.pid) AS n FROM vnames v LEFT JOIN pvil p ON p.vkey = v.vkey WHERE v.dist = ? GROUP BY v.vkey ORDER BY n DESC, v.at ASC LIMIT 40", dist).toArray();
+      return this.json({ villages: rows.filter(r => !HIDDEN_VILLAGES.has(r.vkey) && r.n > 0).map(r => ({ v: r.vname, n: r.n })) });
+    }
+    if (path === "/api/vboard") return this.json(this.vboard(url.searchParams.get("pid")));
 
     // anonymous step counts (no ids): the game sends which steps happened this visit; one row per day and step
     if (path === "/api/ev" && request.method === "POST") {

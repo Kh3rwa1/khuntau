@@ -85,7 +85,7 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: radial-gradient(ellipse at 50% 60%, rgba(20, 22, 26, .2), rgba(14, 14, 16, .78)); }
 .card { width: min(440px, 100%); text-align: center; display: grid; gap: 14px; justify-items: center; margin-block: auto; }
 .overlay { overflow-y: auto; place-items: start center; -webkit-overflow-scrolling: touch; }
-@media (max-height: 600px) { .card .how, .card .lede, .card .olchiki { display: none; } h1 { font-size: 56px; } .card { gap: 10px; } }
+@media (max-height: 600px) { .card .how, .card .lede, .card .olchiki, .card .vilhow { display: none; } h1 { font-size: 56px; } .card { gap: 10px; } }
 .olchiki { font-family: var(--font-olchiki); font-size: 18px; color: var(--saffron); letter-spacing: .08em; }
 h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(64px, 19vw, 112px); line-height: .85; color: var(--paste); text-shadow: 0 4px 0 var(--ochre), 0 14px 40px rgba(0, 0, 0, .6); text-wrap: balance; }
 h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(44px, 13vw, 72px); line-height: .9; color: var(--paste); text-shadow: 0 4px 0 var(--ochre); }
@@ -172,6 +172,10 @@ input:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
 .online-box { display: grid; gap: 10px; width: 100%; justify-items: center; }
 #nameIn { width: min(300px, 100%); text-align: center; }
 .join-row { align-items: center; }
+select.vil { font: 700 16px var(--font-ui); color: var(--ink); background: var(--paste); border: 0; border-radius: 14px; padding: 10px 12px; width: min(300px, 100%); }
+.vilform { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.vilform input { width: min(300px, 100%); text-align: center; }
+.vilhow { font-size: 13px; opacity: .8; max-width: 320px; margin: 0; }
 #codeIn { width: 120px; text-align: center; letter-spacing: .3em; text-transform: uppercase; }
 .btn.small { min-width: 0; font-size: 15px; padding: 10px 18px; }
 .or { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
@@ -328,6 +332,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
       <div class="shirts" id="shirts" aria-label="Shirt colour"></div>
       <button class="boardline" id="animalBtn" type="button"><span>In the ring: <b id="animalName">Brown bull</b></span><u>Change</u></button>
       <button class="boardline" id="boardBtn" type="button"><span id="boardLine">Today's board</span><u>See board</u></button>
+      <button class="boardline" id="villageBtn" type="button"><span id="villageLine">Play for your village</span><u id="villageCta">Choose</u></button>
       <button class="boardline remind" id="remindBtn" type="button" hidden><span>Get a reminder every evening</span><u>Turn on</u></button>
     </div>
     <p class="offline-note" id="offlineNote" hidden>You are offline. Solo play works; the board and friends need internet.</p>
@@ -384,11 +389,26 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 <div class="overlay" id="boardScreen" hidden>
   <div class="card">
     <h2>Today's top</h2>
-    <div class="tabs"><button id="tabDay" class="on" type="button">Today</button><button id="tabAll" type="button">All time</button></div>
+    <div class="tabs"><button id="tabDay" class="on" type="button">Today</button><button id="tabAll" type="button">All time</button><button id="tabVil" type="button">Villages</button></div>
     <p class="fine" id="boardNote">&nbsp;</p>
     <ol class="board-list" id="boardList"></ol>
     <p class="fine" id="ydayLine">&nbsp;</p>
     <button class="btn" id="boardClose" type="button">Close</button>
+  </div>
+</div>
+<div class="overlay" id="villageScreen" hidden>
+  <div class="card">
+    <h2>Your village</h2>
+    <p class="vilhow">Your best score each day counts for your village. A village scores with its 10 best players, and shows on the board once 3 people play for it.</p>
+    <div class="vilform">
+      <select class="vil" id="vilDist" aria-label="District"></select>
+      <input id="vilDistOther" maxlength="24" placeholder="Your district" aria-label="District name" hidden>
+      <input id="vilName" maxlength="24" placeholder="Village name" list="vilList" autocomplete="off" enterkeyhint="done" aria-label="Village name">
+      <datalist id="vilList"></datalist>
+      <p class="fine" id="vilNote">&nbsp;</p>
+      <button class="btn" id="vilSave" type="button">Play for this village</button>
+      <button class="linkbtn" id="vilClose" type="button">Not now</button>
+    </div>
   </div>
 </div>
 <div class="overlay" id="pauseScreen" hidden>
@@ -412,6 +432,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <p class="dayrank" id="dayRank" hidden></p>
     <div class="namerow" id="nameRow" hidden><input id="boardName" maxlength="14" placeholder="Your name" autocomplete="nickname" enterkeyhint="done" aria-label="Name for the board"><button class="btn ghost small" id="boardNameBtn" type="button">Save</button></div>
     <p class="gains" id="gains" hidden></p>
+    <button class="linkbtn" id="vilAsk" type="button" hidden>Play for your village: choose it</button>
     <button class="linkbtn" id="remindBtn2" type="button" hidden>Remind me every evening</button>
     <ul class="plist" id="resultList" hidden></ul>
     <div class="row">
@@ -1359,7 +1380,8 @@ async function postScore(pts) { let name = ''; try { name = localStorage.getItem
   if (!runTicket) return loadBoard();
   try { const r = await fetch('/api/score', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, name, pts, lvl: levelOf(meta.xp), tok: runTicket }) }); runTicket = null; if (r.ok) { boardData = await r.json(); renderBoardLine(); } } catch (e) {} return boardData; }
 function renderBoardScreen() { const d = boardData, ol = $('boardList'); ol.innerHTML = '';
-  $('tabDay').classList.toggle('on', boardTab === 'day'); $('tabAll').classList.toggle('on', boardTab === 'all');
+  $('tabDay').classList.toggle('on', boardTab === 'day'); $('tabAll').classList.toggle('on', boardTab === 'all'); $('tabVil').classList.toggle('on', boardTab === 'vil');
+  if (boardTab === 'vil') return renderVillages();
   if (!d) { $('boardNote').textContent = 'Could not load the board. Check your connection.'; return; }
   const rows = boardTab === 'day' ? d.top : d.all;
   $('boardNote').textContent = boardTab === 'day' ? (d.total ? `${d.total} player${d.total > 1 ? 's' : ''} today · resets at midnight` : 'Nobody has scored today. Be first!') : 'Best single runs ever';
@@ -1367,10 +1389,64 @@ function renderBoardScreen() { const d = boardData, ol = $('boardList'); ol.inne
   if (boardTab === 'day' && d.me && d.me.rank > rows.length) { const li = document.createElement('li'); li.className = 'me'; li.innerHTML = `<span>${d.me.rank}</span><span>You</span><b>${d.me.p}</b>`; ol.appendChild(li); }
   $('ydayLine').textContent = d.yday ? `Yesterday's champion: ${d.yday.n} with ${d.yday.p}` : ' ';
 }
+/* ---------- village vs village ---------- */
+// districts in the list (keep in step with DISTRICTS in src/worker.js); anything else goes in "Other district"
+const DISTRICTS = [
+  ['Jharkhand', ['Bokaro', 'Chatra', 'Deoghar', 'Dhanbad', 'Dumka', 'East Singhbhum', 'Garhwa', 'Giridih', 'Godda', 'Gumla', 'Hazaribagh', 'Jamtara', 'Khunti', 'Koderma', 'Latehar', 'Lohardaga', 'Pakur', 'Palamu', 'Ramgarh', 'Ranchi', 'Sahibganj', 'Seraikela Kharsawan', 'Simdega', 'West Singhbhum']],
+  ['West Bengal', ['Bankura', 'Birbhum', 'Dakshin Dinajpur', 'Hooghly', 'Jhargram', 'Malda', 'Murshidabad', 'Paschim Bardhaman', 'Paschim Medinipur', 'Purba Bardhaman', 'Purulia', 'Uttar Dinajpur']],
+  ['Odisha', ['Balasore', 'Keonjhar', 'Mayurbhanj', 'Sundargarh']],
+  ['Bihar', ['Banka', 'Bhagalpur', 'Jamui', 'Katihar', 'Purnia']],
+  ['Assam', ['Chirang', 'Kokrajhar', 'Sonitpur', 'Udalguri']],
+];
+let vboard = null, vilBack = 'startScreen';
+async function loadVillages() { try { const r = await fetch('/api/vboard?pid=' + meta.pid); if (r.ok) { vboard = await r.json(); renderVillageLine(); } } catch (e) {} return vboard; }
+function renderVillageLine() {
+  const v = meta.vil, t = vboard && vboard.today && vboard.today.me;
+  $('villageCta').textContent = v ? 'Change' : 'Choose';
+  $('villageLine').textContent = !v ? 'Play for your village' : !t ? `Playing for ${v.v}` : t.rank ? `${v.v} is #${t.rank} today` + (t.above ? ` · ${t.above.p - t.p + 1} to pass ${t.above.v}` : '') : `${v.v}: ${t.n} of 3 players needed today`;
+}
+function renderVillages() {
+  const ol = $('boardList'), d = vboard && vboard.today;
+  if (!d) { $('boardNote').textContent = 'Loading villages…'; $('ydayLine').textContent = ' '; return; }
+  $('boardNote').textContent = d.total ? `${d.total} village${d.total > 1 ? 's' : ''} today · 10 best players count` : 'No village has 3 players yet today. Bring yours!';
+  d.top.forEach((r, i) => { const li = document.createElement('li'); if (r.me) li.className = 'me'; const a = document.createElement('span'); a.textContent = i + 1; const b = document.createElement('span'); b.textContent = r.v + ' '; const sm = document.createElement('small'); sm.textContent = `${r.d} · ${r.n}`; b.appendChild(sm); const c = document.createElement('b'); c.textContent = r.p; li.append(a, b, c); ol.appendChild(li); });
+  if (d.me && !d.me.rank && meta.vil) { const li = document.createElement('li'); li.className = 'me'; const b = document.createElement('span'); b.textContent = `${meta.vil.v}: ${d.me.n} of 3 players today`; li.append(document.createElement('span'), b, document.createElement('b')); ol.appendChild(li); }
+  const w = vboard.week && vboard.week.top[0]; $('ydayLine').textContent = w ? `This week: ${w.v} leads with ${w.p}` : ' ';
+}
+function openVillage(back) {
+  vilBack = back; const sel = $('vilDist');
+  if (!sel.options.length) { sel.innerHTML = '<option value="">Choose your district</option>' + DISTRICTS.map(([st, ds]) => `<optgroup label="${st}">` + ds.map(d => `<option>${d}</option>`).join('') + '</optgroup>').join('') + '<option value="other">Other district</option>'; }
+  const v = meta.vil; if (v) { const known = DISTRICTS.some(([, ds]) => ds.includes(v.d)); sel.value = known ? v.d : 'other'; $('vilDistOther').value = known ? '' : v.d; $('vilName').value = v.v; }
+  $('vilDistOther').hidden = sel.value !== 'other'; $('vilNote').innerHTML = '&nbsp;';
+  $(back).hidden = true; $('villageScreen').hidden = false; suggestVillages();
+}
+const vilDist = () => $('vilDist').value === 'other' ? $('vilDistOther').value.trim() : $('vilDist').value;
+async function suggestVillages() { const d = vilDist(), dl = $('vilList'); dl.innerHTML = ''; if (!d) return;
+  try { const r = await fetch('/api/villages?dist=' + encodeURIComponent(d)); if (!r.ok) return; for (const v of (await r.json()).villages) { const o = document.createElement('option'); o.value = v.v; o.label = `${v.n} playing`; dl.appendChild(o); } } catch (e) {} }
+$('vilDist').addEventListener('change', () => { $('vilDistOther').hidden = $('vilDist').value !== 'other'; suggestVillages(); });
+$('vilDistOther').addEventListener('change', suggestVillages);
+$('vilName').addEventListener('keydown', e => { if (e.key === 'Enter') $('vilSave').click(); });
+$('vilSave').addEventListener('click', async () => {
+  const d = vilDist(), n = $('vilName').value.trim(), note = $('vilNote');
+  if (!d) { note.textContent = 'Choose your district first.'; return; } if (n.length < 2) { note.textContent = 'Type your village name.'; $('vilName').focus(); return; }
+  note.textContent = 'Saving…';
+  try { const r = await fetch('/api/village', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, name: n, dist: d }) });
+    if (!r.ok) { note.textContent = r.status === 429 ? 'Too many changes. Try again in a minute.' : 'Use letters only for the village name.'; return; }
+    const j = await r.json(); meta.vil = { v: j.v, d: j.d }; saveMeta(); backupProgress(); track('vil.set');
+    toast(j.from === 'tomorrow' ? `From tomorrow you play for ${j.v}` : `You play for ${j.v}!`, 2000);
+    $('villageScreen').hidden = true; $(vilBack).hidden = false; $('vilAsk').hidden = true; loadVillages();
+  } catch (e) { note.textContent = 'No connection. Try again when you are online.'; } });
+$('vilClose').addEventListener('click', () => { $('villageScreen').hidden = true; $(vilBack).hidden = false; });
+$('villageBtn').addEventListener('click', () => openVillage('startScreen'));
+$('vilAsk').addEventListener('click', () => openVillage('overScreen'));
+if (meta.vil) loadVillages(); else renderVillageLine();
+
 // after any run (solo or online): streak, XP, missions, board
 async function finishRun(pts, online) {
   markPlayedToday(); progress('runs'); progress('score', pts, true); if (online) progress('friends');
   addXp(pts + (online ? 5 : 0), ''); saveMeta();
+  $('vilAsk').hidden = !(pts > 0 && !meta.vil); if (!$('vilAsk').hidden) track('vil.ask'); // ask after a scoring round, never before the first play
+  if (meta.vil) setTimeout(loadVillages, 2500); // the village rank after this score
   const g = $('gains'), notes = runGain.notes.filter(Boolean); g.hidden = false; g.innerHTML = '';
   [`+${runGain.xp} XP` + (meta.streak ? ` · come back tomorrow for day ${meta.streak + 1}` : ''), ...notes.slice(-3)].forEach(t => { const d = document.createElement('div'); d.textContent = t; g.appendChild(d); });
   runGain.xp = 0; runGain.notes = [];
@@ -1388,6 +1464,7 @@ $('boardBtn').addEventListener('click', () => { $('startScreen').hidden = true; 
 $('boardClose').addEventListener('click', () => { $('boardScreen').hidden = true; $('startScreen').hidden = false; });
 $('tabDay').addEventListener('click', () => { boardTab = 'day'; renderBoardScreen(); });
 $('tabAll').addEventListener('click', () => { boardTab = 'all'; renderBoardScreen(); });
+$('tabVil').addEventListener('click', async () => { track('vil.tab'); boardTab = 'vil'; renderBoardScreen(); await loadVillages(); if (boardTab === 'vil') renderBoardScreen(); });
 $('boardNameBtn').addEventListener('click', async () => { const n = $('boardName').value.replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 14); if (!n) return;
   try { localStorage.setItem('khuntau-name', n); } catch (e) {} if ($('nameIn') && !$('nameIn').value) $('nameIn').value = n; $('nameRow').hidden = true;
   if (game.online) netSend({ t: 'hello', name: n });
@@ -1574,7 +1651,11 @@ async function shareScore() {
   const pts = game.score, rank = rankOf(pts);
   let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
   const link = location.origin + '/?beat=' + pts + (name ? '&from=' + encodeURIComponent(name) : '');
-  const text = (challenge && pts > challenge.beat ? `I beat ${challenge.from || 'my friend'}'s ${challenge.beat} with ${pts} points` : `I scored ${pts} points`) + ` in Khuntau (${rank}) this Sohrai. Can you beat me? ${link}`;
+  const vb = meta.vil && vboard && vboard.today && vboard.today.me, above = vb && vb.above;
+  if (meta.vil) track('share.vil');
+  const text = (challenge && pts > challenge.beat ? `I beat ${challenge.from || 'my friend'}'s ${challenge.beat} with ${pts} points` : `I scored ${pts} points`)
+    + (meta.vil ? ` for ${meta.vil.v} (${meta.vil.d}) in Khuntau this Sohrai.` + (above ? ` Help us pass ${above.v}!` : vb && vb.rank === 1 ? ' We are #1 today. Keep us there!' : ' Play for our village!') + ` ${link}`
+      : ` in Khuntau (${rank}) this Sohrai. Can you beat me? ${link}`);
   const note = $('copyNote');
   try {
     const blob = await scoreCard(pts, rank);
@@ -2502,7 +2583,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
