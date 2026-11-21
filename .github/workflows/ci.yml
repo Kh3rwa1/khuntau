@@ -6,7 +6,9 @@ on:
   push:
     branches: [main, 'main-*']
   workflow_dispatch:
-concurrency: { group: deploy-${{ github.ref }}, cancel-in-progress: false }
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   test:
     runs-on: ubuntu-latest
