@@ -131,6 +131,7 @@ export function initStory(C) {
   let mother = null, majhi = null, dancers = [];
 
   /* ---------- small builders ---------- */
+  const vcol = (g, hex) => { const k = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([k.r, k.g, k.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; }; // for one-draw vertex-coloured props
   const mesh = (geo, mat, x = 0, y = 0, z = 0, parent) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (parent) parent.add(m); return m; };
   function motifTex(kind) {
     return C.canvasTex(256, 256, (c, w) => {
@@ -249,14 +250,44 @@ export function initStory(C) {
 
     /* --- gohal: the cattle shed --- */
     const sg = new THREE.Group(); sg.position.copy(GOHAL); sg.rotation.y = faceCentre(GOHAL); scene.add(sg);
-    mesh(new THREE.CircleGeometry(2.7, 20).rotateX(-Math.PI / 2), Mat({ color: 0xc9ab62, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2 }), 0, 0.02, 0, sg);
-    const gw = [], gs = []; // shed timber and bamboo, fused into two pieces below
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const p = mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 7), wood, sx * 2.1, 1.2, sz * 1.7, sg); p.castShadow = true; gw.push(p); }
+    // floor: straw bedding, trampled to mud where the animal stands, hoof marks, loose straws
+    const shedFloor = C.canvasTex(256, 256, (c, w) => { const m = w / 5.4;
+      c.fillStyle = '#c3a55e'; c.fillRect(0, 0, w, w);
+      const g = c.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, 1.5 * m); g.addColorStop(0, 'rgba(110,84,52,.75)'); g.addColorStop(1, 'rgba(110,84,52,0)'); c.fillStyle = g; c.fillRect(0, 0, w, w);
+      for (let i = 0; i < 40; i++) { const x = w / 2 + rand(-1, 1) * 0.5 * m, y = w / 2 + rand(-1.2, 1.2) * m; c.fillStyle = 'rgba(70,52,34,.28)'; c.beginPath(); c.ellipse(x, y, 2.5, 3.8, rand(0, 3), 0, 6.28); c.fill(); }
+      c.lineWidth = 1.3; for (let i = 0; i < 700; i++) { const x = rand(0, w), y = rand(0, w), a = rand(0, 6.28), l = rand(5, 14), d = Math.hypot(x - w / 2, y - w / 2) / (w / 2);
+        if (d < 0.45 && Math.random() < 0.7) continue; c.strokeStyle = ['#e2c779', '#a88a45', '#d6b765', '#8e7238'][i % 4]; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke(); }
+      const e = c.createRadialGradient(w / 2, w / 2, w * 0.4, w / 2, w / 2, w * 0.5); e.addColorStop(0, 'rgba(0,0,0,1)'); e.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalCompositeOperation = 'destination-in'; c.fillStyle = e; c.fillRect(0, 0, w, w); c.globalCompositeOperation = 'source-over'; });
+    mesh(new THREE.CircleGeometry(2.7, 24).rotateX(-Math.PI / 2), Mat({ map: shedFloor, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), 0, 0.02, 0, sg);
     const roof = mesh(new THREE.ConeGeometry(1, 1.3, 4, 1, true), Mat({ map: C.thatchTex, roughness: 1, side: THREE.DoubleSide, transparent: true }), 0, 3.0, 0, sg); W.shedRoof = roof; roof.rotation.y = Math.PI / 4; roof.scale.set(4.1, 1, 3.5); roof.castShadow = true;
-    for (let i = 0; i < 2; i++) { const r = mesh(new THREE.CylinderGeometry(0.035, 0.035, 4.2, 5), straw, 0, 0.55 + i * 0.5, -1.7, sg); r.rotation.z = Math.PI / 2; gs.push(r); }
-    for (let i = 0; i < 2; i++) { const r = mesh(new THREE.CylinderGeometry(0.035, 0.035, 3.4, 5), straw, -2.1, 0.55 + i * 0.5, 0, sg); r.rotation.x = Math.PI / 2; gs.push(r); }
-    gw.push(mesh(new THREE.BoxGeometry(1.5, 0.34, 0.5), wood, -1.0, 0.17, 1.2, sg)); gs.push(mesh(new THREE.BoxGeometry(1.34, 0.06, 0.36), straw, -1.0, 0.33, 1.2, sg));
-    sg.updateMatrixWorld(true); C.bakeStatic(gw); C.bakeStatic(gs);
+    { // everything else in the shed is one vertex-coloured draw (it was two): frame, wattle, trough, basin, hay, tools
+      const parts = [], put = (g, hex, x, y, z, ry = 0) => { const o = new THREE.Mesh(vcol(g, hex)); o.position.set(x, y, z); o.rotation.y = ry; sg.add(o); parts.push(o); return o; };
+      const WOOD = 0x6a5541, DARK = 0x4e3c2c, BAMBOO = 0xb89a5a, STRAW = 0xcaa858, ROPE = 0xc9b07a;
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) put(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 7), WOOD, sx * 2.1, 1.2, sz * 1.7);
+      // no beams or rafters: the roof fades out whenever you are close, so anything under it only ever showed as bars
+      // across the view at eye level
+      // the old rails, and a woven bamboo wattle wall behind them at the back
+      for (let i = 0; i < 2; i++) { put(new THREE.CylinderGeometry(0.035, 0.035, 4.2, 5).rotateZ(Math.PI / 2), STRAW, 0, 0.55 + i * 0.5, -1.7); put(new THREE.CylinderGeometry(0.035, 0.035, 3.4, 5).rotateX(Math.PI / 2), STRAW, -2.1, 0.55 + i * 0.5, 0); }
+      for (let k = 0; k < 30; k++) put(new THREE.BoxGeometry(0.07, rand(1.15, 1.3), 0.025), k % 2 ? BAMBOO : 0xa48848, -1.95 + k * 0.135, 0.62, -1.78);
+      for (let i = 0; i < 4; i++) put(new THREE.BoxGeometry(4.0, 0.045, 0.03), 0x9c7f45, 0, 0.2 + i * 0.3, -1.78 + (i % 2 ? 0.02 : -0.02));
+      // feed trough: a hollowed log with fodder in it
+      put(new THREE.CylinderGeometry(0.27, 0.27, 1.5, 9, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateX(Math.PI / 2), DARK, -1.0, 0.3, 1.2);
+      put(new THREE.BoxGeometry(1.3, 0.05, 0.3), 0x8a9a4a, -1.0, 0.27, 1.2); for (let k = 0; k < 9; k++) put(new THREE.BoxGeometry(rand(0.2, 0.4), 0.02, 0.025), k % 2 ? 0x9caa52 : STRAW, -1.0 + rand(-0.55, 0.55), 0.3, 1.2 + rand(-0.1, 0.1), rand(0, 3));
+      for (const s of [-0.6, 0.6]) put(new THREE.BoxGeometry(0.1, 0.18, 0.5), WOOD, -1.0 + s, 0.09, 1.2);
+      // clay water basin
+      put(new THREE.CylinderGeometry(0.36, 0.26, 0.24, 12), 0x9a4c2a, 1.05, 0.12, 1.25); put(new THREE.CylinderGeometry(0.31, 0.31, 0.02, 12), 0x5d7a86, 1.05, 0.22, 1.25);
+      // hay heaped in the back corner: a mound of loose straws at every angle (spheres read as boulders)
+      for (let k = 0; k < 90; k++) { const a = rand(0, 6.28), r = Math.sqrt(rand(0, 1)), h = (1 - r * r) * 0.75 * rand(0.6, 1), o = put(new THREE.BoxGeometry(rand(0.35, 0.6), 0.03, 0.035), [0xd2b264, 0xc4a356, 0xdcbd6e, 0xb89a4e][k % 4], 1.3 + Math.cos(a) * r * 0.75, 0.04 + h, -1.0 + Math.sin(a) * r * 0.6); o.rotation.set(rand(-0.5, 0.5), rand(0, 3.14), rand(-0.6, 0.6)); }
+      put(new THREE.SphereGeometry(0.62, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.95, 0.78), 0xbe9f50, 1.3, 0.0, -1.0); // the heap's body under the loose straws
+      // tether peg with the rope coiled at its foot; a rake leaning on the back post (a coil hung on a post sat right
+      // behind the bull's rump from both camera angles and read as something stuck to him)
+      put(new THREE.CylinderGeometry(0.05, 0.06, 0.4, 6), DARK, 0.25, 0.2, 1.55);
+      for (let i = 0; i < 3; i++) put(new THREE.TorusGeometry(0.16 + i * 0.03, 0.025, 4, 12).rotateX(Math.PI / 2), ROPE, 0.25 + i * 0.02, 0.03 + i * 0.03, 1.55);
+      { const r = put(new THREE.CylinderGeometry(0.025, 0.03, 1.7, 5), WOOD, 2.0, 0.82, -1.45); r.rotation.set(0.12, 0, -0.18);
+        const h = put(new THREE.BoxGeometry(0.42, 0.05, 0.05), DARK, 2.15, 0.06, -1.55); for (let k = 0; k < 5; k++) put(new THREE.BoxGeometry(0.02, 0.12, 0.02), DARK, 1.97 + k * 0.09, 0.05, -1.52); }
+      sg.updateMatrixWorld(true); const merged = C.bakeStatic(parts, Mat({ vertexColors: true, flatShading: true, roughness: 0.95 })); if (merged) merged.castShadow = true;
+    }
     const oil = mesh(potGeo, clay, 1.5, 0, 1.5, sg); oil.scale.setScalar(0.8); // the oil pot
     W.gohalYaw = sg.rotation.y;
     W.gF = V(Math.sin(W.gohalYaw), 0, Math.cos(W.gohalYaw)); W.gR = V(Math.cos(W.gohalYaw), 0, -Math.sin(W.gohalYaw));
@@ -287,7 +318,6 @@ export function initStory(C) {
       mesh(new THREE.CircleGeometry(AR, 32).rotateX(-Math.PI / 2), Mat({ map: floorTex, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), AC.x, 0.015, AC.z, scene);
       // things at the edge of the akhra, in one vertex-coloured draw: the tumdak's cradle, the drummers' water pot and
       // brass lota, spare sticks, an elders' log bench and a rope cot at the sides, a big shade tree beside it
-      const vcol = (g, hex) => { const k = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([k.r, k.g, k.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
       const props = [], at = (s, i) => AKHRA.clone().addScaledVector(W.aR, s).addScaledVector(W.aIn, i), yawIn = Math.atan2(W.aIn.x, W.aIn.z);
       const put = (g, hex, p, y, yaw = 0) => { const o = new THREE.Mesh(vcol(g, hex)); o.position.set(p.x, y, p.z); o.rotation.y = yaw; props.push(o); return o; };
       put(new THREE.BoxGeometry(0.5, 0.2, 0.3), 0x6b5137, at(0.95, 0), 0.1, Math.atan2(W.aR.x, W.aR.z));
@@ -503,7 +533,7 @@ export function initStory(C) {
   const pick = { on: false, i: 0, busy: false };
   function openPicker() {
     pick.on = true; pick.i = Math.max(0, C.ANIMALS.indexOf(C.animal())); $('pick').hidden = false; renderPick();
-    S.focus = { pos: GOHAL.clone().addScaledVector(W.gF, 1.6).addScaledVector(W.gR, 4.7).setY(1.9), look: GOHAL.clone().addScaledVector(W.gF, 0.5).setY(1.0) };
+    S.focus = { pos: GOHAL.clone().addScaledVector(W.gF, 0.1).addScaledVector(W.gR, 4.8).setY(1.9), look: GOHAL.clone().addScaledVector(W.gF, 0.35).setY(1.0) }; // between the posts: the front post used to stand right in front of the animal's head
     C.bull().play('Idle', { fade: 0.3 });
   }
   function renderPick() { const a = C.ANIMALS[pick.i]; $('pickName').textContent = tr(pick.busy ? 'Bringing…' : a.name); $('pickSub').textContent = tr((pick.i + 1) + ' of ' + C.ANIMALS.length); }
