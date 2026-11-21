@@ -63,7 +63,8 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 2. Recompute `VERSION` in `public/sw.js`:
    `python3 -c "import hashlib,os;h=hashlib.sha1();[h.update(open(os.path.join(r,f),'rb').read()) for r,_,fs in sorted(os.walk('public')) for f in sorted(fs) if f!='sw.js'];print(h.hexdigest()[:10])"`
 3. `npx wrangler deploy`, then check the live site (e.g. `curl -s <site>/story.js | head -1`).
-4. Phones that played before need a full close and reopen to pick up the new service worker.
+4. The page and story.js are network-first, so phones get new code on the next load; models, audio and fonts
+   refresh when the new service worker installs (a full close and reopen makes that immediate).
 
 ## Status board (A to Z audit, Nov 2026)
 Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it current.
@@ -78,7 +79,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Ring hint covered the HIDE button on phones | fixed | `net-guest-3-play.jpg` from online-ui |
 | Draw-call budget | guarded | `tests/calls.mjs` budget per view |
 | Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks) and `tests/online-ui.mjs` (two phones: list, ask, accept, start, play); per-IP limits on restore/save/push, room reports throttled |
-| Offline / service worker | todo | |
+| Offline / service worker | fixed + tested | `tests/offline.mjs`: boots, story, cow with the server really down; story.js now network-first so a deploy can't pair a new page with old story code |
 | Ring game end to end | todo | |
 | Drum latency compensation | todo | |
 | Hindi coverage of every string | todo | |

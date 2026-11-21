@@ -22,15 +22,17 @@ self.addEventListener('fetch', (e) => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;            // nothing from other sites
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/') || url.pathname === '/turn' || url.pathname === '/sw.js') return; // live data never cached
-  if (req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
-    // page: try the network first (fresh updates), fall back to the saved copy when offline or very slow
+  const page = req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html';
+  if (page || url.pathname === '/story.js') {
+    // the page and the story code: network first, so a fresh page always gets the matching fresh story.js
+    // (cache-first story.js could pair a new page with old code after a deploy); saved copy when offline or very slow
     e.respondWith((async () => {
-      const c = await caches.open(CACHE);
+      const c = await caches.open(CACHE), key = page ? '/' : '/story.js';
       try {
         const net = await Promise.race([fetch(req), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 4000))]);
-        if (net.ok) c.put('/', net.clone());
+        if (net.ok) c.put(key, net.clone());
         return net;
-      } catch (err) { return (await c.match('/')) || (await c.match('/index.html')) || Response.error(); }
+      } catch (err) { return (await c.match(key)) || (page && await c.match('/index.html')) || Response.error(); }
     })());
     return;
   }
