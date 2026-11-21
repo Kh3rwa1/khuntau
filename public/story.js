@@ -63,8 +63,23 @@ export function initStory(C) {
     'Tap on the green': 'हरे पर दबाओ', 'Hit!': 'लगा!', 'Bullseye!': 'बीचोंबीच!', 'Missed': 'चूक गया', 'Sharp eye': 'पक्की नज़र', 'Archery contest': 'तीरंदाज़ी',
     'Tap to cast': 'काँटा डालने के लिए दबाओ', 'Wait for the bite…': 'मछली का इंतज़ार…', 'PULL!': 'खींचो!', 'Too early': 'बहुत जल्दी', 'It got away': 'निकल गई', 'Got one!': 'पकड़ ली!', '# fish': '# मछली', 'A good catch': 'अच्छा शिकार', 'Fishing': 'मछली पकड़ना',
     'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'They give you pitha': 'उन्होंने पीठा दिया', 'They give you rice': 'उन्होंने चावल दिया', 'They give you handi': 'उन्होंने हँड़िया दी', 'Three houses sung': 'तीन घरों पर गा लिया', 'Tamak played': 'तामाक बजा लिया',
-    'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: sing at three houses (#/3)': 'आज: तीन घरों पर गाओ (#/3)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
+    'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: sing at three houses (#/#)': 'आज: तीन घरों पर गाओ (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
     'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
+    // the ring finale (lines that live in index.html, translated while the story's ring runs)
+    'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
+    '×# combo · Hoy!': '×# कॉम्बो · होय!', '×# combo · Johar!': '×# कॉम्बो · जोहार!', '×# combo · Got it!': '×# कॉम्बो · मिल गया!', '×# combo · Snatched!': '×# कॉम्बो · झपट लिया!',
+    'Golden pitha! +#': 'सुनहरा पीठा! +#', 'Golden pitha!': 'सुनहरा पीठा!', 'Golden pitha! Worth # extra points.': 'सुनहरा पीठा! # अंक ज़्यादा।', 'Combo lost': 'कॉम्बो टूट गया',
+    'Handi! +# life': 'हँड़िया! +# जान', 'Handi! Full of life +#': 'हँड़िया! जान पूरी, +#', 'Handi! Run over it for an extra life.': 'हँड़िया! एक और जान के लिए उस पर से दौड़ो।',
+    'Get inside the dotted ring at the post first.': 'पहले खूँटे के पास बिंदुओं वाले घेरे में आओ।', 'Grab again without getting hit for a combo': 'बिना चोट खाए फिर झपटो, कॉम्बो बनेगा',
+    'He saw the hide! Get ready to roll.': 'उसने खाल देख ली! लुढ़कने को तैयार रहो।', 'He is catching his breath. Grab now!': 'वह साँस ले रहा है। अभी झपटो!',
+    'He is charging. Hit ROLL!': 'वह दौड़ा! लुढ़को दबाओ!', 'He is charging. Press Space to roll!': 'वह दौड़ा! Space दबाकर लुढ़को!',
+    'HIDE to bait, ROLL to dodge, GRAB at the post': 'खाल से उकसाओ, लुढ़ककर बचो, खूँटे पर झपटो', 'Q bait · Space roll · E grab': 'Q उकसाओ · Space लुढ़को · E झपटो',
+    'Drag the left side of the screen to move': 'चलने के लिए स्क्रीन का बायाँ हिस्सा खींचो', 'Tap HIDE to make him charge, then ROLL aside': 'खाल दबाओ ताकि वह दौड़े, फिर लुढ़ककर हटो',
+    'Stun him on the post, then GRAB the pitha': 'उसे खूँटे से टकराओ, फिर पीठा झपटो', 'Move with WASD or the arrow keys': 'WASD या तीर वाली कुंजियों से चलो',
+    'Press Q to wave the hide, then Space to roll aside': 'खाल हिलाने को Q, लुढ़कने को Space', 'Stun him on the post, then press E to grab': 'उसे खूँटे से टकराओ, फिर झपटने को E',
+    'The bull is angry!': 'बैल गुस्से में है!', 'The bull is furious!': 'बैल आग-बबूला है!', 'The bull is raging!': 'बैल बेकाबू है!', 'Daring dodge!': 'जांबाज़ बचाव!', 'Close call!': 'बाल-बाल बचे!',
+    'Snatch # pitha!': '# पीठा झपटो!', '# pitha! The village roars': '# पीठा! गाँव झूम उठा', 'New personal best! Keep going': 'नया सबसे अच्छा! चलते रहो',
+    'HIDE': 'खाल', 'ROLL': 'लुढ़को', 'GRAB': 'झपटो',
     'Brown bull': 'भूरा बैल', 'White bull': 'सफ़ेद बैल', 'Black bull': 'काला बैल', 'Red cow': 'लाल गाय', 'White cow': 'सफ़ेद गाय', '# of #': '# / #',
   };
   let LANG = 'en'; try { LANG = localStorage.getItem('khuntau-lang') === 'hi' ? 'hi' : 'en'; } catch (e) {}
@@ -871,7 +886,7 @@ export function initStory(C) {
   }
 
   return {
-    start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing,
+    start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing, tr,
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     label: () => save.done ? `Sohrai village: ${doneToday()}/4 today` : save.ch > 0 ? `Continue story (${save.ch}/5)` : 'Story: Sohrai Day',

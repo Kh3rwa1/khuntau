@@ -82,7 +82,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Offline / service worker | fixed + tested | `tests/offline.mjs`: boots, story, cow with the server really down; story.js now network-first so a deploy can't pair a new page with old story code |
 | Ring game end to end | tested | `tests/ring.mjs`: grab, refill, bait+hit, roll dodge, handi, game over, score on the board, play again |
 | Drum timing | fixed + tested | `tests/drum.mjs`: clicks booked on the audio clock minus speaker delay; taps use the touch time; late taps no longer marked Miss before they land; oldest open note gets the tap; each phone learns its offset (`khuntau-drumlag`) |
-| Hindi coverage of every string | todo | |
+| Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
 | In-game credits text, banana leaves | todo | |
 | Deploy from cloud | blocked | Dulor: add `CLOUDFLARE_API_TOKEN` (Workers edit) to the cloud environment secrets |
 | Real-phone feel (A34 fps, drum timing by touch) | blocked | Dulor: play the village and drum on the A34, report fps feel and early/late |

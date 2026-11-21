@@ -1,11 +1,12 @@
 import puppeteer from 'puppeteer';
-import fs from 'fs'; import { check, finish, realErrors } from './check.mjs'; fs.mkdirSync('tests/out', { recursive: true });
+import fs from 'fs'; import { check, finish, realErrors, watchLatin, latinSeen } from './check.mjs'; fs.mkdirSync('tests/out', { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const [W, Hh, tag] = [+process.argv[2] || 390, +process.argv[3] || 780, process.argv[4] || 'p'];
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...(process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), '--no-sandbox', '--autoplay-policy=no-user-gesture-required', '--mute-audio'] });
 const page = await browser.newPage(); const logs = [];
 page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') logs.push(m.type() + ': ' + m.text()); }); page.on('pageerror', e => logs.push('PAGEERROR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
 await page.emulate({ viewport: { width: W, height: Hh, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' });
+if (process.env.HI) await watchLatin(page); // HI=1: the whole story in Hindi, and no English may show
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
 const shot = async n => { await page.screenshot({ path: `tests/out/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 }); };
@@ -43,5 +44,6 @@ await ev(() => { const d = __k.story.debug; d.today().drum = 1; d.persist(); });
 const a2 = await ev(() => { const p = __k.story.debug.W.drumStand; return [p.x, p.z]; }); await goto(a2[0] + 0.6, 0, a2[1] + 0.6); await near('BEAT'); await act(); await sleep(500);
 check(await ev(() => __k.story.debug.S.mode === 'drum' && __k.story.debug.drum.free), 'after the daily chart the tamak is free play');
 for (let i = 0; i < 14; i++) { await ev(i % 3 ? () => __k.story.debug.strike('U') : () => __k.story.debug.strike('T')); await sleep(300); } await shot('18-freedrum'); { const e = await ev(() => __k.story.energy()); check(e > 0.3, `free drumming gets the village dancing (energy ${e.toFixed(2)})`); }
+if (process.env.HI) { const l = await latinSeen(page); check(!l.length, 'Hindi: no English on screen' + (l.length ? ':\n    ' + l.join('\n    ') : '')); }
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 5).join(' | ') : '')); }
 await finish(browser);

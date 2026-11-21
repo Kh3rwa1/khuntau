@@ -1446,8 +1446,10 @@ $('knockYes').addEventListener('click', () => answerKnock(true)); $('knockNo').a
 $('openBtn').addEventListener('click', () => netSend({ t: 'open', on: !net.open }));
 
 let popTimer;
+// the story finale in Hindi: while game.storyRun, the ring's own lines go through the story's translator
+const L = (s) => (game.storyRun && story && story.tr && s != null ? story.tr(s) : s);
 function pop(big, small) {
-  const el = $('pop'); $('popBig').textContent = big; $('popSmall').textContent = small || '';
+  const el = $('pop'); $('popBig').textContent = L(big); $('popSmall').textContent = L(small) || '';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(popTimer); popTimer = setTimeout(() => el.classList.remove('show'), 1100);
 }
@@ -1481,9 +1483,9 @@ let livesShown = -1;
 function renderLives() { if (livesShown === game.lives) return; livesShown = game.lives; $('lamps').innerHTML = [0, 1, 2].map(i => lampSvg.replace('<svg', `<svg class="${i < game.lives ? '' : 'out'}"`)).join(''); }
 
 let toastTimer;
-function toast(text, ms = 1100) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+function toast(text, ms = 1100) { const t = $('toast'); t.textContent = L(text); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
 let hintTimer;
-function hint(text, ms = 2600) { const h = $('hint'); h.textContent = text; h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
+function hint(text, ms = 2600) { const h = $('hint'); h.textContent = L(text); h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
 
 function resetGame() {
   if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.fury = 0; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = 12; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = 3; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
@@ -1497,6 +1499,7 @@ function resetGame() {
 }
 function startGame() {
   game.menuOpen = false; $('pauseScreen').hidden = true;
+  for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w);
   initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hudScore').hidden = false;
   $('bestChip').hidden = best === 0 || innerWidth < 560; $('best').textContent = best; renderRival();
