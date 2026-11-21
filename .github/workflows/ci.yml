@@ -1,0 +1,53 @@
+# Every push: run the whole test suite (story in English and Hindi, ring, drum, walking, offline, online rooms
+# against the real Worker run locally). On main, if the tests pass and the CLOUDFLARE_API_TOKEN secret is set,
+# deploy to Cloudflare. Without the secret the deploy step is skipped and says so.
+name: test and deploy
+on:
+  push:
+    branches: [main, 'main-*']
+  workflow_dispatch:
+concurrency: { group: deploy-${{ github.ref }}, cancel-in-progress: false }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SWGL: '1' # no GPU on the runner: software WebGL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Browser tests (static server)
+        run: |
+          node tests/serve.mjs &
+          sleep 1
+          npm test
+      - name: Online tests (Worker + Durable Objects, local)
+        run: |
+          npx wrangler dev --local --port 8787 --ip 127.0.0.1 > wrangler.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8787/api/board >/dev/null && break; sleep 1; done
+          npm run test:online
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: screenshots, path: tests/out, retention-days: 7 }
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Deploy to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::warning::CLOUDFLARE_API_TOKEN secret not set: tests passed, nothing deployed."; exit 0; fi
+          npx wrangler deploy
+          sleep 5
+          v=$(grep -o "VERSION = '[a-f0-9]*'" public/sw.js)
+          curl -sf https://khuntau.dulalkisku0.workers.dev/sw.js | grep -q "$v" && echo "Live site serves $v" || { echo "::error::live sw.js does not match $v"; exit 1; }
