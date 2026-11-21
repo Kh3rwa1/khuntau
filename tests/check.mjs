@@ -40,7 +40,7 @@ export function dragShoot(page, tu = 0, tv = 0, tol = 0.08) {
     (function ready() { if (a.fly || a.wait > 0) return requestAnimationFrame(ready);
       fire('pointerdown', x0, y0); const ppm = a.ppm; fire('pointermove', x0 + (tu - a.u) * ppm, y0 - (tv - a.v) * ppm);
       (function hold() { const e = Math.hypot(a.u + a.su - tu, a.v + a.sv - tv);
-        if (e < tol || performance.now() - start > 6000) { fire('pointerup', x0, y0); done(e); } else requestAnimationFrame(hold); })();
+        if (e < tol || performance.now() - start > 6000) { const n = a.n; fire('pointerup', x0, y0); (function shot() { a.n > n ? done(e) : requestAnimationFrame(shot); })(); } else requestAnimationFrame(hold); })();
     })();
   }), tu, tv, tol);
 }

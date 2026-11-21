@@ -581,7 +581,7 @@ export function initStory(C) {
   // archery: the crosshair follows the drag (so the thumb never covers the target), letting go shoots
   $('tapzone').addEventListener('pointermove', (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return;
     const g = 1 / Math.max(arch.ppm || 120, 20); arch.u = clamp(d.u + (e.clientX - d.x) * g, -1.8, 1.8); arch.v = clamp(d.v - (e.clientY - d.y) * g, -1.4, 1.4); });
-  const archRelease = (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return; arch.drag = null; S.tap = true; };
+  const archRelease = (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return; arch.drag = null; arch.rel = { u: arch.u + (arch.su || 0), v: arch.v + (arch.sv || 0) }; S.tap = true; }; // the shot goes where the crosshair was when you let go
   $('tapzone').addEventListener('pointerup', archRelease); $('tapzone').addEventListener('pointercancel', (e) => { if (arch.drag && arch.drag.id === e.pointerId) arch.drag = null; });
   const reticle = document.createElement('div'); reticle.id = 'reticle'; reticle.hidden = true;
   reticle.style.cssText = 'position:absolute;left:0;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:3px solid #fff6e0;box-shadow:0 0 0 2px rgba(20,10,6,.85),inset 0 0 0 2px rgba(20,10,6,.85);pointer-events:none;will-change:transform';
@@ -608,14 +608,14 @@ export function initStory(C) {
     arch.t += dt; if (arch.drag) arch.held += dt;
     const A = 0.07 + arch.n * 0.025 + Math.max(0, arch.held - 2.5) * 0.12, t = arch.t;
     arch.su = A * Math.sin(t * 1.9) * Math.cos(t * 0.63); arch.sv = A * 0.8 * Math.sin(t * 2.4 + 1.1);
-    const u = arch.u + arch.su, v = arch.v + arch.sv;
+    const u0 = arch.u + arch.su, v0 = arch.v + arch.sv;
     // crosshair: the aim point on the target's face, projected to the screen
-    archPt.copy(TARGET).addScaledVector(W.aDir, -0.32).addScaledVector(W.aSide, u).setY(FACE_Y + v);
+    archPt.copy(TARGET).addScaledVector(W.aDir, -0.32).addScaledVector(W.aSide, u0).setY(FACE_Y + v0);
     archPt2.copy(archPt).addScaledVector(W.aSide, 1).project(camera); archPt.project(camera);
     const sw = innerWidth / 2, sh = innerHeight / 2, rx = (archPt.x + 1) * sw, ry = (1 - archPt.y) * sh;
     arch.ppm = Math.abs((archPt2.x - archPt.x) * sw); arch.scr = [rx, ry];
     reticle.style.transform = `translate3d(${rx.toFixed(1)}px,${ry.toFixed(1)}px,0)`;
-    const r = Math.hypot(u, v); reticle.style.borderColor = r < FACE_R ? '#9dff9a' : '#fff6e0'; reticle.style.opacity = arch.fly || arch.wait > 0 || arch.over ? 0.35 : 1;
+    const r0 = Math.hypot(u0, v0); reticle.style.borderColor = r0 < FACE_R ? '#9dff9a' : '#fff6e0'; reticle.style.opacity = arch.fly || arch.wait > 0 || arch.over ? 0.35 : 1;
     if (arch.fly) {
       const f = arch.fly; f.k = Math.min(1, f.k + dt / 0.42); f.a.position.lerpVectors(f.from, f.to, f.k); f.a.position.y += Math.sin(f.k * Math.PI) * 0.5;
       if (f.k >= 1) { arch.fly = null; arch.wait = 0.55;
@@ -623,8 +623,9 @@ export function initStory(C) {
         $('tapScore').textContent = arch.hits + '/5';
         if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); }
         else archNock(); }
-    } else if (arch.wait > 0) arch.wait -= dt;
+    } else if (arch.wait > 0) { arch.wait -= dt; arch.rel = null; }
     else if (S.tap && !arch.over) {
+      const rel = arch.rel; arch.rel = null; const u = rel ? rel.u : u0, v = rel ? rel.v : v0, r = Math.hypot(u, v);
       const hit = r < FACE_R, a = W.arrows[arch.n++], pl = C.player();
       pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); C.sfx.whoosh();
       const from = game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5);
