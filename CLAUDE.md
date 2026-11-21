@@ -39,6 +39,7 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
   list). Cron `30 12 * * *` (6 pm IST) sends evening push reminders. Scores need an HMAC ticket.
 - `wrangler.jsonc`: `run_worker_first` for `/ws/*`, `/turn`, `/api/*`; migrations v1 Room, v2 Board.
 - `design/story-brief.md`: the one-page plan for story mode (format from donchitos/claude-code-game-studios).
+- `twa/`: Bubblewrap config and steps for the Play Store app (Trusted Web Activity).
 - `promo/`: the video pipeline used for the trailers (see "Promo videos").
 
 ## Game facts
@@ -91,7 +92,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Santali story text | blocked | needs a Santali speaker to write/check; never machine-invent it |
 | Customs order and details | blocked | Dulor to correct anything wrong for his village |
 | Story mode multiplayer | design choice | single-player by design; the ring is the online mode |
-| Play Store (TWA, `com.tumdah.khuntau`) | blocked | Dulor: developer account type and creation date |
+| Play Store (TWA, `com.tumdah.khuntau`) | ready to build, needs Dulor's account | manifest has id, description, maskable icon; Chrome says installable (`offline.mjs`). `twa/twa-manifest.json` + `twa/README.md` (build, signing, assetlinks). Dulor: Play developer account type + creation date (personal accounts after Nov 2023 need a 12-tester, 14-day closed test), then build once on the Mac |
 | Archery was a timing bar with a picture glued on | rebuilt | drag-to-aim: crosshair follows the drag (thumb never covers the target), held-bow sway that grows if you hold too long, release to shoot, arrow lands where you aimed; arrow keys + Space on laptops. `story3.mjs` aims with real pointer drags; `drag-*.jpg` at 1280x720 and 780x390 |
 
 ## Promo videos (`promo/`)

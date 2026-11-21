@@ -10,3 +10,9 @@ promo/**/*.m4a
 .dev.vars
 *.key
 *.env
+
+# Android signing keys
+*.keystore
+*.jks
+twa/app-release*
+twa/app/

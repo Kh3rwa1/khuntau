@@ -1,13 +1,20 @@
 {
+  "id": "/",
   "name": "Khuntau: the Sohrai bull game",
   "short_name": "Khuntau",
-  "start_url": "/",
+  "description": "Snatch pitha from the khunt while the bull charges. A free 3D game about Khuntau, the bull-post day of the Santal Sohrai festival.",
+  "lang": "en",
+  "start_url": "/?src=app",
+  "scope": "/",
   "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
   "background_color": "#2a140c",
   "theme_color": "#2a140c",
+  "categories": ["games"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

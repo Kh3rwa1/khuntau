@@ -26,6 +26,11 @@ await page.evaluate(() => navigator.serviceWorker.ready);
 await page.waitForFunction(async () => { const ks = await caches.keys(); if (!ks.length) return false; const c = await caches.open(ks[0]); return (await c.keys()).length >= 36; }, { timeout: 60000, polling: 500 });
 await page.reload({ waitUntil: 'domcontentloaded' }); await boot();
 check(await page.evaluate(() => !!navigator.serviceWorker.controller), 'service worker controls the game after the first visit');
+{ const cdp = await page.createCDPSession(), m = await cdp.send('Page.getAppManifest'); const j = JSON.parse(m.data || '{}');
+  check(!m.errors.length, 'web manifest parses with no errors' + (m.errors.length ? ': ' + JSON.stringify(m.errors) : ''));
+  check(j.id && j.icons.some(i => i.purpose === 'maskable' && i.sizes === '512x512') && j.icons.some(i => i.sizes === '192x192'), 'manifest is app-store ready: id, 192 and 512 icons, maskable icon');
+  const inst = await cdp.send('Page.getInstallabilityErrors').catch(() => ({ installabilityErrors: [] }));
+  check(!inst.installabilityErrors.length, 'Chrome sees the game as installable' + (inst.installabilityErrors.length ? ': ' + inst.installabilityErrors.map(e => e.errorId).join(', ') : '')); }
 check(await page.evaluate(async () => { const c = await caches.open((await caches.keys())[0]); return !!(await c.match('/models/cow.json')) && !!(await c.match('/story.js')); }), 'cow model and story saved for offline');
 
 // really offline
