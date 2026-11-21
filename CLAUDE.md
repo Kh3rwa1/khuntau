@@ -80,7 +80,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Draw-call budget | guarded | `tests/calls.mjs` budget per view |
 | Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks) and `tests/online-ui.mjs` (two phones: list, ask, accept, start, play); per-IP limits on restore/save/push, room reports throttled |
 | Offline / service worker | fixed + tested | `tests/offline.mjs`: boots, story, cow with the server really down; story.js now network-first so a deploy can't pair a new page with old story code |
-| Ring game end to end | todo | |
+| Ring game end to end | tested | `tests/ring.mjs`: grab, refill, bait+hit, roll dodge, handi, game over, score on the board, play again |
 | Drum latency compensation | todo | |
 | Hindi coverage of every string | todo | |
 | In-game credits text, banana leaves | todo | |
