@@ -64,14 +64,30 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 3. `npx wrangler deploy`, then check the live site (e.g. `curl -s <site>/story.js | head -1`).
 4. Phones that played before need a full close and reopen to pick up the new service worker.
 
-## Known weak points (open)
-- Real-phone feel is unverified: frame rate in the village and touch drum timing on the Galaxy A34.
-- Story is English and Hindi only; Santali text not done (needs a Santali speaker to check).
-- Customs: the order and details of activities are a best guess; only horn oiling/vermilion and wall painting are
-  documented in sources found so far. Dulor should correct anything wrong for his village.
-- Story mode is single-player only; the ring stays the online mode.
-- Play Store: plan is a TWA built with Bubblewrap, package `com.tumdah.khuntau`; waiting on Dulor's developer
-  account type (personal/organisation) and creation date.
+## Status board (A to Z audit, Nov 2026)
+Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it current.
+
+| Area | State | Proof / what's needed |
+|---|---|---|
+| Walking snags on people | fixed | `tests/walk.mjs` (5 routes, no stall > 1 s) |
+| Archery target unreadable on phone | fixed | screenshots at 390x780 and 1280x720 |
+| Tests only logged, never failed | fixed | `tests/check.mjs`; every test exits 1 on a failed check |
+| Door test walked into the back wall | fixed | `story2.mjs` walks yard to door, asserts inside |
+| Free drumming after the story | works (test was wrong) | `story1.mjs` free-play check |
+| Draw-call budget | guarded | `tests/calls.mjs` budget per view |
+| Online rooms, board, tickets | in progress | |
+| Offline / service worker | todo | |
+| Ring game end to end | todo | |
+| Drum latency compensation | todo | |
+| Hindi coverage of every string | todo | |
+| In-game credits text, banana leaves | todo | |
+| Deploy from cloud | blocked | Dulor: add `CLOUDFLARE_API_TOKEN` (Workers edit) to the cloud environment secrets |
+| Real-phone feel (A34 fps, drum timing by touch) | blocked | Dulor: play the village and drum on the A34, report fps feel and early/late |
+| Santali story text | blocked | needs a Santali speaker to write/check; never machine-invent it |
+| Customs order and details | blocked | Dulor to correct anything wrong for his village |
+| Story mode multiplayer | design choice | single-player by design; the ring is the online mode |
+| Play Store (TWA, `com.tumdah.khuntau`) | blocked | Dulor: developer account type and creation date |
+| Drag-to-aim archery | proposal | redesign, not a fix; build only if Dulor asks |
 
 ## Promo videos (`promo/`)
 Rendered by filming the game in headless Chrome with a virtual clock, then compositing with a 2D canvas.

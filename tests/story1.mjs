@@ -39,7 +39,9 @@ for (const [lane, dt] of notes) { const wait = dt * 1000 - (Date.now() - t0); if
 await page.waitForFunction(() => !!__k.story.debug.S.dlg, { timeout: 60000 }); await shot('13-drumwin'); await tapDlg(); check((await st()).ch === 4, 'drum won: chapter 4');
 await goto(0, 0, 9.5); await near('START'); await shot('14-ring'); await act(); await page.waitForFunction(() => __k.game.mode === 'play', { timeout: 30000 }); await sleep(2500); await shot('15-ringrun'); check((await st()).gm === 'play', 'ring finale starts');
 await ev(() => { __k.game.pitha = 3; }); await page.waitForFunction(() => __k.game.mode === 'story' && !!__k.story.debug.S.dlg, { timeout: 60000 }); await sleep(600); await shot('16-ending'); check((await st()).ch === 5, '3 pitha win the story: chapter 5'); await tapDlg(); await sleep(1500); await shot('17-free'); check((await st()).gm === 'story', 'back in the village after the ending');
+await ev(() => { const d = __k.story.debug; d.today().drum = 1; d.persist(); }); // today's drum chart done: the tamak is free play now
 const a2 = await ev(() => { const p = __k.story.debug.W.drumStand; return [p.x, p.z]; }); await goto(a2[0] + 0.6, 0, a2[1] + 0.6); await near('BEAT'); await act(); await sleep(500);
+check(await ev(() => __k.story.debug.S.mode === 'drum' && __k.story.debug.drum.free), 'after the daily chart the tamak is free play');
 for (let i = 0; i < 14; i++) { await ev(i % 3 ? () => __k.story.debug.strike('U') : () => __k.story.debug.strike('T')); await sleep(300); } await shot('18-freedrum'); { const e = await ev(() => __k.story.energy()); check(e > 0.3, `free drumming gets the village dancing (energy ${e.toFixed(2)})`); }
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 5).join(' | ') : '')); }
 await finish(browser);
