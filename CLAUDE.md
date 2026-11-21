@@ -31,6 +31,8 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 
 ## Layout
 - `public/index.html`: the whole ring game (Three.js, self-hosted under `public/vendor/three/`). One big file.
+- `public/life.js`: village life (chickens that scatter, goats, birds, butterflies, cooking smoke, straw stacks, yard
+  pots/cots/firewood), loaded after the villagers; one instanced or baked mesh per kind (~8 draw calls); scales with QUALITY.
 - `public/story.js`: story mode "Sohrai Day", loaded with `import()` after the game boots. It receives what it
   needs from index.html as one object `C` (see `initStory(C)`); keep it that way instead of reaching into globals.
 - `public/stats.html`: funnel of the anonymous step counts (visits, PLAY, rounds, shares, challenge opens, returns, load time).
@@ -112,6 +114,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Village vs village | built + tested | choose district + village (home line, or asked after a first scoring round); spelling variants merge (NFKC key per district), existing villages suggested; a change counts from the next day; village score = its 10 best players' daily bests (solo and room scores); shown only with 3+ players; `HIDDEN_VILLAGES` in worker.js hides a name (add its key, deploy); Villages tab on the board, rank on the home line, share text names your village and the one right above. `online.mjs` (rules) + `village.mjs` (phone/laptop/landscape) |
 | District list | needs Dulor | Jharkhand's 24 plus WB/Odisha/Bihar/Assam districts with Santal villages, and 'Other district'. Dulor: check the list (`DISTRICTS` in index.html and worker.js) and say which are missing or wrong; is village + district the right unit, or block? |
 | Story and ring were two separate games | merged | one PLAY into the village; khunt rounds scored from the first visit; Back to village; Enter on home = PLAY. `tests/merged.mjs` (new player: village, khunt round, board, back, quest intact; challenge link straight to ring; Hindi round) |
+| Village felt empty | detail added | `life.js`: chickens peck in the front yards and scatter from you and the bull, goats graze, birds circle, butterflies (not on budget phones), cooking smoke over the roofs, straw stacks, clay pots, rope cots, firewood. No downloads; ~8 draw calls (ring 46->54, all views inside budgets). Customs-specific decorations wait for Dulor |
 | Archery was a timing bar with a picture glued on | rebuilt | drag-to-aim: crosshair follows the drag (thumb never covers the target), held-bow sway that grows if you hold too long, release to shoot, arrow lands where you aimed; arrow keys + Space on laptops. `story3.mjs` aims with real pointer drags; `drag-*.jpg` at 1280x720 and 780x390 |
 
 ## Promo videos (`promo/`)

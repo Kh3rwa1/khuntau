@@ -1046,7 +1046,7 @@ function tint(a, map) {
 }
 function shadows(a) { a.root.traverse(o => { if (o.isMesh) o.castShadow = true; }); }
 
-let bull, player, story = null; const crowd = [];
+let bull, player, story = null, life = null; const crowd = [];
 function renderStoryBtn() { if (story) $('playSub').textContent = story.label(); }
 /* ---------- drum troupe: one dhamsa, two madal ---------- */
 const drummers = []; let drumHeat = 1;
@@ -1233,6 +1233,7 @@ function onCrowdLoaded() {
   }
   crowdBudget();
   setTimeout(registerSW, 1500);
+  import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, QUALITY, perf, Mat, mergeGeometries, bakeStatic }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
     story = m.initStory({ THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
@@ -2592,7 +2593,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -2674,6 +2675,7 @@ function frame() {
   game.t += dt;
   if (bull && player) {
     readMove();
+    if (life) { try { life.update(dt); } catch (e) { if (!life.err) { life.err = 1; console.error(e); } } }
     if (inStory) { try { story.update(dt); } catch (e) { if (!story.err) { story.err = 1; console.error(e); } } } // one bad frame in the village must never freeze the game
     else {
       updatePlayer(dt); updateBull(dt); updatePitha(dt); updateHandi(dt);
