@@ -133,6 +133,8 @@ export class Room extends DurableObject {
   report() {
     if (!this.code) return; const host = this.players.get(this.hostId);
     const body = JSON.stringify({ code: this.code, host: host ? host.name : "", n: this.players.size, phase: this.phase, open: this.open !== false && !!host });
+    if (body === this.lastReport && Date.now() - this.lastReportAt < 10000) return; // chatty clients can't hammer the board
+    this.lastReport = body; this.lastReportAt = Date.now();
     this.ctx.waitUntil(this.env.BOARD.getByName("global").fetch(new Request("https://board/internal/room", { method: "POST", body })).catch(() => {}));
   }
 
@@ -395,7 +397,11 @@ export class Board extends DurableObject {
   }
   // ---- helpers ----
   json(obj, status = 200) { return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
-  flood(key, max) { const t = Date.now(), a = (this.hits.get(key) || []).filter(x => t - x < 60000); if (a.length >= max) return true; a.push(t); this.hits.set(key, a); if (this.hits.size > 5000) this.hits.clear(); return false; }
+  flood(key, max) {
+    const t = Date.now(), a = (this.hits.get(key) || []).filter(x => t - x < 60000); if (a.length >= max) return true; a.push(t); this.hits.set(key, a);
+    if (this.hits.size > 5000) for (const [k, v] of this.hits) if (t - v[v.length - 1] > 60000) this.hits.delete(k); // drop stale keys only, so a flood of new ids can't reset everyone's limits
+    return false;
+  }
   async secret() { if (!this._sec) { let v = await this.ctx.storage.get("hmac"); if (!v) { v = b64u(crypto.getRandomValues(new Uint8Array(32))); await this.ctx.storage.put("hmac", v); } this._sec = await crypto.subtle.importKey("raw", unb64u(v), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]); } return this._sec; }
   async sign(text) { return b64u(new Uint8Array(await crypto.subtle.sign("HMAC", await this.secret(), new TextEncoder().encode(text)))).slice(0, 22); }
   saveScore(pid, name, pts, lvl) {
@@ -426,6 +432,7 @@ export class Board extends DurableObject {
 
   async fetch(request) {
     const url = new URL(request.url), sql = this.ctx.storage.sql, path = url.pathname;
+    const ip = request.headers.get("cf-connecting-ip") || "local"; // set by Cloudflare on every request from the internet
     let m = {};
     if (request.method === "POST") { const txt = await request.text(); if (txt.length > 6000) return new Response("too big", { status: 413 }); try { m = txt ? JSON.parse(txt) : {}; } catch { return new Response("bad json", { status: 400 }); } }
 
@@ -473,12 +480,13 @@ export class Board extends DurableObject {
       if (this.flood("v" + m.pid, 20)) return new Response("slow down", { status: 429 });
       const data = JSON.stringify(m.data); if (data.length > 2500) return new Response("too big", { status: 413 });
       let code = sql.exec("SELECT code FROM saves WHERE pid = ?", m.pid).toArray()[0]?.code;
+      if (!code && (this.flood("vn" + ip, 6) || this.flood("vn", 300))) return new Response("slow down", { status: 429 });
       if (!code) { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; do { code = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => A[b % 32]).join(""); } while (sql.exec("SELECT 1 FROM saves WHERE code = ?", code).toArray().length); }
       sql.exec("INSERT INTO saves (pid, code, data, at) VALUES (?, ?, ?, ?) ON CONFLICT(pid) DO UPDATE SET data = excluded.data, at = excluded.at", m.pid, code, data, Date.now());
       return this.json({ code });
     }
     if (path === "/api/restore" && request.method === "POST") {
-      if (this.flood("restore", 40)) return new Response("slow down", { status: 429 });
+      if (this.flood("restore" + ip, 10) || this.flood("restore", 600)) return new Response("slow down", { status: 429 });
       const code = String(m.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
       const r = sql.exec("SELECT pid, data FROM saves WHERE code = ?", code).toArray()[0];
       if (!r) return new Response("no such code", { status: 404 });
@@ -490,7 +498,7 @@ export class Board extends DurableObject {
     if (path === "/api/push/sub" && request.method === "POST") {
       const ep = String(m.endpoint || "");
       if (!okPid(m.pid) || !okPushHost(ep) || ep.length > 700) return new Response("bad subscription", { status: 400 });
-      if (this.flood("p" + m.pid, 10)) return new Response("slow down", { status: 429 });
+      if (this.flood("p" + m.pid, 10) || this.flood("pn" + ip, 8) || this.flood("pn", 300)) return new Response("slow down", { status: 429 });
       if (m.off) sql.exec("DELETE FROM subs WHERE endpoint = ?", ep);
       else sql.exec("INSERT INTO subs (endpoint, pid, played, sent, at) VALUES (?, ?, ?, '', ?) ON CONFLICT(endpoint) DO UPDATE SET pid = excluded.pid", ep, m.pid, istDay(), Date.now());
       return this.json({ ok: 1 });

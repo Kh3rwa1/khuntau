@@ -19,6 +19,7 @@ npx wrangler deploy         # deploy to khuntau.dulalkisku0.workers.dev (needs `
 node tests/serve.mjs        # static server for tests on 127.0.0.1:8791 (no /api; leaderboard calls 404, that is fine)
 npm test                    # with serve.mjs running: story playthroughs at phone and laptop sizes
 node tests/walk.mjs         # walking feel: holds the stick into people, fails on any stall over 1 s
+npx wrangler dev --local --port 8787 --ip 127.0.0.1 &  then  npm run test:online   # rooms, board, tickets, abuse limits
 ```
 Run tests from the repo root. Screenshots land in `tests/out/`; look at them, don't just trust "no errors".
 `?debug` in the URL exposes `window.__k` (game, story, bull, player, setAnimal, houses, renderer, perf, …);
@@ -75,7 +76,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Door test walked into the back wall | fixed | `story2.mjs` walks yard to door, asserts inside |
 | Free drumming after the story | works (test was wrong) | `story1.mjs` free-play check |
 | Draw-call budget | guarded | `tests/calls.mjs` budget per view |
-| Online rooms, board, tickets | in progress | |
+| Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks); per-IP limits on restore/save/push, room reports throttled |
 | Offline / service worker | todo | |
 | Ring game end to end | todo | |
 | Drum latency compensation | todo | |
