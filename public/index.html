@@ -734,6 +734,55 @@ for (let i = 0; i < 9; i++) {
   const a = i / 9 * Math.PI * 2 + 0.35, r = rand(23, 28);
   house(Math.cos(a) * r, Math.sin(a) * r, -a - Math.PI / 2 + rand(-0.2, 0.2), rand(4.5, 6.5), rand(3.6, 4.6), i % 3 === 2); // every third house has a clay-tile roof
 }
+// village props, all in the houses' shared vertex-coloured mesh (no extra draw calls): worn paths to every door, a hand
+// pump, a bullock cart, a clothesline, fenced kitchen gardens behind some houses, rocks. Things you could walk into are in
+// villageProps, which the story's collision and the animals' wandering both respect.
+const villageProps = [];
+{
+  const gapA = (i) => 0.35 + (2 * Math.PI / 9) * i, P = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
+  const put = (geo, hex, x, y, z, ry = 0, rx = 0, rz = 0) => { const m = new THREE.Mesh(vc(geo, hex), houseVC); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); scene.add(m); houseWood.push(m); return m; };
+  // worn dirt paths from the ring to each door
+  for (const h of houses) { const fx = -Math.sin(h.rot + Math.PI), fz = -Math.cos(h.rot + Math.PI); // the door side faces the ring
+    const door = [h.x + Math.sin(h.rot) * (h.d / 2 + 0.8), h.z + Math.cos(h.rot) * (h.d / 2 + 0.8)], len = Math.max(0, Math.hypot(...door) - 13.2);
+    const mid = [door[0] * (1 - len / 2 / Math.hypot(...door)), door[1] * (1 - len / 2 / Math.hypot(...door))];
+    if (len > 0.5) put(new THREE.PlaneGeometry(1.25, len).rotateX(-Math.PI / 2), 0x9a7a55, mid[0], 0.025, mid[1], Math.atan2(door[0], door[1]));
+    for (let k = 0; k < 3; k++) { const t = rand(0.2, 0.9), side = k % 2 ? 1 : -1, ang = Math.atan2(door[0], door[1]); const px = door[0] - Math.sin(ang) * len * t + Math.cos(ang) * side * 0.95, pz = door[1] - Math.cos(ang) * len * t - Math.sin(ang) * side * 0.95;
+      put(new THREE.SphereGeometry(rand(0.12, 0.22), 5, 3).scale(1, 0.7, 1), 0x8f8a80, px, 0.06, pz, rand(0, 6), rand(0, 1)); } } // indexed like the rest, or the shared merge fails
+  // hand pump on a concrete pad, a bucket under the spout (gap 2.5)
+  { const [x, z] = P(gapA(2.5), 22.5), ry = -gapA(2.5) + Math.PI / 2;
+    put(new THREE.CylinderGeometry(0.75, 0.8, 0.12, 14), 0x9a948a, x, 0.06, z);
+    put(new THREE.CylinderGeometry(0.09, 0.11, 1.05, 8), 0x2f4a3a, x, 0.64, z);
+    put(new THREE.BoxGeometry(0.22, 0.26, 0.22), 0x2f4a3a, x, 1.22, z, ry);
+    put(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 6), 0x2f4a3a, x + Math.cos(ry) * 0.2, 1.05, z - Math.sin(ry) * 0.2, ry, 0, 1.1);
+    put(new THREE.BoxGeometry(1.1, 0.05, 0.05), 0x262626, x - Math.cos(ry) * 0.45, 1.38, z + Math.sin(ry) * 0.45, ry, 0, -0.35);
+    put(new THREE.CylinderGeometry(0.17, 0.13, 0.3, 10), 0x8c96a0, x + Math.cos(ry) * 0.42, 0.27, z - Math.sin(ry) * 0.42);
+    villageProps.push({ x, z, r: 0.85 }); }
+  // a bullock cart resting on its shafts (gap 7.5)
+  { const [x, z] = P(gapA(7.5), 23.2), ry = -gapA(7.5), c = Math.cos(ry), s = Math.sin(ry), L = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];
+    put(new THREE.BoxGeometry(1.3, 0.1, 2.2), 0x7a5a3a, x, 0.9, z, ry);
+    for (const sx of [-1, 1]) { const [a1, b1] = L(sx * 0.62, 0); put(new THREE.BoxGeometry(0.06, 0.3, 2.2), 0x6a4a30, a1, 1.08, b1, ry);
+      const [wx, wz] = L(sx * 0.78, 0.1); put(new THREE.TorusGeometry(0.62, 0.06, 5, 18), 0x5e4630, wx, 0.65, wz, ry + Math.PI / 2);
+      for (let k = 0; k < 6; k++) put(new THREE.BoxGeometry(0.04, 1.2, 0.05), 0x6a4a30, wx, 0.65, wz, ry + Math.PI / 2, 0, k * Math.PI / 6);
+      put(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 8), 0x3a2a1c, wx, 0.65, wz, ry, 0, Math.PI / 2);
+      const [sx2, sz2] = L(sx * 0.35, 2.0); put(new THREE.BoxGeometry(0.08, 0.08, 2.4), 0x6a4a30, sx2, 0.5, sz2, ry, -0.35); }
+    put(new THREE.BoxGeometry(1.4, 0.08, 0.08), 0x6a4a30, ...L(0, 3.05).flatMap((v, i) => i ? [0.12, v] : [v]), ry);
+    villageProps.push({ x, z, r: 1.5 }, { x: L(0, 2.2)[0], z: L(0, 2.2)[1], r: 0.7 }); }
+  // a clothesline with saris and cloths drying (gap 5.5)
+  { const a = gapA(5.5), [x, z] = P(a, 24.2), dx = -Math.sin(a) * 1.6, dz = Math.cos(a) * 1.6, ry = Math.atan2(dx, dz);
+    for (const k of [-1, 1]) put(new THREE.CylinderGeometry(0.05, 0.06, 2.1, 6), 0x6a4a30, x + dx * k, 1.05, z + dz * k);
+    put(new THREE.BoxGeometry(0.02, 0.02, 3.2), 0x3a3028, x, 1.95, z, ry);
+    [0xc8372d, 0xe8b33c, 0x2f7ad9, 0xf1ead9].forEach((col, i) => { const t = -0.75 + i * 0.5, w = i % 2 ? 0.5 : 0.62;
+      for (const flip of [0, Math.PI]) put(new THREE.PlaneGeometry(w, 0.95), col, x + dx * t, 1.45, z + dz * t, ry + Math.PI / 2 + flip); });
+    villageProps.push({ x, z, r: 1.7 }); }
+  // fenced kitchen gardens behind some houses (beyond the walkable edge)
+  for (const i of [1, 3, 6, 8]) { const h = houses[i]; if (!h) continue; const c = Math.cos(h.rot), s = Math.sin(h.rot), L = (lx, lz) => [h.x + lx * c + lz * s, h.z - lx * s + lz * c];
+    const W = Math.min(h.w, 4.2), D = 2.6, z0 = -h.d / 2 - 0.4;
+    for (let k = 0; k <= Math.round(W / 0.35); k++) { const lx = -W / 2 + k * (W / Math.round(W / 0.35)); put(new THREE.CylinderGeometry(0.025, 0.03, 0.9, 4), 0x8a7a4a, ...L(lx, z0 - D).flatMap((v, j) => j ? [0.45, v] : [v])); }
+    for (const sx of [-1, 1]) for (let k = 1; k < Math.round(D / 0.35); k++) put(new THREE.CylinderGeometry(0.025, 0.03, 0.9, 4), 0x8a7a4a, ...L(sx * W / 2, z0 - k * 0.35).flatMap((v, j) => j ? [0.45, v] : [v]));
+    for (const y of [0.35, 0.7]) { put(new THREE.BoxGeometry(W, 0.03, 0.03), 0x8a7a4a, ...L(0, z0 - D).flatMap((v, j) => j ? [y, v] : [v]), h.rot); for (const sx of [-1, 1]) put(new THREE.BoxGeometry(0.03, 0.03, D), 0x8a7a4a, ...L(sx * W / 2, z0 - D / 2).flatMap((v, j) => j ? [y, v] : [v]), h.rot); }
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) put(new THREE.SphereGeometry(0.28, 7, 5).scale(1, 0.55, 1), r ? 0x3f7a2e : 0x4f8a36, ...L(-W / 2 + 0.6 + k * (W - 1.2) / 3, z0 - 0.7 - r * 1.1).flatMap((v, j) => j ? [0.12, v] : [v]));
+  }
+}
 scene.updateMatrixWorld(true);
 for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoors, houseRoofs]) if (l.length) bakeStatic(l);
 // trees
@@ -748,6 +797,12 @@ for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoo
     for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(1.3, 2.2), 1), leafMs[k % 3]); f.position.set(rand(-1, 1), h + rand(0, 1.6), rand(-1, 1)); f.castShadow = QUALITY === 2; g.add(f); leaves[k % 3].push(f); }
     g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g);
   }
+  // a few big trees inside the village, between houses at its edge (same meshes, no extra draws)
+  for (const gi of [0.5, 2.5, 5.5, 8.5]) { const a = 0.35 + (2 * Math.PI / 9) * gi, r = gi === 2.5 || gi === 5.5 ? 29.4 : 28.6, g = new THREE.Group(), h = rand(4.2, 5.4);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.42, h, 7), trunkM); t.position.y = h / 2; g.add(t); trunks.push(t);
+    for (let k = 0; k < 7; k++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(1.5, 2.4), 1), leafMs[k % 3]); f.position.set(rand(-1.3, 1.3), h + rand(-0.2, 1.8), rand(-1.3, 1.3)); g.add(f); leaves[k % 3].push(f); }
+    g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g); villageProps.push({ x: g.position.x, z: g.position.z, r: 0.6 }); }
+  scene.updateMatrixWorld(true);
   bakeStatic(trunks); leaves.forEach(l => bakeStatic(l));
 }
 // diyas ring
@@ -1378,9 +1433,9 @@ function onCrowdLoaded() {
   }
   crowdBudget();
   setTimeout(registerSW, 1500);
-  import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, QUALITY, perf, Mat, mergeGeometries, bakeStatic }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
+  import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
-    story = m.initStory({ THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+    story = m.initStory({ props: villageProps, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       musicLevel: v => { MUSIC_VOL.intro = v; refreshMusicVol(); },
       villageRing: () => { track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },

@@ -784,7 +784,8 @@ export function initStory(C) {
     }
     const circ = [[POND.x, POND.z, 3.0], [TARGET.x, TARGET.z, 0.5], [0, 0, 0.5], [game.b.pos.x, game.b.pos.z, 1.15], [AKHRA.x, AKHRA.z, 0.75], [majhi.wrap.position.x, majhi.wrap.position.z, 0.35], [W.tumdak.position.x, W.tumdak.position.z, 0.45]];
     for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) { t3.copy(GOHAL).addScaledVector(W.gR, sx * 2.1).addScaledVector(W.gF, sz * 1.7); circ.push([t3.x, t3.z, 0.3]); }
-    for (const c of dancers) if (c.wrap.visible) circ.push([c.wrap.position.x, c.wrap.position.z, 0.35]); // hidden dancers (slow phones) don't block
+    for (const c of dancers) if (c.wrap.visible) circ.push([c.wrap.position.x, c.wrap.position.z, 0.35]);
+    for (const o of C.props || []) circ.push([o.x, o.z, o.r]); // hand pump, cart, clothesline, trees // hidden dancers (slow phones) don't block
     for (const [cx, cz, r] of circ) pushOut(p, cx, cz, r + 0.32, v, step);
     const pr = Math.hypot(p.x, p.z); if (pr > VILLAGE_R) { p.x *= VILLAGE_R / pr; p.z *= VILLAGE_R / pr; }
     p.y = 0;

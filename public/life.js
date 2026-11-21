@@ -28,6 +28,7 @@ export function initLife(C) {
     const r = Math.hypot(x, z); if (r < RING || r > VILLAGE) return false;
     for (const h of houses) { const c = Math.cos(h.rot), s = Math.sin(h.rot), dx = x - h.x, dz = z - h.z, lx = dx * c - dz * s, lz = dx * s + dz * c;
       if (Math.abs(lx) < h.w / 2 + pad && Math.abs(lz) < h.d / 2 + pad) return false; }
+    for (const o of C.props || []) if (Math.hypot(x - o.x, z - o.z) < o.r + pad * 0.6) return false; // pump, cart, clothesline, trees
     return true;
   };
   const spot = (pad) => { for (let k = 0; k < 40; k++) { const a = rand(0, Math.PI * 2), r = rand(RING + 0.5, VILLAGE - 0.5), x = Math.cos(a) * r, z = Math.sin(a) * r; if (free(x, z, pad)) return V(x, 0, z); } return V(0, 0, 20); };
