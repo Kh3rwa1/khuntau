@@ -12,6 +12,10 @@ Live at https://khuntau.dulalkisku0.workers.dev. Made by Dulor (Tumdah). Phone p
 - After every update, merge the work branch into `main` and push `main`. Don't ask first.
 
 ## Commands
+CI: `.github/workflows/ci.yml` runs everything below on GitHub for each push (software WebGL; desktop profiles use
+`q=low` there because a GPU-less runner renders full quality at 1-3 fps). Logs are public at
+`https://api.github.com/repos/Kh3rwa1/khuntau/actions/runs`.
+
 ```
 npm install                 # wrangler + puppeteer (downloads its own Chrome)
 npx wrangler dev            # local game with the Worker, Durable Objects and API
@@ -86,7 +90,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Busy server (429) on shared mobile IPs | fixed + tested | per-IP limits roomy for carrier NAT (30 new saves/min); keep-progress and reminders say 'try again in a minute' instead of blank/false errors; `tests/busy.mjs` |
 | Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
 | In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
-| Deploy | ready, needs one secret | `.github/workflows/ci.yml` tests every push and deploys `main` when green. Dulor: add repo secret `CLOUDFLARE_API_TOKEN` (Workers edit; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts) |
+| Deploy | ready, needs one secret | `.github/workflows/ci.yml` runs the full suite on every push (213 checks green on GitHub, Nov 21) and deploys `main` when green; today it skips with a warning because the secret is missing. Dulor: add repo secret `CLOUDFLARE_API_TOKEN` (Workers edit; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts) |
 | Slow-phone safety net | tested | `tests/slowphone.mjs`: CPU throttled 6x, auto quality on: steps itself down, remembers it, story still walks |
 | Real-phone feel on the A34 | needs Dulor's phone | open `https://khuntau.dulalkisku0.workers.dev/?fps` on the A34 after the next deploy: read the meter in the village and at the akhra (green 45+, yellow 28+, red below), play the drum chart twice and say early/late/fine |
 | Santali story text | plumbing ready, needs a Santali speaker | `design/santali-strings.csv` (183 lines, English + Hindi, empty Santali column); `node tools/santali-import.mjs` puts it in the game; the language button offers Santali once text exists, in Ol Chiki font; `tests/santali.mjs` proves the path with marker text. Never machine-translate it |
