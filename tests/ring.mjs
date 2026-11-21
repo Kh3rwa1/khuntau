@@ -23,7 +23,8 @@ await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
 // accessories ride their bones: while running, the gamchha's end keeps its distance to the Torso bone while the bone moves
 { const probe = () => ev(() => { const T = __k.THREE, m = __k.player.body, part = __k.player.mats.Gamchha && __k.player.mats.Gamchha.part; if (!part) return null; m.updateMatrixWorld(true); m.skeleton.update();
     const v = new T.Vector3(); m.getVertexPosition(part.start + part.count - 1, v); m.localToWorld(v); const b = m.skeleton.bones.find(x => x.name === 'Torso').getWorldPosition(new T.Vector3()); return { d: v.distanceTo(b), b: b.toArray() }; });
-  await ev(() => { __k.player.play('Run'); }); await sleep(250); const a1 = await probe(); await sleep(170); const a2 = await probe();
+  // the animation is stepped here, not by waiting: a GPU-less CI runner may draw no frame at all in 170 ms
+  await ev(() => { __k.player.play('Run', { fade: 0 }); __k.player.mixer.update(0.25); }); const a1 = await probe(); await ev(() => __k.player.mixer.update(0.17)); const a2 = await probe();
   check(!!a1 && Math.abs(a1.d - a2.d) < 0.01 && Math.hypot(a1.b[0] - a2.b[0], a1.b[1] - a2.b[1], a1.b[2] - a2.b[2]) > 0.002, `accessories move with the body (gamchha stays ${a1 && a1.d.toFixed(3)} m from the torso while it moves)`);
   await ev(() => { __k.player.play('Idle'); }); }
 
@@ -37,6 +38,14 @@ await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
   check(Math.abs(h1[0] - h0[0]) + Math.abs(h1[1] - h0[1]) > 0.1, 'his hooves gather dust after charges');
   await ev(() => { __k.game.score = 0; __k.game.charges = 0; });
   await sleep(1500); check(await ev(() => [1, 2, 3, 4, 5].every(i => { const b = __k.bull.root.getObjectByName('Tail' + i); return !b || (Math.abs(b.rotation.x) < 3.2 && Math.abs(b.rotation.z) < 3.2); })), 'the tail swishes without winding up'); }
+// the rope: slack lies in the dust when he stands near the post, straight when he leans away at the end of it
+{ await ev(() => { const b = __k.game.b; window.__bs = { state: b.state, t: b.t, pos: b.pos.clone(), yaw: b.yaw }; });
+  const rope = (x, z, yaw) => ev(async (x, z, yaw) => { const g = __k.game; g.b.state = 'recover'; g.b.t = -99; g.b.pos.set(x, 0, z); g.b.yaw = yaw; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const r = __k.rope, a = r.geometry.attributes.position, v = new __k.THREE.Vector3(); r.updateMatrixWorld(true); let lo = 9; for (let i = 0; i < a.count; i++) { v.fromBufferAttribute(a, i).applyMatrix4(r.matrixWorld); lo = Math.min(lo, v.y); } return { sag: r.userData.sag, lo }; }, x, z, yaw);
+  const s = await rope(-2.5, -1.5, Math.PI / 2), t = await rope(-6.2, 0, -Math.PI / 2);
+  check(s.sag > 0.5 && s.lo > -0.01 && s.lo < 0.1, `slack rope hangs into the dust, never through it (sag ${s.sag.toFixed(2)}, lowest ${s.lo.toFixed(2)} m)`);
+  check(t.sag < 0.05, `the rope goes straight when he pulls on it (sag ${t.sag.toFixed(2)})`);
+  await ev(() => { const b = __k.game.b, o = window.__bs; b.state = o.state; b.t = o.t; b.pos.copy(o.pos); b.yaw = o.yaw; }); }
 // grab at the post
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; });
 check(await until(() => __k.game.pitha === 1 && __k.game.score > 0, 4000), 'GRAB at the post takes a pitha and scores');
