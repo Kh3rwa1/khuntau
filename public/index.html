@@ -1545,7 +1545,8 @@ function onCrowdLoaded() {
     tint(c, colors); tint(c, { Necklace: pick(BEADS, i), Bangles: pick(BANGLES, i + 1), Gamchha: pick(GAMCHHA, i) }); // their own beads, bangles, cloth
     // women wear a sari in their own colours: sari and pallu from the shirt colour, border and blouse from the trousers
     // (or the vest when they match); the trousers under it take the sari colour so nothing shows at the hem
-    if (kind !== 'man') { const edge = colors.Pants !== colors.Shirt ? colors.Pants : colors.Vest || colors.Belt; tint(c, { Sari: colors.Shirt, SariBorder: edge, Pallu: colors.Shirt, Shirt: edge, Vest: edge, Pants: colors.Shirt }); }
+    if (kind !== 'man') { const edge = colors.Pants !== colors.Shirt ? colors.Pants : colors.Vest || colors.Belt, own = i < looks.length ? colors.Shirt : pick([0xd9b54a, 0x8a3b6e, 0x2f6f8a, 0xc0562a], i); // second time round the looks: her own sari colour, so nobody dresses exactly like Gogo
+      tint(c, { Sari: own, SariBorder: edge, Pallu: own, Shirt: edge, Vest: edge, Pants: own }); }
     // budget phones get only 6 people: spread round 360 degrees the camera saw one or two and the ring looked empty, so
     // there they gather in an arc on the far side, the side the camera looks at from the start
     const slot = [...Array(nCrowd).keys()].sort((x, y) => Math.abs(x - (nCrowd - 1) / 2) - Math.abs(y - (nCrowd - 1) / 2) || x - y)[i]; // centre first: crowdBudget keeps the lowest indices
@@ -2936,7 +2937,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, villageProps, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

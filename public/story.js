@@ -265,11 +265,54 @@ export function initStory(C) {
 
     /* --- akhra: the drum ground --- */
     W.aIn = V(-AKHRA.x, 0, -AKHRA.z).normalize(); W.aR = V(W.aIn.z, 0, -W.aIn.x);
-    mesh(new THREE.CircleGeometry(4.2, 28).rotateX(-Math.PI / 2), Mat({ color: 0xa58a66, roughness: 1, transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), AKHRA.x + W.aIn.x * 1.6, 0.015, AKHRA.z + W.aIn.z * 1.6, scene);
+    W.drumStand = AKHRA.clone().addScaledVector(W.aIn, -0.85).addScaledVector(W.aR, 0.35);
+    { // the swept dance floor remembers its use: broom strokes, a worn band where the dancers' line shuffles, a trodden
+      // patch where the drummer stands. Painted from the real positions (dancers stand on r = 15.4, see placeCrowd).
+      const AC = AKHRA.clone().addScaledVector(W.aIn, 1.6), AR = 4.2;
+      const floorTex = C.canvasTex(512, 512, (c, w) => {
+        const px = (x, z) => [(0.5 + (x - AC.x) / (2 * AR)) * w, (0.5 + (z - AC.z) / (2 * AR)) * w], m = w / (2 * AR);
+        c.fillStyle = '#a58a66'; c.fillRect(0, 0, w, w);
+        for (let i = 0; i < 40; i++) { const x = rand(0, w), y = rand(0, w), r = rand(20, 70), g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, i % 2 ? 'rgba(130,104,74,.35)' : 'rgba(190,168,132,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+        // broom strokes: fans of short curved lines
+        c.lineWidth = 1.2; for (let f = 0; f < 34; f++) { const x = rand(0, w), y = rand(0, w), a0 = rand(0, 6.28); for (let k = 0; k < 7; k++) { c.strokeStyle = k % 2 ? 'rgba(120,96,68,.35)' : 'rgba(200,180,146,.4)'; c.beginPath(); c.arc(x, y, 18 + k * 3, a0, a0 + rand(0.5, 0.9)); c.stroke(); } }
+        // the dancers' line: a darker trodden band with footprints, along the arc they sway on
+        const R0 = 15.4, half = 6.2 / R0; c.lineCap = 'round';
+        for (const [lw, col] of [[1.5, 'rgba(98,76,52,.28)'], [0.8, 'rgba(84,64,44,.3)']]) { c.lineWidth = lw * m; c.strokeStyle = col; c.beginPath(); for (let k = 0; k <= 40; k++) { const a = AA - half + 2 * half * k / 40, [x, y] = px(Math.cos(a) * R0, Math.sin(a) * R0); k ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+        for (let i = 0; i < 260; i++) { const a = AA + rand(-half, half), r = R0 + rand(-0.45, 0.45), [x, y] = px(Math.cos(a) * r, Math.sin(a) * r); c.fillStyle = i % 3 ? 'rgba(70,52,36,.3)' : 'rgba(205,186,150,.3)'; c.beginPath(); c.ellipse(x, y, 0.05 * m, 0.11 * m, a + rand(-0.4, 0.4), 0, 6.28); c.fill(); }
+        { const [x, y] = px(W.drumStand.x, W.drumStand.z), g = c.createRadialGradient(x, y, 0, x, y, 0.75 * m); g.addColorStop(0, 'rgba(92,72,50,.45)'); g.addColorStop(1, 'rgba(92,72,50,0)'); c.fillStyle = g; c.fillRect(x - m, y - m, 2 * m, 2 * m); }
+        // soft edge into the grass
+        const e = c.createRadialGradient(w / 2, w / 2, w * 0.38, w / 2, w / 2, w * 0.5); e.addColorStop(0, 'rgba(0,0,0,1)'); e.addColorStop(1, 'rgba(0,0,0,0)');
+        c.globalCompositeOperation = 'destination-in'; c.fillStyle = e; c.fillRect(0, 0, w, w); c.globalCompositeOperation = 'source-over';
+      });
+      mesh(new THREE.CircleGeometry(AR, 32).rotateX(-Math.PI / 2), Mat({ map: floorTex, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), AC.x, 0.015, AC.z, scene);
+      // things at the edge of the akhra, in one vertex-coloured draw: the tumdak's cradle, the drummers' water pot and
+      // brass lota, spare sticks, an elders' log bench and a rope cot at the sides, a big shade tree beside it
+      const vcol = (g, hex) => { const k = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([k.r, k.g, k.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
+      const props = [], at = (s, i) => AKHRA.clone().addScaledVector(W.aR, s).addScaledVector(W.aIn, i), yawIn = Math.atan2(W.aIn.x, W.aIn.z);
+      const put = (g, hex, p, y, yaw = 0) => { const o = new THREE.Mesh(vcol(g, hex)); o.position.set(p.x, y, p.z); o.rotation.y = yaw; props.push(o); return o; };
+      put(new THREE.BoxGeometry(0.5, 0.2, 0.3), 0x6b5137, at(0.95, 0), 0.1, Math.atan2(W.aR.x, W.aR.z));
+      put(new THREE.SphereGeometry(0.22, 10, 8).scale(1, 0.92, 1), 0x8e4426, at(-0.95, 0.15), 0.23); put(new THREE.CylinderGeometry(0.085, 0.12, 0.09, 10), 0x7c3a20, at(-0.95, 0.15), 0.46);
+      put(new THREE.TorusGeometry(0.12, 0.035, 5, 10).rotateX(Math.PI / 2), 0xc9b07a, at(-0.95, 0.15), 0.035);
+      put(new THREE.SphereGeometry(0.075, 8, 6), 0xc9a03a, at(-0.66, 0.38), 0.075); put(new THREE.CylinderGeometry(0.035, 0.045, 0.07, 8), 0xb88f2e, at(-0.66, 0.38), 0.16);
+      for (const [s, i, y] of [[1.45, -0.25, 0.3], [1.5, -0.4, -0.25]]) put(new THREE.CylinderGeometry(0.016, 0.022, 0.55, 5).rotateZ(Math.PI / 2), 0x7a5a3a, at(s, i), 0.022, yawIn + y);
+      const bench = AC.clone().addScaledVector(W.aR, 3.2).addScaledVector(W.aIn, -0.6);
+      put(new THREE.CylinderGeometry(0.17, 0.19, 2.0, 8).rotateX(Math.PI / 2), 0x6e5238, bench, 0.38, yawIn);
+      for (const s of [-0.7, 0.7]) put(new THREE.CylinderGeometry(0.1, 0.12, 0.3, 6), 0x55412c, bench.clone().addScaledVector(W.aIn, s), 0.15);
+      const cot = AC.clone().addScaledVector(W.aR, -3.3).addScaledVector(W.aIn, -0.4);
+      put(new THREE.BoxGeometry(0.82, 0.04, 1.75), 0xc9b07a, cot, 0.4, yawIn);
+      for (const sx of [-1, 1]) { put(new THREE.BoxGeometry(0.06, 0.07, 1.85), 0x5e4630, cot.clone().addScaledVector(W.aR, sx * 0.44), 0.4, yawIn); put(new THREE.BoxGeometry(0.94, 0.07, 0.06), 0x5e4630, cot.clone().addScaledVector(W.aIn, sx * 0.9), 0.4, yawIn);
+        for (const sz of [-1, 1]) put(new THREE.CylinderGeometry(0.04, 0.035, 0.4, 5), 0x5e4630, cot.clone().addScaledVector(W.aR, sx * 0.44).addScaledVector(W.aIn, sz * 0.9), 0.2); }
+      const tree = AC.clone().addScaledVector(W.aR, 4.9).addScaledVector(W.aIn, -1.4);
+      put(new THREE.CylinderGeometry(0.3, 0.5, 4.6, 8), 0x4a3f33, tree, 2.3);
+      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); put(new THREE.SphereGeometry(rand(1.4, 2.1), 7, 5), [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 4.9 + rand(-0.3, 1.1)); }
+      for (const o of props) scene.add(o);
+      scene.updateMatrixWorld(true); C.bakeStatic(props, Mat({ vertexColors: true, flatShading: true, roughness: 0.95 }));
+      // what you can bump into
+      if (C.props) C.props.push({ x: bench.x + W.aIn.x * 0.6, z: bench.z + W.aIn.z * 0.6, r: 0.4 }, { x: bench.x - W.aIn.x * 0.6, z: bench.z - W.aIn.z * 0.6, r: 0.4 }, { x: cot.x, z: cot.z, r: 0.9 }, { x: tree.x, z: tree.z, r: 0.55 });
+      W.akhraProps = { bench, cot, tree };
+    }
     W.tamak = C.dhamsaMesh(); W.tamak.scale.setScalar(1.35); W.tamak.position.copy(AKHRA); scene.add(W.tamak);
     W.tumdak = C.madalMesh(); W.tumdak.children.filter(o => o.material && o.material.isMeshBasicMaterial).forEach(o => W.tumdak.remove(o)); W.tumdak.scale.setScalar(1.25); W.tumdak.position.copy(AKHRA).addScaledVector(W.aR, 0.95); W.tumdak.position.y = 0.42; W.tumdak.rotation.set(0, Math.atan2(W.aR.x, W.aR.z), Math.PI / 2); scene.add(W.tumdak);
-    const cradle = mesh(new THREE.BoxGeometry(0.5, 0.2, 0.3), wood, 0, 0.1, 0, scene); cradle.position.copy(AKHRA).addScaledVector(W.aR, 0.95); cradle.position.y = 0.1; cradle.rotation.y = W.tumdak.rotation.y;
-    W.drumStand = AKHRA.clone().addScaledVector(W.aIn, -0.85).addScaledVector(W.aR, 0.35);
 
     /* --- archery ground: a shooting line, and a banana-trunk target out past the houses --- */
     const paste = Mat({ color: 0xf6eedd, roughness: 0.9 }), red = Mat({ color: 0xc0281e, roughness: 0.6 });
@@ -840,7 +883,8 @@ export function initStory(C) {
     const thin = C.perf.thin; // slow phones keep two dancers
     for (let i = 0; i < dancers.length; i++) {
       const c = dancers[i]; c.wrap.visible = !thin || i < 2; if (!c.wrap.visible) continue;
-      c.sHop += dt * 3.4; const hop = c.sHop > 0 && c.sHop < 1 ? Math.sin(c.sHop * Math.PI) : 0;
+      const was = c.sHop; c.sHop += dt * 3.4; const hop = c.sHop > 0 && c.sHop < 1 ? Math.sin(c.sHop * Math.PI) : 0;
+      if (was < 1 && c.sHop >= 1 && amp > 0.25 && !thin) for (let k = 0; k < 2; k++) C.emit(C.dustPool, V(c.wrap.position.x + rand(-0.2, 0.2), 0.06, c.wrap.position.z + rand(-0.2, 0.2)), { life: 0.6, vel: V(rand(-0.4, 0.4), rand(0.2, 0.5), rand(-0.4, 0.4)), size: 0.28, grow: 0.7 }); // dust where their feet land
       const sway = Math.sin(dance.phase) * amp;
       c.wrap.position.copy(c.sBase).addScaledVector(c.sTan, sway * 0.55); c.wrap.position.y = hop * 0.17 * amp;
       c.wrap.rotation.y = c.sYaw + sway * 0.3; c.wrap.rotation.z = Math.cos(dance.phase) * 0.1 * amp;
