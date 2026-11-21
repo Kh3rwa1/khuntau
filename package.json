@@ -5,7 +5,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "serve": "node tests/serve.mjs",
-    "test": "node tests/story1.mjs 390 780 p && node tests/story2.mjs && node tests/story3.mjs && node tests/laptop.mjs && node tests/walk.mjs"
+    "test": "node tests/story1.mjs 390 780 p && node tests/story2.mjs && node tests/story3.mjs && node tests/laptop.mjs && node tests/calls.mjs && node tests/walk.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.159.0",

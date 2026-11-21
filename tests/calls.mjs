@@ -1,5 +1,8 @@
 import puppeteer from 'puppeteer';
-import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
+import fs from 'fs'; import { check, finish } from './check.mjs';
+// Draw-call budget per view at q=low (a budget phone dies on draw calls, not triangles). Raise only on purpose.
+const BUDGET = { ring: 90, yard: 60, akhra: 130, edge: 110 };
+const within = (name, i) => check(i.calls <= BUDGET[name], `${name}: ${i.calls} draw calls (budget ${BUDGET[name]}), ${i.tris} triangles`); fs.mkdirSync('tests/out', { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...(process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), '--no-sandbox', '--mute-audio'] });
 const page = await browser.newPage(); const logs = []; page.on('pageerror', e => logs.push(e.message));
@@ -8,9 +11,9 @@ await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-story', J
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
 const info = () => page.evaluate(() => ({ calls: __k.renderer.info.render.calls, tris: __k.renderer.info.render.triangles }));
-await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(3000); console.log('ring', await info());
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(3000); within('ring', await info());
 await page.keyboard.press('Escape'); await sleep(300); await page.evaluate(() => document.getElementById('quitBtn').click()); await sleep(600);
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(3000); console.log('story yard', await info()); await page.screenshot({ path: 'tests/out/c-yard.jpg', type: 'jpeg', quality: 70 });
-await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand); d.S.camYaw = Math.atan2(d.W.drumStand.x, d.W.drumStand.z); d.snapCam(); }); await sleep(1500); console.log('story akhra', await info());
-await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(0, 0, 13); d.S.camYaw = 0; d.snapCam(); }); await sleep(1500); console.log('story ring edge', await info());
-console.log(logs.join('\n') || 'no errors'); await browser.close();
+await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(3000); within('yard', await info()); await page.screenshot({ path: 'tests/out/c-yard.jpg', type: 'jpeg', quality: 70 });
+await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand); d.S.camYaw = Math.atan2(d.W.drumStand.x, d.W.drumStand.z); d.snapCam(); }); await sleep(1500); within('akhra', await info());
+await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(0, 0, 13); d.S.camYaw = 0; d.snapCam(); }); await sleep(1500); within('edge', await info());
+check(!logs.length, 'no page errors ' + logs.join(' | ')); await finish(browser);
