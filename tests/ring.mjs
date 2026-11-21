@@ -24,6 +24,7 @@ await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
 // grab at the post
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; });
 check(await until(() => __k.game.pitha === 1 && __k.game.score > 0, 4000), 'GRAB at the post takes a pitha and scores');
+check(await until(() => __k.life && __k.life.active().petals, 2000), 'marigold petals rain on a snatch');
 await shot('1-grab');
 await until(() => __k.game.p.state === 'free', 4000);
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.input.grab = true; }); await sleep(300);
@@ -39,9 +40,11 @@ await until(() => __k.game.p.state === 'free' && __k.game.p.invuln <= 0, 6000);
 const before = await ev(() => __k.game.lives);
 await ev(() => { const g = __k.game; g.p.pos.set(-3.5, 0, 3.5); g.b.pos.set(-3.2, 0, -0.6); g.b.state = 'watch'; g.b.t = 0; window.__rolled = 0; __k.input.tease = true;
   (function dodge() { const p = g.p, b = g.b; if (b.state === 'charge' && p.state === 'free' && p.pos.distanceTo(b.pos) < 2.6) { __k.input.roll = true; window.__rolled++; } if (window.__rolled < 4 && g.mode === 'play') requestAnimationFrame(dodge); })(); });
+check(await until(() => __k.life && __k.game.b.state === 'windup' && __k.life.active().breath, 12000), 'the bull snorts: breath puffs while he winds up');
 const charged = await until(() => __k.game.b.state === 'charge', 12000);
 await until(() => __k.game.b.state !== 'charge', 6000); await sleep(300);
 check(charged && await ev(() => window.__rolled > 0), 'the bull charged and the player rolled');
+check(await ev(() => __k.life.active().prints), 'the charge leaves hoof prints in the dust');
 check(await ev((n) => __k.game.lives === n, before), 'a well-timed ROLL dodges the charge');
 
 // handi: a life back

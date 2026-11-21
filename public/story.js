@@ -243,6 +243,7 @@ export function initStory(C) {
     W.inside = {
       box: { x: kx, z: kz, hx: 1.05, hz: 0.6 },
       circles: [[cx, cz, 0.62], [hx, hz, 0.5], [hx - 0.75, hz + 0.1, 0.36], [px, pz, 0.42], [bx, bz, 0.72]],
+      restAt: inW(kx + 0.84, kz), // lying on the khatia: feet at this end, head on the red pillow
       handi: inW(hx, hz), pitha: inW(px, pz), bed: inW(kx, kz), door: inW(RW / 2 - 0.45, dz), spawn: inW(RW / 2 - 1.2, dz), mother: inW(1.75, -1.2), bedSide: inW(kx + 0.2, kz + 1.05),
     };
 
@@ -427,9 +428,16 @@ export function initStory(C) {
     C.player().play('PickUp', { once: true, fade: 0.1, ts: 1.3 }); S.lock = 0.9;
     setTimeout(() => { left[left.length - 1].visible = false; C.play('bells', { vol: 0.5, rate: 1.2 }); pop('Pitha!', 'Sweet rice cake'); C.buzz(20); }, 450);
   }
+  // resting: sit on the khatia, lie back with your head on the pillow, breathe slowly, then get up
+  const REST_Q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(V(0, 0, -1), V(-1, 0, 0), V(0, 1, 0))); // up -> pillow end, face -> sky
   function rest() {
-    const pl = C.player(); fade(() => { game.p.pos.copy(W.inside.bedSide); game.p.yaw = 0; pl.play('Idle'); S.tipsy = 0; toast('You rest a while', 1300); for (const c of W.cakes) c.visible = true; }, 700);
+    const pl = C.player(); S.lock = 99; game.p.yaw = Math.PI / 2;
     pl.play('SitDown', { once: true, fade: 0.15 });
+    fade(() => { S.rest = { t: 0, z: 0.6 }; S.tipsy = 0; for (const c of W.cakes) c.visible = true; pl.play('Idle', { fade: 0, ts: 0.3 }); toast('You rest a while', 1300); }, 700);
+  }
+  function wake() {
+    const pl = C.player(); S.rest.t = -99;
+    fade(() => { S.rest = null; pl.wrap.rotation.set(0, 0, 0); game.p.pos.copy(W.inside.bedSide); game.p.yaw = 0; pl.play('StandUp', { once: true, fade: 0.1 }); S.lock = 0.9; }, 350);
   }
   function paint(i) {
     const s = W.spots[i], pl = C.player();
@@ -728,6 +736,7 @@ export function initStory(C) {
     snapCam();
   }
   function stop(keepUi) {
+    if (S.rest) { S.rest = null; C.player().wrap.rotation.set(0, 0, 0); }
     S.on = false; S.dlg = null; S.focus = null; pick.on = false; if (S.mode === 'drum') drumStop(); if (S.mode === 'echo') echoStop(); if (S.mode === 'aim' || S.mode === 'fish') tapStop(); S.mode = 'walk';
     $('tapzone').hidden = true; $('langBtn').hidden = true; if (!keepUi) C.tint(C.bull(), C.animal().tint);
     document.documentElement.classList.remove('story-on');
@@ -798,6 +807,12 @@ export function initStory(C) {
     } else { p.vel.set(0, 0, 0); if (free && (pl.curName === 'Run' || pl.curName === 'Walk')) pl.play('Idle'); }
     collide(p.pos, p.vel, dt);
     pl.wrap.position.copy(p.pos); pl.wrap.rotation.y = p.yaw; pl.wrap.visible = true;
+    if (S.rest && S.rest.t >= 0) { // lying on the khatia, chest rising and falling
+      const r = S.rest; r.t += dt; const a = W.inside.restAt;
+      pl.wrap.position.set(a.x, a.y + 0.6 + Math.sin(r.t * 1.9) * 0.008, a.z); pl.wrap.quaternion.copy(REST_Q);
+      if ((r.z -= dt) < 0) { r.z = 1.5; toast('z z z…', 900); }
+      if (r.t > 5 || (r.t > 0.8 && (Math.hypot(input.x, input.y) > 0.3 || S.act))) { S.act = false; wake(); }
+    }
     input.roll = input.grab = input.tease = false;
 
     // the nearest thing to do

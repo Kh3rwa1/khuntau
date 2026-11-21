@@ -508,7 +508,7 @@ const ARENA_R = 11.5, ROPE_L = 6.2, GRAB_R = 1.45, POST_H = 2.7;
 const rand = (a, b) => a + Math.random() * (b - a);
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3();
+const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), tmpV3 = new THREE.Vector3();
 
 /* ---------- sky & light ---------- */
 const sunDir = new THREE.Vector3(-0.55, 0.52, -0.65).normalize();
@@ -653,6 +653,8 @@ alpana.rotation.x = -Math.PI / 2; alpana.position.y = 0.012; alpana.receiveShado
 
 // khunṭ (the post) with paddy wrap and vermilion band
 const post = new THREE.Group(); scene.add(post);
+let postWob = null; // the post shudders when the bull slams into it
+function updatePost(dt) { if (!postWob) return; const w = postWob; w.t += dt; const k = Math.max(0, 1 - w.t / 0.9) * 0.05 * Math.sin(w.t * 38); post.rotation.x = w.x * k; post.rotation.z = w.z * k; if (w.t > 0.9) { post.rotation.set(0, 0, 0); postWob = null; } }
 {
   const wood = Mat({ color: 0x6a5541, roughness: 0.9 });
   const p = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.21, POST_H, 12), wood);
@@ -1151,6 +1153,11 @@ const garland = new THREE.Group();
   const parts = [[], []];
   for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; parts[i % 2].push(g.clone().translate(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.3)); }
   parts.forEach((p, k) => { garland.add(new THREE.Mesh(mergeGeometries(p, false), marigold[k])); p.forEach(x => x.dispose()); });
+  // a brass bell hanging from the garland, swinging with the animal
+  const brass = Mat({ color: 0xc9962e, roughness: 0.35, metalness: 0.6, emissive: 0x3a2400 });
+  const bell = new THREE.Group(); bell.position.set(0, -0.02, 0.3); garland.add(bell); garland.userData.bell = bell;
+  const bb = new THREE.Mesh(mergeGeometries([new THREE.CylinderGeometry(0.035, 0.07, 0.11, 8).translate(0, -0.1, 0), new THREE.SphereGeometry(0.035, 6, 4).translate(0, -0.04, 0), new THREE.SphereGeometry(0.018, 5, 4).translate(0, -0.165, 0)], false), brass);
+  bell.add(bb);
   scene.add(garland);
 }
 
@@ -1561,7 +1568,7 @@ $('openBtn').addEventListener('click', () => netSend({ t: 'open', on: !net.open 
 
 let popTimer;
 // the story finale in Hindi: while game.storyRun, the ring's own lines go through the story's translator
-const L = (s) => ((game.storyRun || game.villageRun) && story && story.tr && s != null ? story.tr(s) : s); // story finale and rounds started in the village
+const L = (s) => ((game.storyRun || game.villageRun || game.mode === 'story') && story && story.tr && s != null ? story.tr(s) : s); // story finale and rounds started in the village
 function pop(big, small) {
   const el = $('pop'); $('popBig').textContent = L(big); $('popSmall').textContent = L(small) || '';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -1808,6 +1815,11 @@ function updateBull(dt) {
     }
     case 'windup': {
       bull.play('Idle_Headlow', { ts: 1.6 });
+      { // he snorts and paws the ground before he comes
+        const fx = Math.sin(b.yaw), fz = Math.cos(b.yaw), h = animal.h || 1.75;
+        b.puff = (b.puff ?? 0) - dt; if (b.puff <= 0) { b.puff = 0.42; if (life) life.fx('breath', tmpV2.set(b.pos.x + fx * 1.4, h * 0.38, b.pos.z + fz * 1.4), tmpV3.set(fx, 0, fz)); }
+        b.paw = (b.paw ?? 0) - dt; if (b.paw <= 0) { b.paw = 0.33; emit(dustPool, tmpV2.set(b.pos.x + fx * 0.6 + fz * 0.18, 0.12, b.pos.z + fz * 0.6 - fx * 0.18), { life: 0.6, vel: new THREE.Vector3(-fx * 0.9 + rand(-0.3, 0.3), rand(0.4, 0.9), -fz * 0.9 + rand(-0.3, 0.3)), size: 0.35, grow: 0.9 }); }
+      }
       b.yaw = turnTo(b.yaw, yawToP, 4.5, dt);
       arrow.material.opacity = 0.35 + 0.45 * Math.abs(Math.sin(b.t * 14));
       if (b.t > b.dur) {
@@ -1826,7 +1838,7 @@ function updateBull(dt) {
       bull.play('Gallop', { fade: 0.1, ts: b.speed / 9 });
       const step = b.speed * dt;
       b.pos.addScaledVector(b.dir, step); b.dist -= step;
-      b.hoof -= dt; if (b.hoof <= 0) { b.hoof = 0.16; sfx.hoof(); emit(dustPool, tmpV2.copy(b.pos).setY(0.25).addScaledVector(b.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
+      b.hoof -= dt; if (b.hoof <= 0) { b.hoof = 0.16; sfx.hoof(); if (life) life.fx('hoof', b.pos, b.dir); emit(dustPool, tmpV2.copy(b.pos).setY(0.25).addScaledVector(b.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
       // horns hit
       const head = tmpV2.copy(b.pos).addScaledVector(b.dir, 1.0);
       const hd = Math.hypot(head.x - p.pos.x, head.z - p.pos.z);
@@ -1835,7 +1847,7 @@ function updateBull(dt) {
       const r = b.pos.length();
       if (r < 1.0 || r > ROPE_L || b.dist <= 0) closeCall(b, p);
       if (r < 1.0) { // smacked the post
-        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35;
+        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; postWob = { t: 0, x: b.dir.z, z: -b.dir.x };
         toast('Bonk!', 700);
       } else if (r > ROPE_L) { // rope goes taut
         b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
@@ -1941,7 +1953,7 @@ function updatePlayer(dt) {
     if (!p.grabbed && p.t > 0.42 && game.online) { p.grabbed = true; netSend({ t: 'grab' }); }
     if (!p.grabbed && p.t > 0.42) {
       p.grabbed = true; game.pithaReady = false; game.pithaTimer = 0; pitha.visible = false;
-      game.combo++; game.pitha++; renderCombo(); sfx.grab(); buzz(40); progress('pitha'); progress('combo', Math.min(game.combo, 5), true);
+      game.combo++; game.pitha++; renderCombo(); sfx.grab(); if (life) life.fx('petals', game.p.pos); buzz(40); progress('pitha'); progress('combo', Math.min(game.combo, 5), true);
       const gold = pitha.userData.gold, pts = Math.min(game.combo, 5) + (gold ? 3 : 0);
       if (gold) { setGold(false); crowdCheer(0.9); buzz([30, 30, 60]); game.slow = 0.25; }
       award(pts, gold ? `Golden pitha! +${pts}` : game.combo >= 2 ? `×${pts} combo · ${['Hoy!', 'Johar!', 'Got it!', 'Snatched!'][game.pitha % 4]}` : ['Snatched!', 'Hoy!', 'Got it!', 'Johar!'][game.pitha % 4]);
@@ -2151,6 +2163,7 @@ function updateDecor(dt) {
     // garland sits on the neck, turned with the bull
     garland.position.copy(n);
     garland.rotation.set(0, game.b.yaw, 0); garland.rotateX(-1.0);
+    { const bl = garland.userData.bell, st = game.b.state; if (bl) bl.rotation.x = 1.0 + Math.sin(game.t * (st === 'charge' ? 15 : 4)) * (st === 'charge' ? 0.5 : st === 'windup' ? 0.25 : 0.07); } // the bell hangs straight and swings when he runs
   }
   for (const f of flames) { f.userData.p += dt * 9; f.scale.setScalar(0.24 + Math.sin(f.userData.p) * 0.03 + Math.sin(f.userData.p * 2.3) * 0.02); }
 }
@@ -2433,7 +2446,7 @@ function netBull(dt) {
   if (st === 1) arrow.material.opacity = 0.35 + 0.45 * Math.abs(Math.sin(game.t * 14));
   else arrow.material.opacity = Math.max(0, arrow.material.opacity - dt * 4);
   if (st === 2) {
-    g.hoof -= dt; if (g.hoof <= 0) { g.hoof = 0.16; sfx.hoof(); emit(dustPool, tmpV2.copy(g.pos).setY(0.25).addScaledVector(g.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
+    g.hoof -= dt; if (g.hoof <= 0) { g.hoof = 0.16; sfx.hoof(); if (life) life.fx('hoof', g.pos, g.dir); emit(dustPool, tmpV2.copy(g.pos).setY(0.25).addScaledVector(g.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
     const p = game.p, head = tmpV2.copy(g.pos).addScaledVector(g.dir, 1.0);
     if (game.mode === 'play' && !g.hitDone && Math.hypot(head.x - p.pos.x, head.z - p.pos.z) < 1.05 && p.invuln <= 0 && p.state !== 'roll' && p.state !== 'dead' && p.state !== 'celebrate') { g.hitDone = true; hitPlayer(); }
   }
@@ -2677,6 +2690,7 @@ function frame() {
   game.t += dt;
   if (bull && player) {
     readMove();
+    updatePost(dt);
     if (life) { try { life.update(dt); } catch (e) { if (!life.err) { life.err = 1; console.error(e); } } }
     if (inStory) { try { story.update(dt); } catch (e) { if (!story.err) { story.err = 1; console.error(e); } } } // one bad frame in the village must never freeze the game
     else {

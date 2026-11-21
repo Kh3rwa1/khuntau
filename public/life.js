@@ -121,12 +121,51 @@ export function initLife(C) {
     });
     for (const l of [pots, woods, ropes]) if (l.length) bakeStatic(l); }
 
+  /* ---------- ring effects, triggered from the game: hoof prints, breath, marigold petals ---------- */
+  // hoof prints in the dust: a pool of flat marks that sink back into the ground (one draw)
+  const PRINTS = n(24, 36, 48), printGeo = new THREE.CircleGeometry(0.17, 7).rotateX(-Math.PI / 2); printGeo.scale(1, 1, 1.35);
+  const prints = new THREE.InstancedMesh(printGeo, new THREE.MeshBasicMaterial({ color: 0x2e1a0e, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), PRINTS);
+  prints.frustumCulled = false; prints.renderOrder = 1; scene.add(prints); const pr = []; let prI = 0;
+  for (let i = 0; i < PRINTS; i++) { pr.push({ age: 99, x: 0, z: 0, yaw: 0 }); prints.setMatrixAt(i, M.makeScale(0, 0, 0)); }
+  // breath: little white puffs from the bull's nose (one Points draw)
+  const BR = 24, bPos = new Float32Array(BR * 3), br = []; for (let i = 0; i < BR; i++) br.push({ age: 99, p: V(), v: V() });
+  const bGeo = new THREE.BufferGeometry(); bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
+  const breath = new THREE.Points(bGeo, new THREE.PointsMaterial({ size: 1.0, map: sTex, transparent: true, depthWrite: false, opacity: 1 })); breath.frustumCulled = false; scene.add(breath); let brI = 0;
+  // marigold petals that rain down when a pitha is snatched (one draw)
+  const PET = n(40, 60, 80), petGeo = build([part(new THREE.PlaneGeometry(0.15, 0.1), 0xffffff)]);
+  const petals = new THREE.InstancedMesh(petGeo, Mat({ vertexColors: true, side: THREE.DoubleSide, roughness: 1, emissive: 0x2a1400 }), PET); petals.frustumCulled = false; scene.add(petals);
+  const pe = []; for (let i = 0; i < PET; i++) { pe.push({ age: 99, p: V(), v: V(), r: V(), w: V() }); petals.setColorAt(i, new THREE.Color([0xff8a1c, 0xffc21c, 0xffa21c][i % 3])); petals.setMatrixAt(i, M.makeScale(0, 0, 0)); }
+  function fx(kind, pos, dir) {
+    if (kind === 'hoof') { // two prints, side by side, along the charge
+      for (const side of [-1, 1]) { const q = pr[prI]; prI = (prI + 1) % PRINTS; q.age = 0; q.yaw = Math.atan2(dir.x, dir.z); q.x = pos.x + dir.z * 0.22 * side; q.z = pos.z - dir.x * 0.22 * side; }
+    } else if (kind === 'breath') { // a short double puff from the nostrils
+      for (let k = 0; k < 4; k++) { const q = br[brI]; brI = (brI + 1) % BR; q.age = -k * 0.05; q.p.copy(pos); q.v.set(dir.x * 1.3 + rand(-0.2, 0.2), rand(-0.05, 0.2), dir.z * 1.3 + rand(-0.2, 0.2)); }
+    } else if (kind === 'petals' && !perf.thin) {
+      for (let i = 0; i < PET; i++) { const q = pe[i]; q.age = -rand(0, 0.5); q.p.set(pos.x + rand(-1.6, 1.6), rand(2.6, 4.2), pos.z + rand(-1.6, 1.6)); q.v.set(rand(-0.4, 0.4), rand(-0.6, -0.2), rand(-0.4, 0.4)); q.r.set(rand(0, 6), rand(0, 6), rand(0, 6)); q.w.set(rand(-6, 6), rand(-6, 6), rand(-6, 6)); }
+    }
+  }
+  function fxUpdate(dt) {
+    let any = false;
+    for (let i = 0; i < PRINTS; i++) { const q = pr[i]; if (q.age > 12) continue; q.age += dt; any = true; const k = q.age < 7 ? 1 : Math.max(0, 1 - (q.age - 7) / 5);
+      E.set(0, q.yaw, 0); Q.setFromEuler(E); M.compose(P3.set(q.x, 0.03, q.z), Q, S3.set(k, 1, k)); prints.setMatrixAt(i, M); }
+    if (any) prints.instanceMatrix.needsUpdate = true; prints.visible = any; // nothing to draw: no draw call
+    for (let i = 0; i < BR; i++) { const q = br[i], j = i * 3; q.age += dt; if (q.age < 0 || q.age > 0.7) { bPos[j + 1] = -99; continue; } q.p.addScaledVector(q.v, dt); bPos[j] = q.p.x; bPos[j + 1] = q.p.y + q.age * 0.25; bPos[j + 2] = q.p.z; }
+    bGeo.attributes.position.needsUpdate = true; breath.visible = br.some(q => q.age >= 0 && q.age <= 0.7);
+    let pany = false;
+    for (let i = 0; i < PET; i++) { const q = pe[i]; if (q.age > 3.5) continue; q.age += dt; pany = true; if (q.age < 0) { petals.setMatrixAt(i, M.makeScale(0, 0, 0)); continue; }
+      q.v.x += Math.sin(t * 3 + i) * 0.6 * dt; q.p.addScaledVector(q.v, dt); if (q.p.y < 0.02) { q.p.y = 0.02; q.v.set(0, 0, 0); q.w.multiplyScalar(0.9); }
+      q.r.addScaledVector(q.w, dt); E.set(q.r.x, q.r.y, q.r.z); Q.setFromEuler(E); const k = q.age > 2.8 ? Math.max(0, 1 - (q.age - 2.8) / 0.7) : 1;
+      M.compose(q.p, Q, S3.set(k, k, k)); petals.setMatrixAt(i, M); }
+    if (pany) petals.instanceMatrix.needsUpdate = true; petals.visible = pany;
+  }
+
   /* ---------- every frame ---------- */
   const threats = () => [game.p.pos, game.b.pos];
   function step(a, speed, dt) { const dx = a.t.x - a.p.x, dz = a.t.z - a.p.z, d = Math.hypot(dx, dz); if (d < 0.08) return true; const k = Math.min(1, speed * dt / d); const nx = a.p.x + dx * k, nz = a.p.z + dz * k; if (free(nx, nz, 0.6)) { a.p.x = nx; a.p.z = nz; } else a.t = near(a.p, 2, 1.0); a.yaw = Math.atan2(dx, dz); return false; }
   let t = 0;
   function update(dt) {
     dt = Math.min(dt, 0.1); t += dt; const thin = perf.thin;
+    fxUpdate(dt);
     // chickens
     const th = threats();
     flock.forEach((c, i) => {
@@ -157,5 +196,6 @@ export function initLife(C) {
       sGeo.attributes.position.needsUpdate = true; smoke.material.opacity = 0.75; }
   }
   update(0);
-  return { update, counts: { chickens: nChick, goats: nGoat, birds: nBird, butterflies: nFly, smoke: puffs.length } };
+  const active = () => ({ prints: prints.visible, breath: breath.visible, petals: petals.visible });
+  return { update, fx, active, counts: { chickens: nChick, goats: nGoat, birds: nBird, butterflies: nFly, smoke: puffs.length } };
 }
