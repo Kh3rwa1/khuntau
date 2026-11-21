@@ -9,6 +9,15 @@ const browser = await puppeteer.launch({ protocolTimeout: 180000, args: ['--no-s
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-story', JSON.stringify({ ch: 5, done: 1, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); localStorage.removeItem('khuntau-drumlag'); });
+// pretend the phone's speaker lags 120 ms, and record every sound the game books on the audio clock
+await page.evaluateOnNewDocument(() => {
+  Object.defineProperty(AudioContext.prototype, 'outputLatency', { get: () => 0.12, configurable: true });
+  Object.defineProperty(AudioContext.prototype, 'baseLatency', { get: () => 0, configurable: true });
+  window.__srcs = [];
+  const st = AudioBufferSourceNode.prototype.start, sp = AudioBufferSourceNode.prototype.stop;
+  AudioBufferSourceNode.prototype.start = function (when = 0, ...r) { this.__e = { when, ct: this.context.currentTime, pn: performance.now() / 1000 }; window.__srcs.push(this.__e); return st.call(this, when, ...r); };
+  AudioBufferSourceNode.prototype.stop = function (when = 0) { if (this.__e) this.__e.len = when - this.__e.when; return sp.call(this, when); };
+});
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
 await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(2500);
@@ -27,8 +36,15 @@ async function chart(deltaSrc) {
     const iv = setInterval(() => { if (d.drum.done) { clearInterval(iv); setTimeout(() => done({ states: d.drum.notes.map(n => n.state), hits: d.drum.hits, n: d.drum.notes.length || res.length, calib: d.calib(), judged, sched: d.drum.sched }), 100); } }, 50);
   }), deltaSrc);
 }
+await page.evaluate(() => { window.__srcs.length = 0; });
 // 1. on time (relative to the touch lag): all hit, no learning drift
 let r = await chart('(i) => 0');
+// the beat clicks (0.03 s noise bursts) must be booked so they are HEARD on the beat: audio time = beat time - 120 ms speaker lag
+{ const cl = await page.evaluate(() => { const t0 = __k.story.debug.drum.t0; return { t0, s: window.__srcs.filter(e => Math.abs((e.len ?? 0) - 0.05) < 0.002) }; });
+  const errs = cl.s.map(e => { const heard = e.pn + (e.when - e.ct) + 0.12; const k = Math.round((heard - cl.t0) / 0.62); return Math.abs(heard - (cl.t0 + k * 0.62)); });
+  check(cl.s.length >= 20, `count-in and beat clicks were scheduled on the audio clock (${cl.s.length})`);
+  check(errs.length && Math.max(...errs) < 0.012, `every click is heard on its beat with a 120 ms speaker lag taken off (worst ${(Math.max(...errs) * 1000).toFixed(1)} ms)`);
+  check(cl.s.every(e => e.when > e.ct + 0.01), 'clicks are booked ahead, never played late from the frame loop'); }
 check(r.hits === r.n, `on-time taps all count (${r.hits}/${r.n})`);
 check(Math.abs(r.calib) < 0.01, `on-time play leaves the timing alone (calib ${r.calib.toFixed(3)})`);
 check(r.sched === 17, 'every beat click was booked on the audio clock');
