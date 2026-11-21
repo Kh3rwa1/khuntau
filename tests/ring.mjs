@@ -21,11 +21,11 @@ check(await until(() => __k.game.mode === 'play'), 'START puts you in the ring')
 check(await ev(() => __k.game.lives === 3 && document.querySelectorAll('#lamps svg:not(.out)').length === 3), 'three lit lamps at the start');
 await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
 // accessories ride their bones: while running, the gamchha's end keeps its distance to the Torso bone while the bone moves
-{ const probe = () => ev(() => { const T = __k.THREE, m = __k.player.body, part = __k.player.mats.Gamchha && __k.player.mats.Gamchha.part; if (!part) return null; m.updateMatrixWorld(true); m.skeleton.update();
+{ const probe = () => ev(() => { const T = __k.THREE, m = __k.player.body, part = __k.player.mats.Gamchha && __k.player.mats.Gamchha.part; if (!part) return null; __k.player.wrap.updateMatrixWorld(true); m.skeleton.update(); // every bone fresh: on a slow runner no frame may have run since the mixer step
     const v = new T.Vector3(); m.getVertexPosition(part.start + part.count - 1, v); m.localToWorld(v); const b = m.skeleton.bones.find(x => x.name === 'Torso').getWorldPosition(new T.Vector3()); return { d: v.distanceTo(b), b: b.toArray() }; });
   // the animation is stepped here, not by waiting: a GPU-less CI runner may draw no frame at all in 170 ms
   await ev(() => { __k.player.play('Run', { fade: 0 }); __k.player.mixer.update(0.25); }); const a1 = await probe(); await ev(() => __k.player.mixer.update(0.17)); const a2 = await probe();
-  check(!!a1 && Math.abs(a1.d - a2.d) < 0.01 && Math.hypot(a1.b[0] - a2.b[0], a1.b[1] - a2.b[1], a1.b[2] - a2.b[2]) > 0.002, `accessories move with the body (gamchha stays ${a1 && a1.d.toFixed(3)} m from the torso while it moves)`);
+  check(!!a1 && Math.abs(a1.d - a2.d) < 0.01 && Math.hypot(a1.b[0] - a2.b[0], a1.b[1] - a2.b[1], a1.b[2] - a2.b[2]) > 0.002, `accessories move with the body (gamchha ${a1 && a1.d.toFixed(3)} then ${a2 && a2.d.toFixed(3)} m from the torso; torso moved ${a1 && a2 && Math.hypot(a1.b[0] - a2.b[0], a1.b[1] - a2.b[1], a1.b[2] - a2.b[2]).toFixed(3)} m)`);
   await ev(() => { __k.player.play('Idle'); }); }
 
 // the bull's own details: vermilion once decorated, eyes redden with fury, dust on the hooves after charges, tail stays sane
@@ -45,6 +45,12 @@ await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
   const s = await rope(-2.5, -1.5, Math.PI / 2), t = await rope(-6.2, 0, -Math.PI / 2);
   check(s.sag > 0.5 && s.lo > -0.01 && s.lo < 0.1, `slack rope hangs into the dust, never through it (sag ${s.sag.toFixed(2)}, lowest ${s.lo.toFixed(2)} m)`);
   check(t.sag < 0.05, `the rope goes straight when he pulls on it (sag ${t.sag.toFixed(2)})`);
+  // the snap twang, stepped at 120 Hz (an A34 can run that fast): pulled from slack to taut at charge speed it must fire
+  check(await ev(() => { const r = __k.rope, dt = 1 / 120; r.userData.len = 0; let fired = 0, L = 5.2; __k.bendRope(L, 0.75, 1.18, dt);
+    while (L < 6.95) { L += 6 * dt; __k.bendRope(L, 0.75, 1.18, dt); if (r.userData.twang > 0.95) fired++; } const slow = []; r.userData.twang = 0; r.userData.len = 0; L = 5.2;
+    while (L < 6.95) { L += 0.5 * dt; __k.bendRope(L, 0.75, 1.18, dt); slow.push(r.userData.twang); } return fired >= 1 && Math.max(...slow) === 0; }), 'the rope twangs when snapped tight at 120 Hz, not when he leans on it slowly');
+  // budget phones: whichever spectators survive thinning (the lowest indices) stand where the camera looks
+  check(await ev(() => __k.QUALITY !== 0 || __k.crowd.slice(0, 3).every(c => { const a = Math.atan2(c.home.z, c.home.x); return Math.abs(a + Math.PI / 2) < 0.9; })), 'a thinned crowd stays in the middle of the view');
   await ev(() => { const b = __k.game.b, o = window.__bs; b.state = o.state; b.t = o.t; b.pos.copy(o.pos); b.yaw = o.yaw; }); }
 // grab at the post
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; });

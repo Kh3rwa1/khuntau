@@ -963,8 +963,9 @@ const ropeAnchor = new THREE.Vector3(0, 0.75, 0), ROPE_REAL = 6.7; // anchor-to-
 function bendRope(len, y0, y1, dt) {
   const u = rope.userData, arr = rope.geometry.attributes.position.array, b = u.base;
   let s = len < ROPE_REAL ? Math.sqrt(3 * len * (ROPE_REAL - len) / 8) : 0; // parabola sag for that much slack
-  if (u.sag > 0.25 && s < 0.04) u.twang = 1; // snapped tight
-  u.sag = s; u.twang = Math.max(0, u.twang - dt * 1.6);
+  const speed = dt > 0 && u.len ? (len - u.len) / dt : 0; // snapped tight: crossed to taut while pulling away fast
+  if (u.len && u.len < ROPE_REAL && len >= ROPE_REAL && speed > 1.5) u.twang = 1;
+  u.sag = s; u.len = len; u.twang = Math.max(0, u.twang - dt * 1.6);
   const tw = u.twang * u.twang * 0.09 * Math.sin(game.t * 42);
   for (let i = 0; i < arr.length; i += 3) {
     const t = b[i + 2], arc = 4 * t * (1 - t), yw = y0 + (y1 - y0) * t;
@@ -1498,7 +1499,8 @@ function onCrowdLoaded() {
     tint(c, colors); tint(c, { Necklace: pick(BEADS, i), Bangles: pick(BANGLES, i + 1), Gamchha: pick(GAMCHHA, i) }); // their own beads, bangles, cloth
     // budget phones get only 6 people: spread round 360 degrees the camera saw one or two and the ring looked empty, so
     // there they gather in an arc on the far side, the side the camera looks at from the start
-    const a = QUALITY === 0 ? -Math.PI / 2 + (i / (nCrowd - 1) - 0.5) * 2.6 + rand(-0.1, 0.1) : i / nCrowd * Math.PI * 2 + 0.2, r = ARENA_R + rand(1.7, 2.6);
+    const slot = [...Array(nCrowd).keys()].sort((x, y) => Math.abs(x - (nCrowd - 1) / 2) - Math.abs(y - (nCrowd - 1) / 2) || x - y)[i]; // centre first: crowdBudget keeps the lowest indices
+    const a = QUALITY === 0 ? -Math.PI / 2 + (slot / (nCrowd - 1) - 0.5) * 2.6 + rand(-0.1, 0.1) : i / nCrowd * Math.PI * 2 + 0.2, r = ARENA_R + rand(1.7, 2.6);
     c.wrap.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     c.wrap.rotation.y = Math.atan2(-c.wrap.position.x, -c.wrap.position.z);
     c.play('Idle'); c.actions.Idle.time = rand(0, 2);
@@ -2423,10 +2425,10 @@ function updateCamera(dt) {
 }
 
 function updateFlames(dt) {
-  // diya flames: flicker in height and brightness, lean with a slow breeze, gutter when the bull runs past
-  { const P = flames, wind = Math.sin(game.t * 0.37) * 0.5 + Math.sin(game.t * 1.3) * 0.2, bp = game.b && game.b.pos, fast = game.b && game.b.state === 'charge';
+  // diya flames: flicker in height and brightness, lean with a slow breeze, gutter when you run or roll past
+  { const P = flames, wind = Math.sin(game.t * 0.37) * 0.5 + Math.sin(game.t * 1.3) * 0.2, pp = game.p.pos, fast = game.p.state === 'roll' || game.p.vel.lengthSq() > 4;
     for (let i = 0; i < P.items.length; i++) { const u = P.items[i]; u.life += dt * 9; const t = u.life;
-      let gust = 0; if (fast && bp) { const d = Math.hypot(u.pos.x - bp.x, u.pos.z - bp.z); if (d < 3) gust = (3 - d) / 3; }
+      let gust = 0; if (fast) { const d = Math.hypot(u.pos.x - pp.x, u.pos.z - pp.z); if (d < 1.6) gust = (1.6 - d) / 1.6; }
       const h = 0.34 * u.size * (1 + Math.sin(t) * 0.1 + Math.sin(t * 2.3) * 0.07 + Math.sin(t * 5.1) * 0.04) * (1 - gust * 0.45), w = 0.17 * u.size * (1 + gust * 0.25);
       bbS.set(u.pos.x + (wind + Math.sin(t * 1.7) * 0.25) * 0.025, u.pos.y + h * 0.3, u.pos.z + (wind * 0.6) * 0.025);
       P.im.setMatrixAt(i, bbM.compose(bbS, camera.quaternion, tmpV3.set(w, h, 1))); P.al.array[i] = 0.82 + Math.sin(t * 1.9) * 0.1 + Math.sin(t * 4.3) * 0.08 - gust * 0.3; }
@@ -2885,7 +2887,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, rope, flames, dustPool, sparkPool, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
