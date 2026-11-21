@@ -460,12 +460,16 @@ export function initStory(C) {
 
   /* ---------- tamak and tumdak ---------- */
   const BEAT = 0.62, TRAVEL = 1.5, WIN = C.isTouch ? 0.23 : 0.2, LAG = C.isTouch ? 0.045 : 0; // a finger lands a little after the ear expects it
+  // each phone learns its own timing: after a chart, the median of how late (or early) the hits landed nudges this
+  let calib = 0; try { calib = clamp(+localStorage.getItem('khuntau-drumlag') || 0, -0.1, 0.15); } catch (e) {}
+  const off = () => LAG + calib; // judged time = when the finger landed minus this
+  const evTime = (e) => { const t = e && e.timeStamp / 1000; return t > 0 && Math.abs(now() - t) < 0.5 ? t : now(); }; // when the touch really happened, not when the busy frame got to it
   const CHART = [['T', 0], ['U', 1], ['U', 1.5], ['T', 2], ['U', 3], ['T', 4], ['U', 5], ['U', 5.5], ['T', 6], ['U', 7], ['T', 8], ['T', 8.5], ['U', 9], ['T', 10], ['U', 11], ['U', 11.5], ['T', 12], ['U', 13], ['T', 14], ['T', 14.5], ['U', 15], ['T', 16]];
   const NEED = 13;
   const drum = { free: false, t0: 0, notes: [], hits: 0, end: 0, click: -4, lo: false, done: false };
   function drumStart(free) {
     const pl = C.player(), p = game.p;
-    S.mode = 'drum'; drum.free = free; drum.done = false; drum.hits = 0; drum.notes = [];
+    S.mode = 'drum'; drum.free = free; drum.done = false; drum.hits = 0; drum.notes = []; drum.errs = []; drum.sched = -4;
     p.pos.copy(W.drumStand); p.yaw = Math.atan2(W.aIn.x, W.aIn.z); p.vel.set(0, 0, 0);
     S.camYaw = Math.atan2(-W.aIn.x, -W.aIn.z); S.lookT = now() + 999;
     giveSticks(pl); showSticks(true); pl.play('Idle', { fade: 0.15 });
@@ -490,18 +494,18 @@ export function initStory(C) {
     if (quiet) return;
     pl.play(lane === 'T' ? 'SwordSlash' : 'Punch', { once: true, fade: 0.04, ts: lane === 'T' ? 2.6 : 2.4 }); C.buzz(lane === 'T' ? 18 : 8);
   }
-  function strike(lane) {
+  function strike(lane, at) {
     if (S.mode === 'echo') { echoStrike(lane); return; }
     if (S.mode !== 'drum' || drum.done) return;
-    const pl = C.player(), tn = now() - LAG;
+    const pl = C.player(), tn = (at ?? now()) - off();
     drumSound(lane);
     const dp = (lane === 'T' ? W.tamak.position : W.tumdak.position).clone(); dp.y = lane === 'T' ? 0.62 : 0.6;
     C.emit(C.dustPool, dp, { life: 0.35, vel: V(0, 1.4, 0), size: 0.25, grow: 0.7 });
     let power = 1;
     if (!drum.free) {
       power = 0.45; let best = null;
-      for (const n of drum.notes) if (n.lane === lane && n.state === 0 && Math.abs(n.time - tn) <= WIN && (!best || Math.abs(n.time - tn) < Math.abs(best.time - tn))) best = n;
-      if (best) { best.state = 1; best.el.classList.add('done'); drum.hits++; power = 1; judge(lane, Math.abs(best.time - tn) < 0.085 ? 'Perfect' : 'Good'); }
+      for (const n of drum.notes) if (n.lane === lane && n.state === 0 && Math.abs(n.time - tn) <= WIN && (!best || n.time < best.time)) best = n; // oldest open note, so a late tap can't steal the next one
+      if (best) { best.state = 1; best.el.classList.add('done'); drum.hits++; drum.errs.push(tn - best.time); power = 1; judge(lane, Math.abs(best.time - tn) < 0.085 ? 'Perfect' : 'Good'); }
       else if (drum.notes.some(n => n.lane === lane && n.state === 0 && n.time - tn > WIN && n.time - tn < 0.5)) judge(lane, 'Early');
     }
     pulse(power, lane === 'T');
@@ -514,25 +518,30 @@ export function initStory(C) {
     if (deep && dance.energy > 0.7 && S.bullReact <= -2.5) { const bull = C.bull(); bull.play(Math.random() < 0.5 ? 'Idle_HitReact1' : 'Idle_HitReact2', { once: true, fade: 0.1 }); S.bullReact = 0.9; if (Math.random() < 0.5) C.sfx.snort(); }
     if (dance.energy > 1.05 && !dance.said) { dance.said = true; toast('The village is dancing!', 1500); C.crowdCheer(0.5, 1, 0, 'none'); }
   }
-  for (const [id, lane] of [['padT', 'T'], ['padU', 'U']]) $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); strike(lane); });
+  for (const [id, lane] of [['padT', 'T'], ['padU', 'U']]) $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); strike(lane, evTime(e)); });
   $('padDone').addEventListener('click', drumStop);
   function drumUpdate(tn) {
     if (drum.free || drum.done) return;
-    // count-in and a soft stick click on every beat so the pulse is easy to feel
-    while (tn >= drum.t0 + drum.click * BEAT && drum.click <= 16) {
-      if (C.audio.ctx && !C.audio.muted) C.noise(C.audio.ctx.currentTime, 0.03, drum.click < 0 ? 0.3 : 0.1, 'highpass', 3000, 1, C.audio.sfxBus);
-      $('beatCount').textContent = drum.click < 0 ? String(-drum.click) : ''; drum.click++;
+    // count-in and a soft stick click on every beat. Clicks are booked on the audio clock a little ahead, minus the
+    // speaker's own delay, so you hear each one exactly when its note reaches the line (not up to a frame late).
+    const ctx = C.audio.ctx, outLat = ctx ? clamp((ctx.outputLatency || 0) + (ctx.baseLatency || 0), 0, 0.3) : 0;
+    while (drum.sched <= 16 && drum.t0 + drum.sched * BEAT - tn < 0.25 + outLat) {
+      if (ctx && !C.audio.muted) C.noise(Math.max(ctx.currentTime, ctx.currentTime + (drum.t0 + drum.sched * BEAT - tn) - outLat), 0.03, drum.sched < 0 ? 0.3 : 0.1, 'highpass', 3000, 1, C.audio.sfxBus);
+      drum.sched++;
     }
+    while (tn >= drum.t0 + drum.click * BEAT && drum.click <= 16) { $('beatCount').textContent = drum.click < 0 ? String(-drum.click) : ''; drum.click++; }
+    const tj = tn - off(); // judging clock, same offset as strike()
     const hgt = drum.laneH || 200;
     for (const n of drum.notes) {
       const f = 1 - (n.time - tn) / TRAVEL;
-      if (n.state === 0 && tn - n.time > WIN) { n.state = 2; judge(n.lane, 'Miss'); }
+      if (n.state === 0 && tj - n.time > WIN + 0.12) { n.state = 2; judge(n.lane, 'Miss'); } // grace: a touch that came in time may reach us a frame or two late
       const show = f > 0 && (n.state === 0 || (n.state === 1 && tn - n.time < 0.15));
       n.el.style.opacity = show ? Math.min(1, f * 4) : 0;
       if (show) n.el.style.transform = `translate3d(0,${(Math.min(f, 1.04) * hgt).toFixed(1)}px,0) scale(${n.state === 1 ? 1.5 : 1})`;
     }
-    if (tn > drum.end) {
+    if (tj > drum.end) {
       drum.done = true; const ok = drum.hits >= NEED;
+      if (drum.errs.length >= 6) { const e = drum.errs.slice().sort((a, b) => a - b), m = e[e.length >> 1]; calib = clamp(calib + m * 0.7, -0.1, 0.15); try { localStorage.setItem('khuntau-drumlag', calib.toFixed(3)); } catch (x) {} }
       pop(drum.hits + '/' + CHART.length, ok ? 'The beat is yours' : 'Need ' + NEED + '. Try again');
       if (ok) { C.crowdCheer(0.9); C.buzz([30, 40, 60]); dance.energy = 1.5; for (const c of dancers) c.play('Victory', { once: true, fade: 0.2 }); S.sat = 1.6; }
       setTimeout(() => { drumStop(); if (ok && save.ch === 3) { setChapter(4); say(T.drumWin); } else if (ok && save.ch >= 5) daily('drum', 'Tamak played'); }, 1500);
@@ -745,7 +754,7 @@ export function initStory(C) {
     for (const s of W.spots) if (s.art.visible && s.k < 1) { s.k = Math.min(1, s.k + dt * 0.9); s.art.material.opacity = s.k; }
 
     // drums, and everyone who hears them
-    if (S.mode === 'drum') drumUpdate(tn - LAG * 0);
+    if (S.mode === 'drum') drumUpdate(tn);
     else if (S.mode === 'aim') archUpdate(dt); else if (S.mode === 'fish') fishUpdate(dt, tn); else if (S.mode === 'echo') echoUpdate(dt);
     if (W.flags) for (const f of W.flags) f.children[1].rotation.y = Math.sin(tn * 2.4 + f.position.x) * 0.35;
     { const td = today(); W.jale.forEach((sp, i) => { sp.visible = !S.inside && save.ch >= 1 && !td.jv[i]; if (sp.visible) sp.scale.setScalar(1 + Math.sin(tn * 3 + i) * 0.15); }); }
@@ -857,7 +866,7 @@ export function initStory(C) {
     if (S.dlg) { if (k === 'Enter' || k === 'Space' || k === 'KeyE') { e.preventDefault(); nextLine(); } return; }
     if (pick.on) { if (k === 'ArrowLeft' || k === 'KeyA') stepPick(-1); else if (k === 'ArrowRight' || k === 'KeyD') stepPick(1); else if (k === 'Enter' || k === 'KeyE') $('pickOk').click(); return; }
     if (S.mode === 'aim' || S.mode === 'fish') { if (e.repeat) return; if (k === 'Space' || k === 'Enter' || k === 'KeyE') { e.preventDefault(); S.tap = true; } return; }
-    if (S.mode === 'drum' || S.mode === 'echo') { if (e.repeat) return; if (k === 'KeyF' || k === 'KeyD' || k === 'ArrowLeft') strike('T'); else if (k === 'KeyJ' || k === 'KeyK' || k === 'ArrowRight') strike('U'); else if (drum.free && (k === 'Enter' || k === 'KeyE')) drumStop(); return; }
+    if (S.mode === 'drum' || S.mode === 'echo') { if (e.repeat) return; if (k === 'KeyF' || k === 'KeyD' || k === 'ArrowLeft') strike('T', evTime(e)); else if (k === 'KeyJ' || k === 'KeyK' || k === 'ArrowRight') strike('U', evTime(e)); else if (drum.free && (k === 'Enter' || k === 'KeyE')) drumStop(); return; }
     if (k === 'KeyE' || k === 'Enter' || k === 'Space') { e.preventDefault(); S.act = true; }
   }
 
@@ -866,6 +875,6 @@ export function initStory(C) {
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     label: () => save.done ? `Sohrai village: ${doneToday()}/4 today` : save.ch > 0 ? `Continue story (${save.ch}/5)` : 'Story: Sohrai Day',
-    debug: { S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    debug: { calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }
