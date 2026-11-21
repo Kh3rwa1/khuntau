@@ -64,10 +64,15 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 - The interior of the house lives under the ground at y = -40 and is shown only while inside.
 
 ## Deploy checklist
-1. Run `node tests/serve.mjs` and `npm test`; look at the screenshots in `tests/out/`.
+GitHub CI deploys: every push to `main` runs the full suite, and if it is green and the repo secret
+`CLOUDFLARE_API_TOKEN` exists, it runs `wrangler deploy` and checks the live `sw.js` VERSION. So merging to `main`
+means going live about 20 minutes later. Before merging:
+1. Run `node tests/serve.mjs` + `npm test` (and `wrangler dev --local` + `npm run test:online` for Worker changes);
+   look at the screenshots in `tests/out/`.
 2. Recompute `VERSION` in `public/sw.js`:
    `python3 -c "import hashlib,os;h=hashlib.sha1();[h.update(open(os.path.join(r,f),'rb').read()) for r,_,fs in sorted(os.walk('public')) for f in sorted(fs) if f!='sw.js'];print(h.hexdigest()[:10])"`
-3. `npx wrangler deploy`, then check the live site (e.g. `curl -s <site>/story.js | head -1`).
+3. Merge to `main` and push; watch the run at `https://api.github.com/repos/Kh3rwa1/khuntau/actions/runs`.
+Fallback from the Mac: `npx wrangler deploy`, then `curl -s <site>/sw.js | head -5` to check VERSION.
 4. The page and story.js are network-first, so phones get new code on the next load; models, audio and fonts
    refresh when the new service worker installs (a full close and reopen makes that immediate).
 
@@ -92,7 +97,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
 | Deploy | ready, needs one secret | `.github/workflows/ci.yml` runs the full suite on every push (213 checks green on GitHub, Nov 21) and deploys `main` when green; today it skips with a warning because the secret is missing. Dulor: add repo secret `CLOUDFLARE_API_TOKEN` (Workers edit; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts) |
 | Slow-phone safety net | tested | `tests/slowphone.mjs`: CPU throttled 6x, auto quality on: steps itself down, remembers it, story still walks |
-| Real-phone feel on the A34 | needs Dulor's phone | open `https://khuntau.dulalkisku0.workers.dev/?fps` on the A34 after the next deploy: read the meter in the village and at the akhra (green 45+, yellow 28+, red below), play the drum chart twice and say early/late/fine |
+| Real-phone feel on the A34 | needs Dulor's phone | open `https://khuntau.dulalkisku0.workers.dev/?fps` on the A34 after the next deploy: read the meter in the village and at the akhra (green 45+, yellow 28+, red below); play the drum chart twice and say early/late/fine; try archery and say if the crosshair moves too fast/slow for your drag and if the sway feels fair |
 | Santali story text | plumbing ready, needs a Santali speaker | `design/santali-strings.csv` (183 lines, English + Hindi, empty Santali column); `node tools/santali-import.mjs` puts it in the game; the language button offers Santali once text exists, in Ol Chiki font; `tests/santali.mjs` proves the path with marker text. Never machine-translate it |
 | Customs order and details | needs Dulor | `design/customs-check.md`: 10 questions, one per custom shown; answer OK / wrong / in my village |
 | Story mode multiplayer | design choice | single-player by design; the ring is the online mode |

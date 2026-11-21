@@ -14,7 +14,7 @@ const ev = f => page.evaluate(f);
 const st = () => ev(() => { const s = __k.story.debug; return { ch: s.save.ch, mode: s.S.mode, inside: s.S.inside, near: s.S.near && s.S.near.label, dlg: !!s.S.dlg, pos: [__k.game.p.pos.x, __k.game.p.pos.y, __k.game.p.pos.z].map(v => +v.toFixed(1)), gm: __k.game.mode }; });
 const tapDlg = async () => { for (let i = 0; i < 8; i++) { if (!(await ev(() => !!__k.story.debug.S.dlg))) break; await ev(() => document.getElementById('dlg').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))); await sleep(350); } };
 const act = () => ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
-const goto = (x, y, z) => page.evaluate((x, y, z) => { __k.game.p.pos.set(x, y, z); }, x, y, z);
+const goto = (x, y, z) => page.evaluate((x, y, z) => { __k.game.p.pos.set(x, y, z); __k.story.debug.S.near = null; }, x, y, z); // clear the old prompt: it was computed before the teleport
 await shot('00-home');
 await page.tap('#storyBtn'); await sleep(1800); await shot('01-wake'); { const s = await st(); check(s.inside && s.ch === 0 && s.gm === 'story', 'story starts inside the house, chapter 0'); }
 await tapDlg(); await sleep(300);

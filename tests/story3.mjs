@@ -13,7 +13,7 @@ await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentlo
 await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
 const shot = n => page.screenshot({ path: `tests/out/a-${n}.jpg`, type: 'jpeg', quality: 72 });
 const ev = (f, ...a) => page.evaluate(f, ...a);
-const near = (l) => page.waitForFunction((l) => { const n = __k.story.debug.S.near; return n && n.label === l; }, { timeout: 40000 }, l);
+const near = async (l) => { await page.evaluate(() => { __k.story.debug.S.near = null; }); return page.waitForFunction((l) => { const n = __k.story.debug.S.near; return n && n.label === l; }, { timeout: 40000 }, l); }; // never trust a prompt from before a teleport
 const act = () => ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
 const tap = () => ev(() => document.getElementById('tapzone').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
 const mode = (m) => page.waitForFunction((m) => __k.story.debug.S.mode === m, { timeout: 60000 }, m);

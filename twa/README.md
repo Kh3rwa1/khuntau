@@ -4,8 +4,9 @@ The Android app is the website in a Trusted Web Activity, built with Bubblewrap.
 except the parts tied to Dulor's Google Play account and signing key.
 
 ## What Dulor needs first
-- A Google Play developer account. Personal accounts created after Nov 2023 must run a **closed test with
-  at least 12 testers for 14 days** before production; organisation accounts skip that. Tell Claude which type
+- A Google Play developer account. Last we checked, Google required personal accounts created after Nov 2023
+  to run a **closed test with at least 12 testers for 14 days** before production, and organisation accounts did not.
+  Play Console shows the rule that applies to your account; follow that if it differs. Tell Claude which type
   and when it was created, so the plan matches.
 
 ## Build (on the Mac, once)
