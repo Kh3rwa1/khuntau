@@ -75,8 +75,9 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Tests only logged, never failed | fixed | `tests/check.mjs`; every test exits 1 on a failed check |
 | Door test walked into the back wall | fixed | `story2.mjs` walks yard to door, asserts inside |
 | Free drumming after the story | works (test was wrong) | `story1.mjs` free-play check |
+| Ring hint covered the HIDE button on phones | fixed | `net-guest-3-play.jpg` from online-ui |
 | Draw-call budget | guarded | `tests/calls.mjs` budget per view |
-| Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks); per-IP limits on restore/save/push, room reports throttled |
+| Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks) and `tests/online-ui.mjs` (two phones: list, ask, accept, start, play); per-IP limits on restore/save/push, room reports throttled |
 | Offline / service worker | todo | |
 | Ring game end to end | todo | |
 | Drum latency compensation | todo | |

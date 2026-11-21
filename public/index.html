@@ -60,6 +60,7 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
 #hint { position: fixed; z-index: 5; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); pointer-events: none; font-size: 15px; background: var(--glass); padding: 6px 14px; border-radius: 999px; opacity: 0; transition: opacity .3s; width: max-content; max-width: min(88vw, 520px); text-align: center; box-sizing: border-box; }
 #hint.show { opacity: 1; }
+.touch:not(.story-on) #hint { bottom: calc(232px + env(safe-area-inset-bottom, 0px)); } /* above the HIDE / ROLL / GRAB buttons it talks about */
 
 /* Touch controls */
 #outLobbyBtn { position: fixed; z-index: 6; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); }
