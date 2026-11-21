@@ -19,7 +19,7 @@ CI: `.github/workflows/ci.yml` runs everything below on GitHub for each push (so
 ```
 npm install                 # wrangler + puppeteer (downloads its own Chrome)
 npx wrangler dev            # local game with the Worker, Durable Objects and API
-npx wrangler deploy         # deploy to khuntau.dulalkisku0.workers.dev (needs `npx wrangler login` once)
+npx wrangler deploy         # deploy to khuntau.dulalkisku0.workers.dev (cloud sessions: token is in the environment)
 node tests/serve.mjs        # static server for tests on 127.0.0.1:8791 (no /api; leaderboard calls 404, that is fine)
 npm test                    # with serve.mjs running: story (EN + Hindi), ring, drum, walk, offline, draw calls, 429 messages
 node tests/walk.mjs         # walking feel: holds the stick into people, fails on any stall over 1 s
@@ -95,7 +95,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Busy server (429) on shared mobile IPs | fixed + tested | per-IP limits roomy for carrier NAT (30 new saves/min); keep-progress and reminders say 'try again in a minute' instead of blank/false errors; `tests/busy.mjs` |
 | Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
 | In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
-| Deploy | ready, needs one secret | `.github/workflows/ci.yml` runs the full suite on every push (213 checks green on GitHub, Nov 21) and deploys `main` when green; today it skips with a warning because the secret is missing. Dulor: add repo secret `CLOUDFLARE_API_TOKEN` (Workers edit; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts) |
+| Deploy | live | Deployed 21 Nov from the cloud session (sw VERSION d8a2a98c4a, live files match the repo byte for byte, live phone smoke test clean). Cloud sessions have `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` and `api.cloudflare.com` allowed: `npx wrangler deploy` works here. CI (`.github/workflows/ci.yml`) also deploys green `main` when the repo secret is set |
 | Slow-phone safety net | tested | `tests/slowphone.mjs`: CPU throttled 6x, auto quality on: steps itself down, remembers it, story still walks |
 | Real-phone feel on the A34 | needs Dulor's phone | open `https://khuntau.dulalkisku0.workers.dev/?fps` on the A34 after the next deploy: read the meter in the village and at the akhra (green 45+, yellow 28+, red below); play the drum chart twice and say early/late/fine; try archery and say if the crosshair moves too fast/slow for your drag and if the sway feels fair |
 | Santali story text | plumbing ready, needs a Santali speaker | `design/santali-strings.csv` (183 lines, English + Hindi, empty Santali column); `node tools/santali-import.mjs` puts it in the game; the language button offers Santali once text exists, in Ol Chiki font; `tests/santali.mjs` proves the path with marker text. Never machine-translate it |
