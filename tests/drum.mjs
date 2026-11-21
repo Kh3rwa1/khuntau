@@ -3,9 +3,9 @@
 // Checks: late-but-inside-window taps count (the miss check used to ignore the touch offset), taps outside the
 // window miss, and the drum learns a phone's steady lateness so the next chart judges those taps Perfect.
 import puppeteer from 'puppeteer';
-import { check, finish, realErrors } from './check.mjs';
+import { check, finish, realErrors, SW } from './check.mjs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const browser = await puppeteer.launch({ protocolTimeout: 180000, args: ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, '--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-story', JSON.stringify({ ch: 5, done: 1, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); localStorage.removeItem('khuntau-drumlag'); });

@@ -1,9 +1,9 @@
 // What a player sees when the server says "too many requests" (429): many Indian phones share one carrier IP,
 // so a real player can hit a per-IP limit. Save code and restore must say "try again in a minute", not stay blank.
 import puppeteer from 'puppeteer';
-import { check, finish, realErrors } from './check.mjs';
+import { check, finish, realErrors, SW } from './check.mjs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const browser = await puppeteer.launch({ protocolTimeout: 120000, args: ['--no-sandbox', '--mute-audio'] });
+const browser = await puppeteer.launch({ protocolTimeout: 120000, args: [...SW, '--no-sandbox', '--mute-audio'] });
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 await page.setRequestInterception(true);

@@ -3,10 +3,10 @@
 // Needs: npx wrangler dev --local --port 8787 --ip 127.0.0.1    then: node tests/online-ui.mjs
 import puppeteer from 'puppeteer';
 import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
-import { check, finish, realErrors } from './check.mjs';
+import { check, finish, realErrors, SW } from './check.mjs';
 const BASE = process.argv[2] || 'http://127.0.0.1:8787';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const browser = await puppeteer.launch({ protocolTimeout: 180000, args: ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, '--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
 async function phone(tag, name) {
   const ctx = await browser.createBrowserContext(), page = await ctx.newPage(), logs = [];
   page.on('pageerror', e => logs.push(e.message)); page.on('console', m => { if (m.type() === 'error') logs.push(m.text()); });

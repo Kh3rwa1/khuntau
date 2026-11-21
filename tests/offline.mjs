@@ -5,7 +5,7 @@
 // returning player gets it on the next load, not the stale cached copy. Run: node tests/offline.mjs
 import puppeteer from 'puppeteer';
 import http from 'http'; import fs from 'fs'; import os from 'os'; import path from 'path';
-import { check, finish, realErrors } from './check.mjs';
+import { check, finish, realErrors, SW } from './check.mjs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'khuntau-off-')); fs.cpSync('public', root, { recursive: true });
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.mp3': 'audio/mpeg', '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/json', '.jpg': 'image/jpeg' };
@@ -15,7 +15,7 @@ const up = () => new Promise(res => { server = http.createServer((q, r) => { let
   r.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-cache' }); fs.createReadStream(f).pipe(r); }).listen(8792, '127.0.0.1', res); });
 const down = () => new Promise(res => { server.closeAllConnections(); server.close(res); });
 await up();
-const browser = await puppeteer.launch({ protocolTimeout: 180000, args: ['--no-sandbox', '--mute-audio'] });
+const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, '--no-sandbox', '--mute-audio'] });
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 const URL = 'http://127.0.0.1:8792/?debug&q=low';

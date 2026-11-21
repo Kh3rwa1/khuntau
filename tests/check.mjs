@@ -28,3 +28,5 @@ export async function watchLatin(page) {
   });
 }
 export const latinSeen = (page) => page.evaluate(() => [...window.__latin]);
+// Chrome flags for machines without a GPU (CI): SWGL=1 renders WebGL in software.
+export const SW = process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [];

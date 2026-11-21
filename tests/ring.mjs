@@ -4,10 +4,10 @@
 //   node tests/ring.mjs http://127.0.0.1:8787    (wrangler dev --local; the score must be accepted)
 import puppeteer from 'puppeteer';
 import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
-import { check, finish, realErrors } from './check.mjs';
+import { check, finish, realErrors, SW } from './check.mjs';
 const BASE = process.argv[2] || 'http://127.0.0.1:8791', API = BASE.includes('8787');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const browser = await puppeteer.launch({ protocolTimeout: 180000, args: ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, '--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-played', '1'); localStorage.setItem('khuntau-name', 'Ring Test'); });
