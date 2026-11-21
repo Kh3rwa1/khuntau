@@ -1,0 +1,12 @@
+node_modules/
+.wrangler/
+tests/out/
+promo/trailer/game/
+promo/trailer/clips*/
+promo/trailer/frames/
+promo/**/*.mp4
+promo/**/*.m4a
+.DS_Store
+.dev.vars
+*.key
+*.env

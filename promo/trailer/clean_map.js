@@ -1,0 +1,1 @@
+window.__SAT = {}; for (const k of ['एक दिन','एक बैल','खाल लहराओ!','छीन लो!','पीठा','पूरा गाँव','बचो!','सिर्फ़ एक जीतेगा','हर साल...','हिम्मत किसमें है?','EVERY HARVEST','THE DRUMS BEGIN','SOHRAI','THE PITHA','ONLY THE BRAVE','WAVE THE HIDE','DODGE THE CHARGE','SNATCH THE PITHA','PLAY WITH FRIENDS','BEAT THEIR SCORE']) window.__SAT[k] = '';

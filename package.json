@@ -1,0 +1,16 @@
+{
+  "name": "khuntau",
+  "description": "Khuntau: free 3D browser game about the Sohrai bull-post ritual",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "serve": "node tests/serve.mjs",
+    "test": "node tests/story1.mjs 390 780 p && node tests/story2.mjs && node tests/story3.mjs && node tests/laptop.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.159.0",
+    "puppeteer": "^24.0.0"
+  },
+  "private": true,
+  "type": "module"
+}

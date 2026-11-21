@@ -1,0 +1,17 @@
+window.__SAT = {
+  'EVERY HARVEST': 'ᱡᱟᱣ ᱥᱮᱨᱢᱟ',
+  'THE DRUMS BEGIN': 'ᱛᱩᱢᱫᱟᱜ ᱠᱚ ᱨᱟᱜ ᱮᱫᱟ',
+  'SOHRAI': 'ᱥᱚᱦᱨᱟᱭ',
+  'ONE BULL  ·  ONE KHUNT': 'ᱢᱤᱫᱴᱟᱝ ᱰᱟᱝᱨᱟ  ·  ᱢᱤᱫᱴᱟᱝ ᱠᱷᱩᱱᱴ',
+  'THE PITHA': 'ᱯᱤᱴᱷᱟ',
+  'ONLY THE BRAVE': 'ᱥᱩᱢᱩᱝ ᱵᱤᱨᱟᱹᱫᱟᱹᱞᱤ',
+  'WAVE THE HIDE': 'ᱦᱟᱨᱛᱟ ᱡᱷᱩᱞᱟᱹᱣ ᱢᱮ',
+  'DODGE THE CHARGE': 'ᱰᱟᱝᱨᱟ ᱠᱷᱚᱱ ᱵᱟᱹᱪᱟᱣ ᱢᱮ',
+  'SNATCH THE PITHA': 'ᱯᱤᱴᱷᱟ ᱦᱟᱛᱟᱣ ᱢᱮ',
+  'COMBOS  ·  RANKS  ·  BRAGGING RIGHTS': 'ᱥᱠᱳᱨ  ·  ᱞᱮᱵᱷᱮᱞ  ·  ᱫᱤᱱ ᱦᱤᱥᱟᱹᱵ ᱵᱳᱨᱰ',
+  'PLAY WITH FRIENDS': 'ᱜᱟᱛᱮ ᱠᱚ ᱥᱟᱶ ᱠᱷᱮᱞ ᱢᱮ',
+  'LIVE VOICE CHAT  ·  UP TO 6 PLAYERS': 'ᱨᱚᱲ ᱠᱟᱛᱮ ᱠᱷᱮᱞ  ·  ᱖ ᱦᱚᱲ ᱦᱟᱹᱵᱤᱡ',
+  'BEAT THEIR SCORE': 'ᱩᱱᱠᱩᱣᱟᱜ ᱥᱠᱳᱨ ᱦᱤᱨᱟᱹᱣ ᱢᱮ',
+  'THE SOHRAI BULL GAME': 'ᱥᱚᱦᱨᱟᱭ ᱰᱟᱝᱨᱟ ᱠᱷᱮᱞ',
+  'PLAY FREE  ·  IN YOUR BROWSER': 'ᱵᱤᱱ ᱜᱚᱱᱚᱝ ᱛᱮ ᱠᱷᱮᱞ ᱢᱮ',
+};

@@ -1,0 +1,11 @@
+import fs from 'fs'; import { boot } from './boot.mjs';
+const { browser, page } = await boot(1280, 720);
+await page.addScriptTag({ path: './look.js' });
+console.log(await page.evaluate(() => __look()));
+await page.evaluate(() => { const T = __T; T.game.mode = 'play'; T.camLock = true; T.game.p.invuln = 99; T.game.b.dur = 999; });
+const shot = async (name, fn) => { await page.evaluate(fn); const t0 = Date.now(); let j; for (let i = 0; i < 6; i++) j = await page.evaluate(() => { __step(1000 / 30); __motes(__T.game.t); return __T.renderer.domElement.toDataURL('image/jpeg', 0.92); }); console.log(name, ((Date.now() - t0) / 6) | 0, 'ms/frame'); fs.writeFileSync(`./frames/look-${name}.jpg`, Buffer.from(j.split(',')[1], 'base64')); };
+await shot('drums', () => { const T = __T, d = T.drummers[1].wrap.position; const f = d.clone().normalize(); const side = new T.THREE.Vector3(-f.z, 0, f.x);
+  T.camera.fov = 32; T.camera.updateProjectionMatrix(); const c = d.clone().addScaledVector(f, -3.2).addScaledVector(side, 1.4); c.y = 1.0; T.camera.position.copy(c); T.camera.lookAt(d.x, 1.0, d.z); __dof(c.distanceTo(d), 0.012, 0.012); });
+await shot('bull', () => { const T = __T; T.game.b.pos.set(2.2, 0, -1.4); T.game.p.pos.set(6, 0, 3); T.camera.fov = 30; T.camera.updateProjectionMatrix(); T.camera.position.set(5.2, 0.55, 1.2); T.camera.lookAt(2.2, 1.15, -1.4); __dof(4.0, 0.01, 0.012); });
+await shot('wide', () => { const T = __T; T.camera.fov = 35; T.camera.updateProjectionMatrix(); T.camera.position.set(-16, 7, 22); T.camera.lookAt(0, 1, 0); __dof(26, 0.0, 0.0); });
+console.log(page.logs.join('\n') || 'no errors'); await browser.close();

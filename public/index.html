@@ -1,0 +1,2643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="Sohrai bull game. Snatch the pitha from the khunt without getting horned. Play with friends online.">
+<meta property="og:title" content="Khuntau: the Sohrai bull game">
+<meta property="og:image" content="https://khuntau.dulalkisku0.workers.dev/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:url" content="https://khuntau.dulalkisku0.workers.dev/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:description" content="Snatch the pitha from the post before the bull gets you. Play with friends.">
+<meta name="theme-color" content="#2a140c">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}</style>
+<title>Khuntau</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: one full-screen 3D ring; HUD floats on the corners, touch controls on the bottom edge.
+   Single deliberate look: Sohrai dusk — red earth, rice-paste white, lamp saffron. */
+:root {
+  color-scheme: dark;
+  --earth: #2a140c;
+  --ochre: #b5462a;
+  --paste: #f6eedd;
+  --saffron: #ffb347;
+  --leaf: #4f7a3a;
+  --ink: #140a06;
+  --glass: rgba(20, 10, 6, .62);
+  --font-display: "Rubik Dirt", "Baloo 2", system-ui, sans-serif;
+  --font-ui: "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-olchiki: "Noto Sans Ol Chiki", "Baloo 2", sans-serif;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; overflow: hidden; background: #c9d6df; color: var(--paste); }
+body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+#stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, transparent 60%, rgba(0, 0, 0, .28)); }
+
+/* HUD */
+.hud { position: fixed; z-index: 5; pointer-events: none; display: flex; gap: 10px; align-items: center; }
+.hud-tl { top: calc(10px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); }
+.hud-tr { top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); }
+.chip { background: var(--glass); border: 1px solid rgba(246, 238, 221, .14); border-radius: 14px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.score-num { font-family: var(--font-display); font-size: 30px; line-height: 1; color: var(--saffron); font-variant-numeric: tabular-nums; min-width: 1.2ch; }
+.chip small { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; line-height: 1.1; }
+.lamps { display: flex; gap: 4px; }
+.lamps svg { width: 22px; height: 22px; transition: opacity .3s, filter .3s; }
+.lamps svg.out { opacity: .28; filter: grayscale(1); }
+.icon-btn { pointer-events: auto; background: var(--glass); border: 1px solid rgba(246, 238, 221, .14); color: var(--paste); width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; }
+.icon-btn:focus-visible, .btn:focus-visible, .act:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+
+#toast { position: fixed; z-index: 6; left: 50%; top: calc(18% + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: none; font-family: var(--font-display); font-size: clamp(26px, 6vw, 44px); color: var(--paste); text-shadow: 0 3px 0 var(--ochre), 0 8px 24px rgba(0, 0, 0, .55); white-space: nowrap; opacity: 0; transition: opacity .25s, transform .25s; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+#hint { position: fixed; z-index: 5; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); pointer-events: none; font-size: 15px; background: var(--glass); padding: 6px 14px; border-radius: 999px; opacity: 0; transition: opacity .3s; width: max-content; max-width: min(88vw, 520px); text-align: center; box-sizing: border-box; }
+#hint.show { opacity: 1; }
+
+/* Touch controls */
+#outLobbyBtn { position: fixed; z-index: 6; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); }
+#controls { position: fixed; inset: auto 0 0 0; height: 46%; z-index: 4; display: none; }
+.touch #controls { display: block; }
+#joyzone { position: absolute; left: 0; bottom: 0; width: 58%; height: 100%; }
+#joy { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(246, 238, 221, .35); background: rgba(20, 10, 6, .25); display: none; pointer-events: none; }
+#knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(246, 238, 221, .85); box-shadow: 0 4px 14px rgba(0, 0, 0, .4); }
+.acts { position: absolute; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: auto auto; grid-template-areas: "hide ." "roll grab"; gap: 14px; align-items: end; }
+#hideBtn { grid-area: hide; width: 74px; height: 74px; background: #b8915e; font-size: 14px; box-shadow: 0 6px 0 #7a5d38; }
+#hideBtn.cool { opacity: .45; }
+#rollBtn { grid-area: roll; } #grabBtn { grid-area: grab; }
+.act { border: 0; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-ui); font-weight: 800; letter-spacing: .06em; color: var(--ink); cursor: pointer; touch-action: none; }
+#rollBtn { width: 74px; height: 74px; background: var(--paste); font-size: 14px; box-shadow: 0 6px 0 #bfb39b; }
+#grabBtn { width: 96px; height: 96px; background: #7c6a55; font-size: 17px; box-shadow: 0 6px 0 #4b3e30; transition: background .2s, transform .1s; }
+#grabBtn.ready { background: var(--saffron); box-shadow: 0 6px 0 #b8701f, 0 0 0 6px rgba(255, 179, 71, .25); animation: pulse 1s infinite; }
+.act:active { transform: translateY(3px); }
+@keyframes pulse { 50% { box-shadow: 0 6px 0 #b8701f, 0 0 0 14px rgba(255, 179, 71, 0); } }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: radial-gradient(ellipse at 50% 60%, rgba(20, 22, 26, .2), rgba(14, 14, 16, .78)); }
+.card { width: min(440px, 100%); text-align: center; display: grid; gap: 14px; justify-items: center; margin-block: auto; }
+.overlay { overflow-y: auto; place-items: start center; -webkit-overflow-scrolling: touch; }
+@media (max-height: 600px) { .card .how, .card .lede, .card .olchiki { display: none; } h1 { font-size: 56px; } .card { gap: 10px; } }
+.olchiki { font-family: var(--font-olchiki); font-size: 18px; color: var(--saffron); letter-spacing: .08em; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(64px, 19vw, 112px); line-height: .85; color: var(--paste); text-shadow: 0 4px 0 var(--ochre), 0 14px 40px rgba(0, 0, 0, .6); text-wrap: balance; }
+h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(44px, 13vw, 72px); line-height: .9; color: var(--paste); text-shadow: 0 4px 0 var(--ochre); }
+.lede { margin: 0; font-size: 17px; line-height: 1.4; max-width: 34ch; opacity: .92; text-wrap: balance; }
+.how { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; text-align: left; font-size: 14.5px; background: var(--glass); border-radius: 14px; padding: 12px 16px; width: 100%; box-sizing: border-box; }
+.how b { color: var(--saffron); font-weight: 700; white-space: nowrap; }
+.btn { font-family: var(--font-ui); font-weight: 800; font-size: 19px; letter-spacing: .02em; border: 0; border-radius: 16px; padding: 14px 30px; background: var(--saffron); color: var(--ink); cursor: pointer; box-shadow: 0 5px 0 #b8701f; min-width: 220px; }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b8701f; }
+.btn[disabled] { background: #6d5c4a; box-shadow: 0 5px 0 #3e3329; color: rgba(246, 238, 221, .7); cursor: progress; }
+.btn.ghost { background: transparent; color: var(--paste); box-shadow: inset 0 0 0 2px rgba(246, 238, 221, .4); }
+.bar { width: 220px; height: 6px; border-radius: 6px; background: rgba(246, 238, 221, .15); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--saffron); transition: width .2s; }
+.fine { font-size: 12px; opacity: .6; margin: 0; }
+.big-score { font-family: var(--font-display); font-size: 84px; line-height: 1; color: var(--saffron); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.only-keys { display: contents; } .only-touch { display: none; } .touch .only-touch { display: contents; } .touch .only-keys { display: none; }
+@media (prefers-reduced-motion: reduce) { #grabBtn.ready { animation: none; } #pop.show { animation: none; } }
+#micBtn.on { background: var(--leaf); border-color: transparent; }
+#micBtn.muted { background: var(--ochre); border-color: transparent; }
+/* minimal home */
+.home { gap: 10px; }
+.tag { margin: 0; font-size: 18px; opacity: .9; }
+.challenge { margin: 6px 0 0; background: var(--saffron); color: var(--ink); font-weight: 800; font-size: 16px; padding: 8px 16px; border-radius: 999px; }
+.btn.play { font-size: 24px; padding: 18px 64px; min-width: 240px; margin-top: 14px; }
+.today { width: 100%; max-width: 330px; display: flex; flex-direction: column; gap: 6px; background: rgba(20,10,6,.38); border: 1px solid rgba(246,238,221,.16); border-radius: 14px; padding: 10px 12px; text-align: left; }
+.today-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 800; }
+.today-head b { color: var(--saffron); }
+.xpbar { height: 5px; border-radius: 3px; background: rgba(246,238,221,.16); overflow: hidden; }
+.xpbar i { display: block; height: 100%; width: 0; background: var(--saffron); transition: width .6s; }
+.missions { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.missions li { display: flex; justify-content: space-between; gap: 8px; }
+.missions li span:last-child { font-variant-numeric: tabular-nums; opacity: .75; white-space: nowrap; }
+.missions li.done { color: #9dff9a; } .missions li.done span:first-child::before { content: '✓ '; }
+.boardline { all: unset; cursor: pointer; font-size: 13px; padding: 4px 0 0; border-top: 1px solid rgba(246,238,221,.14); margin-top: 2px; display: flex; justify-content: space-between; gap: 8px; }
+.boardline:focus-visible { outline: 2px solid var(--saffron); outline-offset: 2px; border-radius: 4px; }
+.boardline.remind { border-top: 0; padding-top: 0; }
+.boardline u { color: var(--saffron); text-underline-offset: 3px; white-space: nowrap; }
+.shirts { display: flex; gap: 8px; justify-content: center; padding-top: 2px; }
+.shirts button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(246,238,221,.35); padding: 0; cursor: pointer; position: relative; }
+.shirts button.on { border-color: var(--saffron); box-shadow: 0 0 0 2px var(--saffron); }
+.shirts button.locked { opacity: .35; cursor: default; }
+.shirts button.locked::after { content: attr(data-lvl); position: absolute; inset: 0; display: grid; place-items: center; font: 800 10px var(--font-ui); color: #fff; text-shadow: 0 0 3px #000; }
+.dayrank { margin: 0; font-weight: 800; font-size: 16px; color: var(--saffron); }
+.gains { margin: 0; font-size: 13px; opacity: .9; display: flex; flex-direction: column; gap: 1px; }
+.gains div:first-child { font-weight: 800; color: var(--saffron); }
+.namerow { display: flex; gap: 6px; justify-content: center; }
+.namerow input { width: 150px; }
+.board-list { list-style: none; margin: 0; padding: 0; width: 100%; max-width: 330px; display: flex; flex-direction: column; gap: 2px; font-size: 15px; text-align: left; max-height: 42vh; overflow: auto; }
+.board-list li { display: grid; grid-template-columns: 28px 1fr auto; gap: 6px; padding: 4px 8px; border-radius: 8px; }
+.board-list li.me { background: rgba(255,179,71,.22); font-weight: 800; }
+.board-list li small { opacity: .6; font-weight: 600; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { all: unset; cursor: pointer; padding: 5px 14px; border-radius: 999px; font-weight: 800; font-size: 14px; border: 1px solid rgba(246,238,221,.3); }
+.tabs button.on { background: var(--saffron); color: var(--ink); border-color: transparent; }
+.offline-note { margin: 0; font-size: 13px; font-weight: 800; background: rgba(20,10,6,.5); border: 1px dashed rgba(246,238,221,.35); border-radius: 12px; padding: 8px 12px; max-width: 330px; }
+.roomlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.roomlist li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.roomlist li small { display: block; opacity: .7; font-size: 12px; }
+.roomlist .live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #5fe36a; margin-right: 6px; box-shadow: 0 0 6px #5fe36a; }
+.roomlist button { all: unset; cursor: pointer; background: var(--saffron); color: var(--ink); font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 999px; white-space: nowrap; }
+.roomlist button.wait { background: rgba(246,238,221,.2); color: var(--paste); }
+.roomlist button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+#knockBar { position: fixed; z-index: 30; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: rgba(20,10,6,.92); border: 1px solid var(--saffron); border-radius: 999px; padding: 6px 8px 6px 16px; font-weight: 800; font-size: 14px; max-width: calc(100vw - 24px); zoom: var(--ui, 1); }
+#knockBar[hidden] { display: none; }
+#knockBar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#knockBar .btn { padding: 6px 14px; min-width: 0; font-size: 13px; }
+.bestline { margin: 0; font-size: 14px; opacity: .8; font-variant-numeric: tabular-nums; }
+.linkbtn { background: none; border: 0; color: var(--paste); font: 700 16px var(--font-ui); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; padding: 8px; opacity: .9; }
+.linkbtn.tiny { font-size: 12px; font-weight: 600; opacity: .55; }
+.linkbtn:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; border-radius: 6px; }
+/* score pop + combo */
+#pop { position: fixed; z-index: 6; left: 50%; top: calc(28% + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: none; text-align: center; opacity: 0; }
+#pop b { display: block; font-family: var(--font-display); font-size: clamp(44px, 11vw, 72px); color: var(--saffron); text-shadow: 0 4px 0 var(--ochre), 0 10px 26px rgba(0,0,0,.5); line-height: 1; }
+#pop span { display: block; font-weight: 800; font-size: 18px; color: var(--paste); text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+#pop.show { animation: popup 1s ease-out forwards; }
+@keyframes popup { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.08); } 70% { opacity: 1; transform: translate(-50%, -10px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -26px) scale(1); } }
+.combo .score-num { color: var(--paste); font-size: 22px; }
+.combo { background: var(--ochre); }
+/* results */
+.rank { margin: 0; font-family: var(--font-display); font-size: 26px; color: var(--paste); }
+#overNext { margin: 0; font-size: 15px; opacity: .85; }
+input { -webkit-user-select: text; user-select: text; font-family: var(--font-ui); font-size: 18px; font-weight: 700; color: var(--ink); background: var(--paste); border: 0; border-radius: 14px; padding: 12px 14px; box-sizing: border-box; }
+input:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.online-box { display: grid; gap: 10px; width: 100%; justify-items: center; }
+#nameIn { width: min(300px, 100%); text-align: center; }
+.join-row { align-items: center; }
+#codeIn { width: 120px; text-align: center; letter-spacing: .3em; text-transform: uppercase; }
+.btn.small { min-width: 0; font-size: 15px; padding: 10px 18px; }
+.or { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+.code { font-family: var(--font-display); font-size: clamp(56px, 16vw, 88px); letter-spacing: .12em; color: var(--saffron); line-height: 1; text-shadow: 0 4px 0 var(--ochre); }
+.label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .7; margin: 0; }
+.plist { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 6px; }
+.plist li { display: flex; align-items: center; gap: 10px; background: var(--glass); border-radius: 12px; padding: 8px 12px; font-size: 16px; font-weight: 700; text-align: left; }
+.plist .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+.plist .tag { margin-left: auto; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; font-weight: 600; }
+.plist .pts { margin-left: auto; font-family: var(--font-display); font-size: 24px; color: var(--saffron); font-variant-numeric: tabular-nums; }
+/* one UI scale for every screen: smaller on short landscape phones, larger on tablets and big monitors */
+.card, .hud, .acts, #board { zoom: var(--ui, 1); }
+#board { position: fixed; z-index: 5; right: calc(12px + env(safe-area-inset-right, 0px)); top: calc(60px + env(safe-area-inset-top, 0px)); display: grid; gap: 4px; pointer-events: none; min-width: 130px; }
+#board .r { display: flex; align-items: center; gap: 8px; background: var(--glass); border-radius: 10px; padding: 4px 10px; font-size: 13px; font-weight: 700; }
+#board .r.out { opacity: .45; text-decoration: line-through; }
+#board .r.me { box-shadow: inset 0 0 0 1.5px var(--saffron); }
+#board .r b { margin-left: auto; color: var(--saffron); font-variant-numeric: tabular-nums; }
+#board .dot { width: 10px; height: 10px; border-radius: 50%; }
+#timerChip .score-num { font-size: 22px; }
+/* story mode */
+#actBtn { grid-area: grab; width: 104px; height: 104px; background: var(--saffron); font-size: 15px; line-height: 1.05; padding: 8px; box-sizing: border-box; text-align: center; box-shadow: 0 6px 0 #b8701f; display: none; }
+#actBtn.off { background: #7c6a55; box-shadow: 0 6px 0 #4b3e30; opacity: .45; }
+.story-on #hideBtn, .story-on #rollBtn, .story-on #grabBtn { display: none; }
+.story-on #actBtn { display: grid; }
+/* laptops get the same big button, clickable, with its key on it */
+html.story-on:not(.touch) #controls { display: block; pointer-events: none; height: auto; top: auto; bottom: 0; }
+html.story-on:not(.touch) #joyzone { display: none; }
+html.story-on:not(.touch) .acts { pointer-events: auto; }
+html.story-on:not(.touch) #actBtn { position: relative; cursor: pointer; }
+html.story-on:not(.touch) #actBtn:not(.off)::after { content: "E"; position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 8px; background: var(--paste); color: var(--ink); font: 800 14px/26px var(--font-ui); text-align: center; box-shadow: 0 2px 0 #bfb39b; }
+html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+#actBtn:not(.off) { animation: actpulse 1.4s ease-in-out infinite; }
+@keyframes actpulse { 50% { box-shadow: 0 6px 0 #b8701f, 0 0 0 12px rgba(255, 179, 71, .28); } }
+@media (prefers-reduced-motion: reduce) { #actBtn:not(.off) { animation: none; } }
+#objChip { max-width: min(calc(100vw - 150px), 420px); align-items: center; gap: 10px; padding: 7px 14px 7px 10px; }
+#objChip svg { flex: none; width: 22px; height: 22px; color: var(--saffron); transition: transform .12s linear; }
+#objText { font-weight: 800; font-size: 15px; line-height: 1.15; }
+#objDist { font-size: 12px; opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#prompt { position: fixed; z-index: 5; left: 50%; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); pointer-events: none; font-weight: 800; font-size: 16px; background: var(--glass); border: 1px solid rgba(255, 179, 71, .5); padding: 8px 16px; border-radius: 999px; white-space: nowrap; }
+#prompt kbd { font: inherit; background: var(--saffron); color: var(--ink); border-radius: 6px; padding: 0 7px; margin-right: 8px; }
+.touch #prompt { display: none; }
+#fade { position: fixed; inset: 0; z-index: 9; background: #0d0704; opacity: 0; pointer-events: none; transition: opacity .28s; }
+#fade.on { opacity: 1; }
+#dlg { position: fixed; inset: 0; z-index: 8; display: grid; align-items: end; justify-items: center; padding: 0 max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); cursor: pointer; }
+#dlgBox { width: min(560px, 100%); background: rgba(20, 10, 6, .9); border: 1px solid rgba(255, 179, 71, .45); border-radius: 18px; padding: 12px 16px 12px; box-sizing: border-box; zoom: var(--ui, 1); }
+#dlgWho { font-family: var(--font-display); font-size: 22px; color: var(--saffron); line-height: 1; margin-bottom: 4px; }
+#dlgText { margin: 0; font-size: 17px; line-height: 1.35; min-height: 2.7em; text-wrap: pretty; }
+#dlgNext { text-align: right; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; opacity: .7; margin-top: 2px; }
+#pick { position: fixed; z-index: 7; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: grid; gap: 10px; justify-items: center; width: min(420px, calc(100vw - 24px)); background: rgba(20, 10, 6, .88); border: 1px solid rgba(255, 179, 71, .45); border-radius: 18px; padding: 12px; box-sizing: border-box; zoom: var(--ui, 1); }
+#pick .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+#pick .arrow { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--paste); color: var(--ink); font: 800 24px var(--font-ui); cursor: pointer; box-shadow: 0 4px 0 #bfb39b; }
+#pickName { font-family: var(--font-display); font-size: 26px; color: var(--paste); text-align: center; line-height: 1; }
+#pickSub { font-size: 12px; opacity: .7; text-align: center; letter-spacing: .1em; text-transform: uppercase; }
+#pads { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+.pad { position: absolute; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); width: 124px; height: 124px; border-radius: 50%; border: 0; pointer-events: auto; touch-action: none; cursor: pointer; font: 800 15px var(--font-ui); letter-spacing: .06em; color: var(--ink); display: grid; place-items: center; }
+#padT { left: calc(22px + env(safe-area-inset-left, 0px)); background: radial-gradient(circle at 50% 42%, #f1dfb8 0 46%, #8a5a2e 48% 62%, #5a3b22 64%); box-shadow: 0 7px 0 #3b2716, 0 0 0 5px rgba(255, 179, 71, .3); }
+#padU { right: calc(22px + env(safe-area-inset-right, 0px)); background: radial-gradient(circle at 50% 42%, #f6eedd 0 40%, #b5462a 42% 60%, #7c2c18 62%); box-shadow: 0 7px 0 #53200f, 0 0 0 5px rgba(246, 238, 221, .25); }
+.pad.hit { transform: translateY(5px) scale(.96); filter: brightness(1.25); }
+.pad small { display: block; font-size: 10px; opacity: .65; letter-spacing: .1em; }
+.lane { position: absolute; width: 124px; top: 20%; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+#laneT { left: calc(22px + env(safe-area-inset-left, 0px)); } #laneU { right: calc(22px + env(safe-area-inset-right, 0px)); }
+.lane::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; margin-left: -2px; border-radius: 2px; background: linear-gradient(rgba(246, 238, 221, 0), rgba(246, 238, 221, .3)); }
+.note { position: absolute; left: 50%; top: 0; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; will-change: transform; opacity: 0; box-shadow: 0 3px 10px rgba(0, 0, 0, .45); }
+#laneT .note { background: var(--saffron); border: 4px solid #5a3b22; box-sizing: border-box; }
+#laneU .note { background: var(--paste); border: 4px solid #b5462a; box-sizing: border-box; width: 42px; height: 42px; margin: -21px 0 0 -21px; }
+.note.done { background: #9dff9a !important; }
+.judge { position: absolute; bottom: calc(160px + env(safe-area-inset-bottom, 0px)); width: 124px; text-align: center; font-family: var(--font-display); font-size: 24px; color: var(--paste); text-shadow: 0 3px 0 var(--ochre); opacity: 0; transition: opacity .25s; }
+.judge.show { opacity: 1; transition: none; }
+#judgeT { left: calc(22px + env(safe-area-inset-left, 0px)); } #judgeU { right: calc(22px + env(safe-area-inset-right, 0px)); }
+#padDone { position: absolute; left: 50%; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); pointer-events: auto; }
+#beatCount { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-family: var(--font-display); font-size: clamp(60px, 18vw, 110px); color: var(--paste); text-shadow: 0 5px 0 var(--ochre), 0 10px 30px rgba(0, 0, 0, .5); }
+#tapzone { position: fixed; inset: 0; z-index: 6; touch-action: none; cursor: pointer; }
+#tapHint { position: absolute; left: 50%; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-family: var(--font-display); font-size: clamp(24px, 6.5vw, 40px); color: var(--paste); text-shadow: 0 3px 0 var(--ochre), 0 8px 24px rgba(0, 0, 0, .55); width: max-content; max-width: 92vw; text-align: center; pointer-events: none; }
+#tapScore { position: absolute; left: 50%; top: calc(62px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); font-family: var(--font-display); font-size: 26px; color: var(--saffron); pointer-events: none; }
+#tapScore:empty { display: none; }
+#aim { position: absolute; left: 50%; bottom: calc(136px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(82vw, 440px); height: 30px; border-radius: 15px; background: rgba(20, 10, 6, .72); border: 2px solid rgba(246, 238, 221, .5); pointer-events: none; }
+#aimZone { position: absolute; left: 42.2%; width: 15.6%; top: 0; bottom: 0; background: rgba(157, 255, 154, .6); }
+#aimMark { position: absolute; top: -9px; left: 50%; width: 7px; height: 48px; margin-left: -3.5px; background: var(--saffron); border-radius: 4px; box-shadow: 0 0 0 2px var(--ink); }
+#tapQuit { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: calc(60px + env(safe-area-inset-top, 0px)); min-width: 0; }
+.storyrow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+@media (max-width: 460px) { .hud-tl .chip small, #timerChip small { display: none; } .hud .chip { padding: 5px 9px; } .lamps svg { width: 18px; height: 18px; } }
+</style>
+
+</head>
+<body>
+<div id="stage"></div>
+
+<div class="hud hud-tl" id="hudScore" hidden>
+  <div class="chip"><span class="score-num" id="score">0</span><small>points</small></div>
+  <div class="chip combo" id="comboChip" hidden><span class="score-num">×<span id="combo">2</span></span></div>
+  <div class="chip lamps" id="lamps" aria-label="Lives"></div>
+</div>
+<div class="hud hud-tr">
+  <div class="chip" id="timerChip" hidden><small>time</small><span class="score-num" id="timer">120</span></div>
+  <div class="chip" id="rivalChip" hidden><small id="rivalName">pass</small><span class="score-num" id="rivalPts" style="font-size:22px">0</span></div>
+  <div class="chip" id="bestChip" hidden><small>best</small><span class="score-num" id="best" style="font-size:22px">0</span></div>
+  <button class="icon-btn" id="pauseBtn" aria-label="Pause" title="Pause (Esc)" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg>
+  </button>
+  <button class="icon-btn" id="fsBtn" aria-label="Full screen" title="Full screen" hidden>
+    <svg id="fsIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="micBtn" aria-label="Turn on voice chat" title="Voice chat" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/><path id="micSlash" d="M4 4l16 16" stroke-width="2.6"/></svg>
+  </button>
+  <button class="icon-btn" id="muteBtn" aria-label="Mute sound" title="Sound">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path id="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>
+  </button>
+</div>
+<div class="hud hud-tl" id="hudStory" hidden>
+  <div class="chip" id="objChip"><svg id="objArrow" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l7 18-7-4-7 4z"/></svg><span id="objText"></span><span id="objDist"></span></div>
+</div>
+<div id="prompt" hidden></div>
+<div id="fade"></div>
+<div id="dlg" hidden><div id="dlgBox"><div id="dlgWho"></div><p id="dlgText"></p><div id="dlgNext">Tap to go on</div></div></div>
+<div id="pick" hidden>
+  <div class="prow"><button class="arrow" id="pickPrev" type="button" aria-label="Previous animal">&#8249;</button><div><div id="pickName">Brown bull</div><div id="pickSub">1 of 5</div></div><button class="arrow" id="pickNext" type="button" aria-label="Next animal">&#8250;</button></div>
+  <button class="btn small" id="pickOk" type="button">Tie this one to the khunt</button>
+</div>
+<div id="pads" hidden>
+  <div class="lane" id="laneT"></div><div class="lane" id="laneU"></div>
+  <div class="judge" id="judgeT"></div><div class="judge" id="judgeU"></div>
+  <div id="beatCount"></div>
+  <button class="pad" id="padT" type="button" aria-label="Beat the tamak"><span>TAMAK<small class="only-keys">F</small></span></button>
+  <button class="pad" id="padU" type="button" aria-label="Beat the tumdak"><span>TUMDAK<small class="only-keys">J</small></span></button>
+  <button class="btn small" id="padDone" type="button" hidden>Done</button>
+</div>
+<div id="tapzone" hidden><div id="tapScore" class="chip"></div><div id="aim" hidden><i id="aimZone"></i><b id="aimMark"></b></div><div id="tapHint"></div><button class="btn small ghost" id="tapQuit" type="button">Leave</button></div>
+<div id="toast"></div>
+<div id="pop"><b id="popBig"></b><span id="popSmall"></span></div>
+<div id="hint"></div>
+
+<div id="controls">
+  <div id="joyzone"><div id="joy"><div id="knob"></div></div></div>
+  <div class="acts">
+    <button class="act" id="hideBtn" aria-label="Wave the dried hide at the bull">HIDE</button>
+    <button class="act" id="rollBtn" aria-label="Dodge roll">ROLL</button>
+    <button class="act" id="grabBtn" aria-label="Grab the pitha">GRAB</button>
+    <button class="act off" id="actBtn" aria-label="Do the nearest thing">·</button>
+  </div>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="card home">
+    <div class="olchiki" lang="sat">ᱠᱷᱩᱱᱴᱟᱣ</div>
+    <h1>Khuntau</h1>
+    <p class="tag">Snatch the pitha. Dodge the bull.</p>
+    <p class="challenge" id="challenge" hidden></p>
+    <div class="bar" id="loadBar"><i></i></div>
+    <button class="btn play" id="startBtn" disabled>Loading…</button>
+    <div class="storyrow"><button class="btn ghost small" id="storyBtn" type="button" disabled>Story: Sohrai Day</button></div>
+    <p class="bestline" id="bestLine" hidden></p>
+    <div class="today" id="today">
+      <div class="today-head"><span id="lvlLine">Level 1</span><b id="streakLine"></b></div>
+      <div class="xpbar"><i id="xpFill"></i></div>
+      <ul class="missions" id="missions"></ul>
+      <div class="shirts" id="shirts" aria-label="Shirt colour"></div>
+      <button class="boardline" id="animalBtn" type="button"><span>In the ring: <b id="animalName">Brown bull</b></span><u>Change</u></button>
+      <button class="boardline" id="boardBtn" type="button"><span id="boardLine">Today's board</span><u>See board</u></button>
+      <button class="boardline remind" id="remindBtn" type="button" hidden><span>Get a reminder every evening</span><u>Turn on</u></button>
+    </div>
+    <p class="offline-note" id="offlineNote" hidden>You are offline. Solo play works; the board and friends need internet.</p>
+    <div class="today rooms" id="rooms" hidden>
+      <div class="today-head"><span>Playing now</span><b id="roomsCount"></b></div>
+      <ul class="roomlist" id="roomList"></ul>
+    </div>
+    <button class="linkbtn" id="friendsBtn" type="button">Play with friends</button>
+    <div class="online-box" id="onlineBox" hidden>
+      <input id="nameIn" maxlength="14" placeholder="Your name" autocomplete="nickname" enterkeyhint="done" aria-label="Your name">
+      <button class="btn small" id="createBtn" disabled>Create a room</button>
+      <div class="row join-row"><input id="codeIn" maxlength="4" placeholder="CODE" autocapitalize="characters" autocomplete="off" aria-label="Room code"><button class="btn ghost small" id="joinBtn" disabled>Join room</button></div>
+      <p class="fine" id="netNote">&nbsp;</p>
+    </div>
+    <p class="fine" id="loadErr"></p>
+    <button class="linkbtn tiny" id="keepBtn" type="button">Keep my progress</button>
+    <button class="linkbtn tiny" id="creditsBtn" type="button">Credits</button>
+    <p class="fine" id="credits" hidden>Bull, cow &amp; villagers: Quaternius (CC0). Sound effects via Openverse: Freesound, CC0; bull bellow by confusion_music (CC BY 4.0).</p>
+  </div>
+</div>
+
+<div class="overlay" id="lobbyScreen" hidden>
+  <div class="card">
+    <p class="label">Room code</p>
+    <div class="code" id="roomCode">----</div>
+    <div class="row">
+      <button class="btn" id="shareBtn">Invite on WhatsApp</button>
+      <button class="btn ghost small" id="copyLinkBtn">Copy link</button>
+    </div>
+    <p class="fine" id="shareNote">&nbsp;</p>
+    <button class="btn ghost small" id="voiceBtn" hidden>Turn on voice chat</button>
+    <ul class="plist" id="plist"></ul>
+    <button class="btn ghost small" id="openBtn" type="button" hidden>Join requests: on</button>
+    <button class="btn" id="hostStartBtn" hidden>Start round</button>
+    <p class="lede" id="lobbyNote">Waiting for the host to start the round…</p>
+    <button class="btn ghost small" id="leaveBtn">Leave room</button>
+  </div>
+</div>
+<div id="board" hidden></div>
+<div id="knockBar" hidden><span id="knockText"></span><button class="btn small" id="knockYes" type="button">Accept</button><button class="btn ghost small" id="knockNo" type="button">No</button></div>
+
+<button class="btn small" id="outLobbyBtn" type="button" hidden>Back to lobby</button>
+<div class="overlay" id="keepScreen" hidden>
+  <div class="card">
+    <h2>Keep my progress</h2>
+    <p class="lede" id="keepLine">Your code</p>
+    <div class="code" id="keepCode" style="font-size:clamp(34px,10vw,52px)">······</div>
+    <p class="fine">Write it down. It brings back your level, streak and shirts on a new phone, or if this browser is cleared.</p>
+    <div class="namerow"><input id="restoreIn" maxlength="6" placeholder="CODE" autocapitalize="characters" autocomplete="off" aria-label="Restore code"><button class="btn ghost small" id="restoreBtn" type="button">Restore</button></div>
+    <p class="fine" id="keepNote">&nbsp;</p>
+    <button class="btn" id="keepClose" type="button">Close</button>
+  </div>
+</div>
+<div class="overlay" id="boardScreen" hidden>
+  <div class="card">
+    <h2>Today's top</h2>
+    <div class="tabs"><button id="tabDay" class="on" type="button">Today</button><button id="tabAll" type="button">All time</button></div>
+    <p class="fine" id="boardNote">&nbsp;</p>
+    <ol class="board-list" id="boardList"></ol>
+    <p class="fine" id="ydayLine">&nbsp;</p>
+    <button class="btn" id="boardClose" type="button">Close</button>
+  </div>
+</div>
+<div class="overlay" id="pauseScreen" hidden>
+  <div class="card">
+    <h2>Paused</h2>
+    <p class="fine" id="pauseNote" hidden>Online rounds keep going while this menu is open.</p>
+    <button class="btn" id="resumeBtn">Resume</button>
+    <button class="btn ghost small" id="fsBtn2" hidden>Full screen</button>
+    <button class="btn ghost small" id="langBtn" type="button" hidden>हिन्दी</button>
+    <button class="linkbtn" id="quitBtn" type="button">Quit to menu</button>
+  </div>
+</div>
+
+<div class="overlay" id="overScreen" hidden>
+  <div class="card">
+    <h2 id="overTitle">Horned!</h2>
+    <div class="big-score" id="overScore">0</div>
+    <p class="lede" id="overLine">points</p>
+    <p class="rank" id="overRank" hidden></p>
+    <p id="overNext" hidden></p>
+    <p class="dayrank" id="dayRank" hidden></p>
+    <div class="namerow" id="nameRow" hidden><input id="boardName" maxlength="14" placeholder="Your name" autocomplete="nickname" enterkeyhint="done" aria-label="Name for the board"><button class="btn ghost small" id="boardNameBtn" type="button">Save</button></div>
+    <p class="gains" id="gains" hidden></p>
+    <button class="linkbtn" id="remindBtn2" type="button" hidden>Remind me every evening</button>
+    <ul class="plist" id="resultList" hidden></ul>
+    <div class="row">
+      <button class="btn" id="againBtn">Play again</button>
+      <button class="btn ghost" id="shareScoreBtn">Share score</button>
+      <button class="btn ghost" id="copyBtn" hidden>Back to lobby</button>
+    </div>
+    <button class="linkbtn" id="menuBtn" type="button">Menu</button>
+    <p class="fine" id="copyNote">&nbsp;</p>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "/vendor/three/build/three.module.min.js",
+  "three/addons/": "/vendor/three/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ---------- setup ---------- */
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+if (isTouch) document.documentElement.classList.add('touch');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (id) => document.getElementById(id);
+
+// quality tier: 0 low-end phone, 1 normal phone / tablet, 2 laptop. ?q=low|mid|high forces one.
+const QUALITY = (() => {
+  const f = new URLSearchParams(location.search).get('q'); if (f) return { low: 0, mid: 1, high: 2 }[f] ?? 1;
+  if (!isTouch) return 2;
+  const mem = navigator.deviceMemory || 4, cores = navigator.hardwareConcurrency || 4;
+  let gpu = ''; try { const c = document.createElement('canvas').getContext('webgl'), e = c && c.getExtension('WEBGL_debug_renderer_info'); gpu = e ? String(c.getParameter(e.UNMASKED_RENDERER_WEBGL)) : ''; } catch (e) {}
+  // budget phone graphics chips (most phones under about Rs 12,000), whatever the core count says
+  const weakGpu = /Mali-(4|T\d|G3[1-9]|G5[0-2])|PowerVR|Adreno \(TM\) ([3-5]\d\d|6[01]\d)|SwiftShader|llvmpipe|Vivante|VideoCore/i.test(gpu);
+  return mem <= 3 || cores <= 4 || weakGpu ? 0 : 1;
+})();
+const QFORCED = new URLSearchParams(location.search).has('q');
+// what the game has already learned about this device (how far it had to turn things down last time)
+let savedStage = 0; try { const v = JSON.parse(localStorage.getItem('khuntau-perf') || 'null'); if (v && v.q === QUALITY && !QFORCED) savedStage = v.stage | 0; } catch (e) {}
+// start one step better than last time when it had to go far down, so one bad day (hot phone, busy phone) isn't permanent
+const START_STAGE = Math.max(savedStage >= 4 ? savedStage - 1 : savedStage, QUALITY === 0 ? 3 : 0);
+// cheap mode: simple lighting and no real-time shadows. Chosen before anything is built so every material is made cheap.
+const CHEAP = START_STAGE >= 3;
+const stripPbr = ({ roughness, metalness, envMapIntensity, ...rest }) => rest;
+const Mat = (p = {}) => CHEAP ? new THREE.MeshLambertMaterial(stripPbr(p)) : new THREE.MeshStandardMaterial(p);
+// cap the number of pixels drawn: tablets have huge screens at 2x, which is what made them slow
+const MAX_PIX = [0.6e6, 1.5e6, 3.2e6][QUALITY], PR_CAP = [1, 1.5, 2][QUALITY];
+const perf = { scale: 1, acc: 0, n: 0, t: 0, shadowsCut: false, stage: 0, bad: 0, longs: 0, hold: 2.5, hist: [] };
+const targetPR = () => Math.max(0.5, Math.min(devicePixelRatio, PR_CAP, Math.sqrt(MAX_PIX / (innerWidth * innerHeight))) * perf.scale);
+const renderer = new THREE.WebGLRenderer({ antialias: QUALITY === 2, powerPreference: 'high-performance', stencil: false });
+renderer.setPixelRatio(targetPR());
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.shadowMap.enabled = !CHEAP;
+renderer.shadowMap.type = QUALITY === 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+$('stage').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xc9d6df, 40, 140);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
+camera.position.set(0, 6, 14);
+
+const UPV = new THREE.Vector3(0, 1, 0);
+const ARENA_R = 11.5, ROPE_L = 6.2, GRAB_R = 1.45, POST_H = 2.7;
+const rand = (a, b) => a + Math.random() * (b - a);
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3();
+
+/* ---------- sky & light ---------- */
+const sunDir = new THREE.Vector3(-0.55, 0.52, -0.65).normalize();
+{
+  const g = new THREE.SphereGeometry(220, 32, 16);
+  const m = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { sun: { value: sunDir } },
+    vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `varying vec3 vP; uniform vec3 sun;
+      void main(){
+        float h = clamp(vP.y, -0.2, 1.0);
+        vec3 top = vec3(0.16,0.36,0.70), mid = vec3(0.42,0.62,0.86), hor = vec3(0.80,0.86,0.90);
+        vec3 c = mix(hor, mid, smoothstep(0.0, 0.25, h));
+        c = mix(c, top, smoothstep(0.25, 0.9, h));
+        float s = max(dot(normalize(vP), sun), 0.0);
+        c += vec3(1.0,0.86,0.62) * pow(s, 8.0) * 0.25 + vec3(1.0,0.97,0.9) * pow(s, 900.0) * 3.0;
+        if (h < 0.0) c = mix(vec3(0.55,0.58,0.55), hor, smoothstep(-0.2,0.0,h));
+        gl_FragColor = vec4(c, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`
+  });
+  scene.add(new THREE.Mesh(g, m));
+}
+scene.add(new THREE.HemisphereLight(0xcfe2ff, 0x5c5236, 0.9));
+const sun = new THREE.DirectionalLight(0xfff0d8, 3.0);
+sun.position.copy(sunDir).multiplyScalar(35);
+sun.castShadow = !CHEAP;
+{ const ms = [512, 1024, 2048][QUALITY]; sun.shadow.mapSize.set(ms, ms); }
+Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 70 });
+sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xbcd4ff, 0.3);
+fill.position.set(10, 8, 12);
+scene.add(fill);
+
+/* ---------- procedural textures ---------- */
+function canvasTex(w, h, draw, repeat) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); }
+  return t;
+}
+function speckle(ctx, w, h, n, colors, size) {
+  for (let i = 0; i < n; i++) { ctx.fillStyle = colors[i % colors.length]; ctx.globalAlpha = Math.random() * 0.5; const s = Math.random() * size; ctx.fillRect(Math.random() * w, Math.random() * h, s, s); }
+  ctx.globalAlpha = 1;
+}
+function blotches(ctx, w, h, n, colors, rmin, rmax, alpha) {
+  for (let i = 0; i < n; i++) {
+    const x = Math.random() * w, y = Math.random() * h, r = rand(rmin, rmax);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r); const c = colors[i % colors.length];
+    g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  ctx.globalAlpha = 1;
+}
+const grassTex = canvasTex(512, 512, (ctx, w, h) => {
+  ctx.fillStyle = '#6b7f3e'; ctx.fillRect(0, 0, w, h);
+  blotches(ctx, w, h, 60, ['#566b2f', '#8a9349', '#7c8a44', '#9a8a5a'], 30, 90, 0.5);
+  for (let i = 0; i < 14000; i++) { ctx.strokeStyle = ['#4e6328', '#87974b', '#6f8238', '#a3a160'][i % 4]; ctx.globalAlpha = rand(0.3, 0.8); const x = Math.random() * w, y = Math.random() * h; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + rand(-1.5, 1.5), y - rand(2, 6)); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+}, 40);
+const dirtTex = canvasTex(1024, 1024, (ctx, w, h) => {
+  ctx.fillStyle = '#9a8466'; ctx.fillRect(0, 0, w, h);
+  blotches(ctx, w, h, 90, ['#86704f', '#a8937a', '#7b6a52', '#b09a78'], 40, 140, 0.55);
+  speckle(ctx, w, h, 22000, ['#6f5d45', '#b8a687', '#5e4f3b', '#c9b99a'], 3);
+  // soft edge so the dirt melts into the grass
+  const g = ctx.createRadialGradient(w / 2, h / 2, w * 0.36, w / 2, h / 2, w * 0.5);
+  g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalCompositeOperation = 'destination-in'; ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = 'source-over';
+});
+
+// rice-paste alpana around the post: grab ring, rope-reach ring, hoof motifs
+const alpanaTex = canvasTex(1024, 1024, (ctx, w) => {
+  const c = w / 2, px = w / 18; // 18 m across
+  ctx.translate(c, c);
+  ctx.strokeStyle = '#f6eedd'; ctx.fillStyle = '#f6eedd'; ctx.lineCap = 'round';
+  const ring = (r, lw, dash) => { ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath(); ctx.arc(0, 0, r * px, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); };
+  ctx.fillStyle = 'rgba(176,52,36,.45)'; ctx.beginPath(); ctx.arc(0, 0, 0.6 * px, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f6eedd';
+  ring(GRAB_R, 7, [2, 16]);
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; ctx.beginPath(); ctx.arc(Math.cos(a) * GRAB_R * px, Math.sin(a) * GRAB_R * px, 6, 0, 7); ctx.fill(); }
+  ring(3.2, 3);
+  for (let i = 0; i < 24; i++) { // petals
+    const a = i / 24 * Math.PI * 2; ctx.save(); ctx.rotate(a); ctx.beginPath();
+    ctx.ellipse(3.75 * px, 0, 0.42 * px, 0.14 * px, 0, 0, Math.PI * 2); ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+  }
+  ring(ROPE_L - 0.05, 9); ring(ROPE_L + 0.25, 3, [10, 12]);
+  for (let i = 0; i < 20; i++) { // cattle hoof prints on the reach ring
+    const a = i / 20 * Math.PI * 2 + 0.08; ctx.save(); ctx.rotate(a); ctx.translate((ROPE_L + 0.75) * px, 0); ctx.rotate(Math.PI / 2);
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(s * 7, 0, 5.5, 10, s * 0.18, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
+  ring(8.4, 4, [3, 14]);
+});
+alpanaTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+const wallTex = canvasTex(256, 128, (ctx, w, h) => {
+  ctx.fillStyle = '#ddd3bf'; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#9a5a3f'; ctx.fillRect(0, h * 0.38, w, h * 0.2);
+  ctx.fillStyle = '#2b2925'; ctx.fillRect(0, h * 0.58, w, h * 0.42);
+  ctx.fillStyle = '#ddd3bf'; ctx.fillRect(0, h * 0.56, w, 3);
+  ctx.fillStyle = '#2b2925';
+  for (let x = 0; x < w; x += 16) { ctx.beginPath(); ctx.moveTo(x, h * 0.36); ctx.lineTo(x + 8, h * 0.24); ctx.lineTo(x + 16, h * 0.36); ctx.fill(); }
+  ctx.fillStyle = '#ddd3bf';
+  for (let x = 8; x < w; x += 32) { ctx.beginPath(); ctx.arc(x, h * 0.48, 4, 0, 7); ctx.fill(); }
+  speckle(ctx, w, h, 1600, ['#000', '#fff', '#7a6a55'], 2);
+});
+const thatchTex = canvasTex(128, 128, (ctx, w, h) => {
+  ctx.fillStyle = '#9a8656'; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) { ctx.strokeStyle = ['#6e6040', '#c2b07c', '#857549', '#5a5038'][i % 4]; ctx.globalAlpha = 0.6; ctx.beginPath(); const x = Math.random() * w, y = Math.random() * h; ctx.moveTo(x, y); ctx.lineTo(x + rand(-2, 2), y + rand(8, 20)); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+}, 3);
+const glowTex = canvasTex(64, 64, (ctx, w) => {
+  const g = ctx.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.3, 'rgba(255,210,140,.8)'); g.addColorStop(1, 'rgba(255,140,40,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, w);
+});
+const dustTex = canvasTex(64, 64, (ctx, w) => {
+  const g = ctx.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  g.addColorStop(0, 'rgba(176,154,120,.85)'); g.addColorStop(1, 'rgba(176,154,120,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, w);
+});
+const arrowTex = canvasTex(64, 256, (ctx, w, h) => {
+  const g = ctx.createLinearGradient(0, h, 0, 0); g.addColorStop(0, 'rgba(255,70,40,0)'); g.addColorStop(0.25, 'rgba(255,70,40,.9)'); g.addColorStop(1, 'rgba(255,170,60,.9)');
+  ctx.fillStyle = g;
+  for (let y = 24; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(6, y + 18); ctx.lineTo(w / 2, y); ctx.lineTo(w - 6, y + 18); ctx.lineTo(w - 6, y + 30); ctx.lineTo(w / 2, y + 12); ctx.lineTo(6, y + 30); ctx.fill(); }
+});
+
+/* ---------- village ---------- */
+const ground = new THREE.Mesh(new THREE.CircleGeometry(200, 48), Mat({ map: grassTex, roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const dirt = new THREE.Mesh(new THREE.CircleGeometry(19, 64), Mat({ map: dirtTex, transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
+dirt.rotation.x = -Math.PI / 2; dirt.position.y = 0.005; dirt.receiveShadow = true; scene.add(dirt);
+const alpana = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), Mat({ map: alpanaTex, transparent: true, roughness: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
+alpana.material.opacity = 0.88; alpana.material.polygonOffsetFactor = -2;
+alpana.rotation.x = -Math.PI / 2; alpana.position.y = 0.012; alpana.receiveShadow = true; scene.add(alpana);
+
+// khunṭ (the post) with paddy wrap and vermilion band
+const post = new THREE.Group(); scene.add(post);
+{
+  const wood = Mat({ color: 0x6a5541, roughness: 0.9 });
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.21, POST_H, 12), wood);
+  p.position.y = POST_H / 2; p.castShadow = true; p.receiveShadow = true; post.add(p);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.215, 0.18, 12), Mat({ color: 0xc0281e, roughness: 0.5 }));
+  band.position.y = 0.55; post.add(band);
+  const paddy = Mat({ color: 0xe0b552, roughness: 0.7 });
+  for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.045, 6, 14), paddy); t.rotation.x = Math.PI / 2; t.position.y = 1.35 + i * 0.12; post.add(t); }
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), wood); cap.position.y = POST_H; post.add(cap);
+}
+// pitha bundle tied near the top
+const pitha = new THREE.Group(); post.add(pitha);
+{
+  const leaf = Mat({ color: 0x4f7a3a, roughness: 0.6, side: THREE.DoubleSide });
+  const cake = Mat({ color: 0xc98a3d, roughness: 0.55, emissive: 0x3a1c00, emissiveIntensity: 0.3 });
+  for (let i = 0; i < 3; i++) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.2 - i * 0.02, 0.2 - i * 0.02, 0.07, 14), cake); d.position.y = i * 0.075; d.castShadow = true; pitha.add(d); pitha.userData.disc = d; }
+  const l = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 8, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45), leaf); l.position.y = 0.2; pitha.add(l);
+  const str = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.35), new THREE.MeshBasicMaterial({ color: 0xf2e6c8 })); str.position.set(0, 0.3, -0.24); str.rotation.x = 0.7; pitha.add(str);
+  pitha.position.set(0, 2.15, 0.32);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffc66b, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  halo.scale.setScalar(1.3); halo.position.y = 0.08; pitha.add(halo); pitha.userData.halo = halo;
+}
+
+// Scenery that never moves is fused into a few big pieces: 24 trees were 168 separate draws, now 4.
+function bakeStatic(meshes, material) {
+  if (!meshes.length) return null;
+  const geos = meshes.map(m => { m.updateWorldMatrix(true, false); return m.geometry.clone().applyMatrix4(m.matrixWorld); });
+  const merged = mergeGeometries(geos, false); if (!merged) return null;
+  const out = new THREE.Mesh(merged, material || meshes[0].material); out.castShadow = meshes[0].castShadow; out.receiveShadow = meshes[0].receiveShadow;
+  for (const m of meshes) { m.removeFromParent(); m.geometry.dispose(); } geos.forEach(g => g.dispose()); scene.add(out); return out;
+}
+const houseDoors = [], houseRoofs = [], houses = [];
+const doorMat = Mat({ color: 0x24160e });
+// mud houses with banded Santal walls and thatch
+function house(x, z, rot, w = 5, d = 4) {
+  const g = new THREE.Group();
+  const wt = wallTex.clone(); wt.needsUpdate = true; wt.wrapS = THREE.RepeatWrapping; wt.repeat.set(w / 2.5, 1);
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(w, 2.6, d), Mat({ map: wt, roughness: 0.95 }));
+  walls.position.y = 1.3; walls.castShadow = walls.receiveShadow = true; g.add(walls);
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.7), doorMat); houseDoors.push(door);
+  door.position.set(0, 0.85, d / 2 + 0.01); g.add(door);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1, 2.1, 4, 1, true), Mat({ map: thatchTex, roughness: 1, side: THREE.DoubleSide }));
+  roof.rotation.y = Math.PI / 4; roof.scale.set(w * 0.82, 1, d * 0.82); roof.position.y = 2.6 + 1.05; roof.castShadow = true; g.add(roof); houseRoofs.push(roof);
+  g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); houses.push({ x, z, rot, w, d });
+}
+for (let i = 0; i < 9; i++) {
+  const a = i / 9 * Math.PI * 2 + 0.35, r = rand(23, 28);
+  house(Math.cos(a) * r, Math.sin(a) * r, -a - Math.PI / 2 + rand(-0.2, 0.2), rand(4.5, 6.5), rand(3.6, 4.6));
+}
+bakeStatic(houseDoors); bakeStatic(houseRoofs);
+// trees
+{
+  const trunkM = Mat({ color: 0x4a3f33, roughness: 1 });
+  const leafMs = [0x3e6b2c, 0x4f7d35, 0x355a26].map(c => Mat({ color: c, roughness: 0.85, flatShading: true }));
+  const trunks = [], leaves = [[], [], []];
+  for (let i = 0; i < 24; i++) {
+    const a = rand(0, Math.PI * 2), r = rand(31, 55), g = new THREE.Group();
+    const h = rand(3, 5);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.3, h, 6), trunkM); t.position.y = h / 2; t.castShadow = QUALITY === 2; g.add(t); trunks.push(t);
+    for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(1.3, 2.2), 1), leafMs[k % 3]); f.position.set(rand(-1, 1), h + rand(0, 1.6), rand(-1, 1)); f.castShadow = QUALITY === 2; g.add(f); leaves[k % 3].push(f); }
+    g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g);
+  }
+  bakeStatic(trunks); leaves.forEach(l => bakeStatic(l));
+}
+// diyas ring
+const flames = [];
+{
+  const cupG = new THREE.CylinderGeometry(0.11, 0.07, 0.07, 10);
+  const cupM = Mat({ color: 0x9c4a26, roughness: 0.9 });
+  const n = 30, cups = new THREE.InstancedMesh(cupG, cupM, n);
+  const m4 = new THREE.Matrix4();
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2, r = ARENA_R + 0.7;
+    m4.makeTranslation(Math.cos(a) * r, 0.035, Math.sin(a) * r); cups.setMatrixAt(i, m4);
+    const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffb04a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    f.position.set(Math.cos(a) * r, 0.15, Math.sin(a) * r); f.scale.setScalar(0.26); f.userData.p = rand(0, 10); scene.add(f); flames.push(f);
+  }
+  scene.add(cups);
+}
+
+// grass tufts around the ring
+{
+  const tuftTex = canvasTex(64, 64, (ctx, w, h) => {
+    for (let i = 0; i < 22; i++) { ctx.strokeStyle = ['#5d7a31', '#7d9142', '#4b6527', '#9aa25a'][i % 4]; ctx.lineWidth = 2; ctx.beginPath(); const x = rand(10, 54); ctx.moveTo(x, h); ctx.quadraticCurveTo(x + rand(-6, 6), h * 0.5, x + rand(-12, 12), rand(4, 26)); ctx.stroke(); }
+  });
+  const m = Mat({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1 });
+  const g1 = new THREE.PlaneGeometry(0.7, 0.45); g1.translate(0, 0.22, 0);
+  const g2 = g1.clone().rotateY(Math.PI / 2);
+  const n = [110, 260, 520][QUALITY], m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
+  for (const g of [g1, g2]) {
+    const im = new THREE.InstancedMesh(g, m, n);
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2), r = Math.sqrt(rand(0, 1)) * 30 + 16;
+      ps.set(Math.cos(a) * r, 0, Math.sin(a) * r); q.setFromAxisAngle(UPV, rand(0, 6.28)); sc.setScalar(rand(0.7, 1.5));
+      im.setMatrixAt(i, m4.compose(ps, q, sc));
+    }
+    scene.add(im);
+  }
+}
+// distant hills, softened by the fog
+{
+  const hm = Mat({ color: 0x5d7346, roughness: 1, flatShading: true });
+  const hills = [];
+  for (let i = 0; i < 14; i++) {
+    const a = i / 14 * Math.PI * 2 + rand(-0.1, 0.1), r = rand(105, 135);
+    const h = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), hm);
+    h.scale.set(rand(22, 40), rand(7, 14), rand(14, 24));
+    h.position.set(Math.cos(a) * r, -0.5, Math.sin(a) * r); h.rotation.y = -a + rand(-0.3, 0.3); scene.add(h); hills.push(h);
+  }
+  bakeStatic(hills);
+}
+// image-based lighting from the sky so materials pick up natural reflections
+{
+  const pm = new THREE.PMREMGenerator(renderer);
+  const skyOnly = new THREE.Scene(); skyOnly.add(scene.children.find(o => o.material && o.material.isShaderMaterial).clone());
+  skyOnly.add(new THREE.Mesh(new THREE.CircleGeometry(200, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x6b6a4a })));
+  scene.environment = pm.fromScene(skyOnly, 0.04).texture;
+  scene.environmentIntensity = 0.55;
+  if (CHEAP) scene.environment = null;
+  pm.dispose();
+}
+
+/* ---------- particles ---------- */
+const particles = [];
+function makePool(tex, n, blending) {
+  const pool = [];
+  for (let i = 0; i < n; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending }));
+    s.visible = false; scene.add(s); pool.push(s);
+  }
+  return pool;
+}
+const dustPool = makePool(dustTex, 46, THREE.NormalBlending);
+const sparkPool = makePool(glowTex, 30, THREE.AdditiveBlending);
+function emit(pool, pos, opts) {
+  const s = pool.find(p => !p.visible); if (!s) return;
+  s.visible = true; s.position.copy(pos);
+  s.userData = { life: 0, max: opts.life, vel: opts.vel.clone(), grow: opts.grow, size: opts.size, grav: opts.grav || 0 };
+  s.material.color.set(opts.color || 0xffffff); s.material.opacity = 1; s.scale.setScalar(opts.size);
+  particles.push(s);
+}
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const s = particles[i], u = s.userData; u.life += dt;
+    if (u.life >= u.max) { s.visible = false; particles.splice(i, 1); continue; }
+    u.vel.y -= u.grav * dt; s.position.addScaledVector(u.vel, dt);
+    const k = u.life / u.max; s.material.opacity = 1 - k; s.scale.setScalar(u.size + u.grow * k);
+  }
+}
+
+// charge telegraph arrow on the ground
+const arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1), new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }));
+arrow.geometry.translate(0, 0.5, 0); arrow.geometry.rotateX(-Math.PI / 2);
+arrow.position.y = 0.03; scene.add(arrow);
+
+// rope
+const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 6), Mat({ color: 0xc9b07a, roughness: 1 }));
+rope.geometry.translate(0, 0.5, 0); rope.geometry.rotateX(Math.PI / 2); rope.castShadow = true; scene.add(rope);
+const ropeAnchor = new THREE.Vector3(0, 0.75, 0);
+
+/* ---------- audio: dhamsa + madal, all synthesized ---------- */
+const audio = { ctx: null, master: null, muted: false, intensity: 0, next: 0, step: 0, noise: null };
+function initAudio() {
+  if (audio.ctx) { audio.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  const ctx = new AC(); audio.ctx = ctx;
+  audio.master = ctx.createGain(); audio.master.gain.value = audio.muted ? 0 : 0.8;
+  const comp = ctx.createDynamicsCompressor(); audio.master.connect(comp); comp.connect(ctx.destination);
+  audio.sfxBus = ctx.createGain(); audio.sfxBus.connect(audio.master);
+  audio.drumBus = ctx.createGain(); audio.drumBus.connect(audio.master);
+  for (const el of [music.intro, music.game]) { // music through the graph so volume works on iPhone too
+    const g = ctx.createGain(); g.gain.value = 0; ctx.createMediaElementSource(el).connect(g); g.connect(audio.master); el._g = g;
+  }
+  loadSamples();
+  const len = ctx.sampleRate; const b = ctx.createBuffer(1, len, ctx.sampleRate); const d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  audio.noise = b; audio.next = ctx.currentTime + 0.1;
+}
+function tone(t, type, f0, f1, dur, vol, out = audio.master) {
+  const c = audio.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(t, dur, vol, ftype, freq, q = 1, out = audio.master) {
+  const c = audio.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  s.buffer = audio.noise; f.type = ftype; f.frequency.value = freq; f.Q.value = q;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+}
+/* recorded music (yours) and sound effects (Openverse / Freesound) */
+const music = { intro: new Audio('audio/intro.mp3'), game: new Audio('audio/gameplay.mp3'), cur: null };
+for (const el of [music.intro, music.game]) { el.loop = true; el.preload = 'auto'; el.playsInline = true; }
+const MUSIC_VOL = { intro: 0.8, game: 0.5 };
+// while the mic is live, music is off so friends hear each other (and the mic doesn't pick the music up); sound effects stay
+const voiceLive = () => { try { return voice.on && !voice.muted; } catch (e) { return false; } };
+const musicVol = k => voiceLive() ? 0 : MUSIC_VOL[k];
+function refreshMusicVol() {
+  if (!audio.ctx || !music.cur) return;
+  const el = music.cur === 'intro' ? music.intro : music.game; if (!el._g) return;
+  const t = audio.ctx.currentTime; el._g.gain.cancelScheduledValues(t); el._g.gain.setTargetAtTime(musicVol(music.cur), t, 0.25);
+}
+function setMusic(which) {
+  if (!audio.ctx || music.cur === which) return;
+  const t = audio.ctx.currentTime; music.cur = which;
+  for (const k of ['intro', 'game']) {
+    const el = k === 'intro' ? music.intro : music.game; if (!el._g) continue;
+    el._g.gain.cancelScheduledValues(t);
+    if (k === which) {
+      if (k === 'game') el.currentTime = 0;
+      el.play().catch(() => {}); el._g.gain.setTargetAtTime(musicVol(k), t, 0.35);
+    } else {
+      el._g.gain.setTargetAtTime(0, t, 0.3);
+      setTimeout(() => { if (music.cur !== k) el.pause(); }, 1600);
+    }
+  }
+}
+const SFX_FILES = ['snort', 'bellow', 'gallop', 'hit', 'punch', 'whoosh', 'bonk', 'snap', 'bells', 'cheer1', 'cheer2', 'highfive', 'clap'];
+audio.buf = {};
+function loadSamples() {
+  for (const n of SFX_FILES) fetch('audio/' + n + '.mp3').then(r => r.arrayBuffer()).then(b => audio.ctx.decodeAudioData(b)).then(d => { audio.buf[n] = d; }).catch(() => {});
+}
+function play(name, { vol = 1, rate = 1, when = 0 } = {}) {
+  const b = audio.buf[name]; if (!b || !audio.ctx || audio.muted) return !!b;
+  const s = audio.ctx.createBufferSource(); s.buffer = b; s.playbackRate.value = rate;
+  const g = audio.ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(audio.sfxBus);
+  s.start(audio.ctx.currentTime + when); return true;
+}
+let gallopSrc = null;
+function gallop(on) {
+  if (!audio.ctx) return;
+  if (on && !gallopSrc && audio.buf.gallop && !audio.muted) {
+    const s = audio.ctx.createBufferSource(); s.buffer = audio.buf.gallop; s.loop = true; s.playbackRate.value = 1.15;
+    const g = audio.ctx.createGain(); g.gain.value = 0.6; s.connect(g); g.connect(audio.sfxBus); s.start(); gallopSrc = { s, g };
+  } else if (!on && gallopSrc) {
+    const { s, g } = gallopSrc, t = audio.ctx.currentTime; g.gain.setTargetAtTime(0, t, 0.05); s.stop(t + 0.3); gallopSrc = null;
+  }
+}
+function firstGesture() {
+  initAudio(); if (!audio.ctx) return;
+  // unlock both tracks inside a real tap (iPhone), then start the intro on menus
+  if (music.cur !== 'game') music.game.play().then(() => { if (music.cur !== 'game') music.game.pause(); }).catch(() => {});
+  if (['menu', 'lobby', 'over'].includes(game.mode)) setMusic('intro');
+}
+addEventListener('pointerdown', firstGesture, { once: true });
+addEventListener('keydown', firstGesture, { once: true });
+
+const sfx = {
+  dhamsa: (t) => { tone(t, 'sine', 95, 42, 0.5, 0.9, audio.drumBus); noise(t, 0.08, 0.25, 'lowpass', 400, 1, audio.drumBus); },
+  madalHi: (t) => { tone(t, 'triangle', 340, 250, 0.12, 0.28, audio.drumBus); noise(t, 0.05, 0.15, 'bandpass', 2400, 3, audio.drumBus); },
+  madalLo: (t) => { tone(t, 'sine', 170, 105, 0.3, 0.45, audio.drumBus); },
+  // referee-style pea whistle: a bright tone with the fast trill of the pea, plus breath
+  whistle: (blasts = 1, vol = 0.32) => {
+    if (!audio.ctx || audio.muted) return; const c = audio.ctx;
+    for (let i = 0; i < blasts; i++) {
+      const t = c.currentTime + i * 0.24, len = i === blasts - 1 ? 0.42 : 0.16;
+      const o = c.createOscillator(), lfo = c.createOscillator(), dep = c.createGain(), g = c.createGain(), bp = c.createBiquadFilter();
+      o.type = 'triangle'; o.frequency.value = 2750; lfo.frequency.value = 34; dep.gain.value = 150;
+      lfo.connect(dep); dep.connect(o.frequency); bp.type = 'bandpass'; bp.frequency.value = 2900; bp.Q.value = 2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.setValueAtTime(vol, t + len - 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(bp); bp.connect(g); g.connect(audio.sfxBus); o.start(t); lfo.start(t); o.stop(t + len + 0.02); lfo.stop(t + len + 0.02);
+      noise(t, len, vol * 0.25, 'bandpass', 3200, 1.2, audio.sfxBus);
+    }
+  },
+  snort: () => { if (!audio.ctx) return; const t = audio.ctx.currentTime; noise(t, 0.28, 0.5, 'bandpass', 520, 1.5); noise(t + 0.3, 0.35, 0.45, 'bandpass', 420, 1.5); },
+  hoof: () => { if (!audio.ctx) return; const t = audio.ctx.currentTime; tone(t, 'sine', 120, 60, 0.12, 0.35); noise(t, 0.04, 0.2, 'lowpass', 800); },
+  hit: () => { if (!audio.ctx) return; const t = audio.ctx.currentTime; tone(t, 'sine', 140, 40, 0.4, 1); noise(t, 0.25, 0.7, 'lowpass', 900); },
+  snap: () => { if (!audio.ctx) return; const t = audio.ctx.currentTime; noise(t, 0.09, 0.6, 'highpass', 2000); tone(t, 'square', 90, 50, 0.12, 0.2); },
+  whoosh: () => { if (!audio.ctx) return; const t = audio.ctx.currentTime; noise(t, 0.3, 0.35, 'bandpass', 1200, 0.8); },
+  grab: () => {
+    if (!audio.ctx) return; const t = audio.ctx.currentTime;
+    [1320, 1980, 2640].forEach((f, i) => tone(t + i * 0.07, 'sine', f, f * 0.99, 0.9, 0.22));
+    for (let i = 0; i < 6; i++) noise(t + 0.05 + i * 0.09, 0.4, 0.22, 'bandpass', rand(700, 1500), 0.6); // crowd hoy
+  },
+};
+const synthSfx = { ...sfx };
+const voiceOnNow = () => { try { return voice.on; } catch (e) { return false; } };
+function crowdCheer(vol = 0.9, rate = 1, when = 0, quiet = 'whistle') {
+  if (voiceOnNow()) { if (quiet === 'whistle') synthSfx.whistle(vol > 0.6 ? 2 : 1, 0.28); else if (quiet === 'clap') play('clap', { vol: 0.5, when }); return; }
+  play(Math.random() < 0.5 ? 'cheer1' : 'cheer2', { vol, rate, when });
+}
+Object.assign(sfx, {
+  snort() { if (!play('snort', { rate: 0.78, vol: 0.9 })) return synthSfx.snort(); play('snort', { rate: 0.66, vol: 0.7, when: 0.3 }); },
+  hoof() { if (!audio.buf.gallop) synthSfx.hoof(); },
+  hit() { if (!play('punch', { vol: 1 })) return synthSfx.hit(); play('hit', { vol: 0.9, when: 0.02 }); },
+  snap() { if (!play('snap', { vol: 0.8 })) synthSfx.snap(); },
+  bonk() { if (!play('bonk', { vol: 1, rate: 0.8 })) synthSfx.snap(); },
+  whoosh() { if (!play('whoosh', { vol: 0.7, rate: 1.1 })) synthSfx.whoosh(); },
+  grab() { if (!play('bells', { vol: 0.9 })) return synthSfx.grab(); crowdCheer(0.85, 1, 0.05); },
+  bellow() { play('bellow', { vol: 0.8 }); },
+  cheer() { crowdCheer(0.9); },
+  highfive() { if (!play('highfive', { vol: 1 })) play('clap', { vol: 1 }); },
+  tease() { if (!play('whoosh', { vol: 0.8, rate: 0.7 })) synthSfx.whoosh(); play('whoosh', { vol: 0.6, rate: 0.85, when: 0.18 }); crowdCheer(0.35, 1.1, 0.1, 'none'); },
+});
+function runDrums() {
+  if (!audio.ctx || audio.muted) return;
+  const c = audio.ctx, bpm = lerp(96, 168, audio.intensity), stepDur = 60 / bpm / 2;
+  while (audio.next < c.currentTime + 0.12) {
+    const s = audio.step % 8, t = audio.next;
+    if (s === 0 || s === 5 || (audio.intensity > 0.6 && s === 3)) sfx.dhamsa(t);
+    if (s === 2 || s === 6 || s === 7 || (audio.intensity > 0.3 && s % 2 === 1)) sfx.madalHi(t);
+    if (s === 4) sfx.madalLo(t);
+    audio.step++; audio.next += stepDur;
+  }
+}
+$('muteBtn').addEventListener('click', () => {
+  audio.muted = !audio.muted;
+  if (audio.master) audio.master.gain.value = audio.muted ? 0 : 0.8;
+  $('waves').style.opacity = audio.muted ? 0 : 1;
+  $('muteBtn').setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound');
+  if (audio.ctx) audio.next = audio.ctx.currentTime + 0.05;
+});
+
+/* ---------- characters ---------- */
+const loader = new GLTFLoader();
+const files = { bull: 'models/bull.json', man: 'models/casual_male.json', woman: 'models/casual_female.json', worker: 'models/worker_female.json' };
+const loaded = {}; let loadedCount = 0;
+
+// Each character arrives as 6 or 7 separate pieces (skin, shirt, hair…), each drawn and animated on its own.
+// Fuse them into one piece coloured per vertex: about 6x fewer draws per character, the biggest saving on weak phones.
+let charMat = Mat({ vertexColors: true, roughness: 0.8 });
+function mergeChar(gltf) {
+  const groups = new Map();
+  gltf.scene.traverse(o => { if (o.isSkinnedMesh) { const a = groups.get(o.skeleton) || []; a.push(o); groups.set(o.skeleton, a); } });
+  for (const meshes of groups.values()) {
+    const geos = [], parts = []; let v = 0;
+    for (const m of meshes) {
+      const g = m.geometry, n = g.attributes.position.count; parts.push({ name: m.material.name, start: v, count: n, color: m.material.color.clone() }); v += n;
+      const c = new THREE.BufferGeometry(); for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) c.setAttribute(k, g.attributes[k]); c.setIndex(g.index); geos.push(c);
+    }
+    const merged = mergeGeometries(geos, false); if (!merged) continue;
+    const col = new Float32Array(v * 3); for (const p of parts) for (let i = p.start; i < p.start + p.count; i++) { col[i * 3] = p.color.r; col[i * 3 + 1] = p.color.g; col[i * 3 + 2] = p.color.b; }
+    merged.setAttribute('color', new THREE.BufferAttribute(col, 3)); merged.userData.parts = parts;
+    meshes[0].geometry = merged; meshes[0].material = charMat;
+    for (const m of meshes.slice(1)) m.parent.remove(m);
+  }
+}
+// soft dark disc under a character, used when real-time shadows are off
+const blobs = [];
+const blobMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+{ const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 4, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); blobMat.alphaMap = new THREE.CanvasTexture(c); }
+const blobGeo = new THREE.PlaneGeometry(1, 1);
+function setShadows(on) { on = on && !CHEAP; sun.castShadow = on; for (const b of blobs) b.visible = !on; }
+function actor(gltf, height, clone) {
+  const root = clone ? SkeletonUtils.clone(gltf.scene) : gltf.scene;
+  if (clone) { const extra = []; root.traverse(o => { if (o.name === 'hideHolder') extra.push(o); }); extra.forEach(o => o.parent.remove(o)); } // props belong to their owner, not every copy
+  // measure each model once, in its rest pose at load. Measuring later picks up whatever pose the
+  // local player is in (rolling, knocked down), which made late joiners come out the wrong size.
+  if (!gltf.userData.fit) {
+    gltf.scene.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(gltf.scene, true);
+    gltf.userData.fit = { h: box.max.y - box.min.y, minY: box.min.y, scale: gltf.scene.scale.clone(), y: gltf.scene.position.y };
+  }
+  const fit = gltf.userData.fit, s = height / fit.h;
+  const wrap = new THREE.Group(); wrap.add(root);
+  root.scale.copy(fit.scale).multiplyScalar(s); root.position.set(0, fit.y - fit.minY * s, 0); root.rotation.set(0, 0, 0);
+  const mixer = new THREE.AnimationMixer(root);
+  const actions = {};
+  for (const clip of gltf.animations) actions[clip.name] = mixer.clipAction(clip);
+  const a = { wrap, root, mixer, actions, current: null, mats: {} };
+  root.traverse(o => {
+    if (!o.isMesh) return; o.frustumCulled = false;
+    const parts = o.geometry.userData.parts;
+    if (!parts) { if (clone) o.material = o.material.clone(); a.mats[o.material.name] = o.material; return; }
+    // share the heavy data, keep a private copy of the colours so each person can wear their own
+    const src = o.geometry, g = new THREE.BufferGeometry();
+    for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) g.setAttribute(k, src.attributes[k]);
+    g.setIndex(src.index); g.setAttribute('color', new THREE.BufferAttribute(src.attributes.color.array.slice(), 3));
+    o.geometry = g; o.material = charMat; a.body = o;
+    for (const p of parts) a.mats[p.name] = { part: p };
+  });
+  const blob = new THREE.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.035; blob.scale.setScalar(height * 0.62); blob.renderOrder = 2; blob.visible = !sun.castShadow;
+  wrap.add(blob); blobs.push(blob); a.blob = blob;
+  a.play = (name, { fade = 0.18, once = false, ts = 1 } = {}) => {
+    const next = actions[name]; if (!next) return;
+    next.timeScale = ts;
+    if (a.current === next && !once) return;
+    next.reset(); next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity); next.clampWhenFinished = once;
+    next.enabled = true; next.setEffectiveWeight(1).play();
+    if (a.current && a.current !== next) a.current.crossFadeTo(next, fade, false);
+    a.current = next; a.curName = name;
+  };
+  return a;
+}
+const _tc = new THREE.Color();
+function tint(a, map) {
+  const col = a.body && a.body.geometry.attributes.color;
+  for (const [k, v] of Object.entries(map)) { const m = a.mats[k]; if (!m) continue;
+    if (m.part && col) { _tc.set(v); for (let i = m.part.start, e = i + m.part.count; i < e; i++) col.setXYZ(i, _tc.r, _tc.g, _tc.b); col.needsUpdate = true; }
+    else if (m.color) { m.color.set(v); if (m.map) m.map = null; m.needsUpdate = true; } }
+}
+function shadows(a) { a.root.traverse(o => { if (o.isMesh) o.castShadow = true; }); }
+
+let bull, player, story = null; const crowd = [];
+function renderStoryBtn() { if (story) $('storyBtn').textContent = story.label(); }
+/* ---------- drum troupe: one dhamsa, two madal ---------- */
+const drummers = []; let drumHeat = 1;
+const leatherMat = Mat({ color: 0xe2cfa6, roughness: 0.85 });
+function dhamsaMesh() {
+  const g = new THREE.Group();
+  const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), Mat({ color: 0x5a3b22, roughness: 0.45, metalness: 0.5 }));
+  bowl.position.y = 0.42; // lower hemisphere: rounded bottom, open rim at the top
+  const head = new THREE.Mesh(new THREE.CircleGeometry(0.42, 22), leatherMat); head.rotation.x = -Math.PI / 2; head.position.y = 0.425;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.025, 6, 22), Mat({ color: 0x3b2716, roughness: 0.6 })); rim.rotation.x = Math.PI / 2; rim.position.y = 0.425;
+  const stand = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 6, 14), Mat({ color: 0xc9b07a, roughness: 1 })); stand.rotation.x = Math.PI / 2; stand.position.y = 0.04;
+  g.add(bowl, head, rim, stand); g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+function madalMesh() {
+  // barrel drum: fatter in the middle, leather heads both ends, red clay body with cord lacing
+  const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(new THREE.Vector2(0.13 + Math.sin(t * Math.PI) * 0.05 - t * 0.02, -0.29 + t * 0.58)); }
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.LatheGeometry(pts, 16), Mat({ color: 0x9b3b24, roughness: 0.7, side: THREE.DoubleSide }));
+  const capA = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), leatherMat); capA.position.y = -0.29; capA.rotation.x = Math.PI / 2;
+  const capB = new THREE.Mesh(new THREE.CircleGeometry(0.11, 16), leatherMat); capB.position.y = 0.29; capB.rotation.x = -Math.PI / 2;
+  const cordM = new THREE.MeshBasicMaterial({ color: 0xe8dcc0 });
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const c = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.6, 3), cordM); c.position.set(Math.cos(a) * 0.17, 0, Math.sin(a) * 0.17); g.add(c); }
+  g.add(body, capA, capB); g.rotation.z = Math.PI / 2; // lies across the drummer's waist
+  return g;
+}
+function stickFor(a) {
+  const hand = a.root.getObjectByName('FistR') || a.root.getObjectByName('Fist.R'); if (!hand) return;
+  a.root.updateMatrixWorld(true); const ws = hand.getWorldScale(new THREE.Vector3());
+  const h = new THREE.Group(); h.scale.set(1 / ws.x, 1 / ws.y, 1 / ws.z);
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.42, 6), Mat({ color: 0x6b4a2c, roughness: 0.8 }));
+  st.position.y = 0.16; h.add(st); hand.add(h);
+}
+function buildDrummers(nCrowd) {
+  const mid = 0.2 + Math.PI / nCrowd; // the gap between two crowd members
+  const r = ARENA_R + 2.3;
+  const layout = [['madal', mid - 0.11], ['dhamsa', mid], ['madal', mid + 0.11]];
+  for (const [type, a] of layout) {
+    const d = actor(loaded.man, rand(1.62, 1.74), true);
+    tint(d, { Skin: [0x5e3a22, 0x6b4126, 0x553420][drummers.length % 3], Shirt: 0xf1ead9, Pants: 0xf1ead9, Belt: 0xc8372d, Hair: 0x15100c });
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    d.wrap.position.set(x, 0, z); d.wrap.rotation.y = Math.atan2(-x, -z);
+    d.type = type; d.base = type === 'dhamsa' ? 0.85 : 1.1;
+    if (type === 'dhamsa') {
+      const drum = dhamsaMesh(); const f = new THREE.Vector3(-x, 0, -z).normalize();
+      drum.position.set(x + f.x * 0.62, 0, z + f.z * 0.62); scene.add(drum);
+      stickFor(d); d.play('SwordSlash', { ts: d.base });
+    } else {
+      const drum = madalMesh(); drum.position.set(0, 0.92, 0.3); d.wrap.add(drum);
+      d.play('Punch', { ts: d.base });
+    }
+    if (d.current) d.current.time = rand(0, 0.4);
+    scene.add(d.wrap); drummers.push(d);
+  }
+}
+function updateDrummers(dt) {
+  const st = game.b.state, live = game.mode === 'play' || game.online;
+  const target = game.mode === 'story' && story ? 0.2 + story.energy() * 1.5 : live && (st === 'windup' || st === 'charge') ? 1.8 : live ? 1.15 : 0.9;
+  drumHeat = lerp(drumHeat, target, 1 - Math.pow(0.1, dt));
+  for (const d of drummers) { if (d.current) d.current.timeScale = d.base * drumHeat; if (d.root.visible) d.mixer.update(dt); }
+}
+// dried cow hide, waved to excite the bull
+const hideTex = canvasTex(128, 128, (ctx, w, h) => {
+  ctx.fillStyle = '#cfa772'; ctx.fillRect(0, 0, w, h);
+  blotches(ctx, w, h, 14, ['#a47b48', '#e0c08e', '#8f6a3e'], 10, 34, 0.6);
+  for (let i = 0; i < 900; i++) { ctx.strokeStyle = ['#6b4c2c', '#d2b387'][i % 2]; ctx.globalAlpha = 0.35; const x = Math.random() * w, y = Math.random() * h; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + rand(-1, 1), y + rand(2, 5)); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+});
+const hideGeo = (() => {
+  const sh = new THREE.Shape(); const pts = 14;
+  for (let i = 0; i <= pts; i++) { const a = i / pts * Math.PI * 2, r = 0.3 * (0.75 + 0.25 * Math.sin(a * 3 + 1) + rand(-0.06, 0.06)); const x = Math.cos(a) * r * 1.15, y = Math.sin(a) * r * 0.85 - 0.26; i ? sh.lineTo(x, y) : sh.moveTo(x, y); }
+  const g = new THREE.ShapeGeometry(sh, 6);
+  const pos = g.attributes.position; // gentle curl so it reads as leather, not paper
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin(pos.getX(i) * 4) * 0.04 + pos.getY(i) * pos.getY(i) * 0.15);
+  g.computeVertexNormals(); return g;
+})();
+const hideMat = Mat({ map: hideTex, roughness: 0.95, side: THREE.DoubleSide });
+function giveHide(a) {
+  const hand = a.root.getObjectByName('FistR') || a.root.getObjectByName('Fist.R') || a.root.getObjectByName('LowerArmR'); if (!hand) return;
+  a.root.updateMatrixWorld(true);
+  const ws = hand.getWorldScale(new THREE.Vector3());
+  const holder = new THREE.Group(); holder.name = 'hideHolder'; holder.scale.set(1 / ws.x, 1 / ws.y, 1 / ws.z);
+  const m = new THREE.Mesh(hideGeo, hideMat); m.castShadow = true; m.scale.setScalar(1.25); holder.add(m);
+  hand.add(holder); a.hide = holder; a.hideMesh = m; a.flap = 0;
+}
+const _hq = new THREE.Quaternion(), _hp = new THREE.Quaternion(), _he = new THREE.Euler(0, 0, 0, 'YXZ');
+function flapHide(a, dt) {
+  if (!a.hideMesh) return;
+  a.flap = Math.max(0, a.flap - dt);
+  const k = a.flap > 0 ? 1 : 0, t = performance.now() / 1000;
+  // the hand only carries it; the hide itself stays broadside to the player's facing so it reads clearly
+  _he.set(k * Math.sin(t * 22) * 0.6 + Math.sin(t * 2) * 0.06, a.wrap.rotation.y + k * Math.sin(t * 13) * 0.5, k * Math.cos(t * 17) * 0.35);
+  _hq.setFromEuler(_he);
+  a.hide.updateWorldMatrix(true, false); a.hide.getWorldQuaternion(_hp);
+  a.hideMesh.quaternion.copy(_hp.invert().multiply(_hq));
+}
+const garland = new THREE.Group();
+{
+  const marigold = [0xff8a1c, 0xffc21c].map(c => Mat({ color: c, roughness: 0.6, emissive: c, emissiveIntensity: 0.12 }));
+  const g = new THREE.IcosahedronGeometry(0.075, 0);
+  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; const m = new THREE.Mesh(g, marigold[i % 2]); m.position.set(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.3); garland.add(m); }
+  scene.add(garland);
+}
+
+// The animal at the khunt can be changed: three bulls and two cows. Cows use a second model, fetched only when picked.
+const ANIMALS = [
+  { id: 'brown', name: 'Brown bull', model: 'bull', h: 1.75, tint: { Main: 0x6b4a33, Main_Light: 0xcbb69a, Horns: 0xb8633f, Hooves: 0x2a2420, Muzzle: 0x3a2a22 } },
+  { id: 'white', name: 'White bull', model: 'bull', h: 1.75, tint: { Main: 0xe4dac8, Main_Light: 0xf5efe3, Horns: 0x6f5c46, Hooves: 0x2a2420, Muzzle: 0xc49a8c } },
+  { id: 'black', name: 'Black bull', model: 'bull', h: 1.8, tint: { Main: 0x25201d, Main_Light: 0x4a413a, Horns: 0xdbd0b6, Hooves: 0x14110e, Muzzle: 0x191513 } },
+  { id: 'redcow', name: 'Red cow', model: 'cow', h: 1.6, tint: { Main: 0x9b4f2a, Main_Light: 0xe6cfae, Horns: 0xd9cfb8, Hooves: 0x2a2420, Muzzle: 0xc98f7c } },
+  { id: 'whitecow', name: 'White cow', model: 'cow', h: 1.6, tint: { Main: 0xece4d4, Main_Light: 0xf7f2e8, Horns: 0x8a7458, Hooves: 0x2a2420, Muzzle: 0xd3a79a } },
+];
+let animal = ANIMALS[0]; try { animal = ANIMALS.find(a => a.id === localStorage.getItem('khuntau-animal')) || ANIMALS[0]; } catch (e) {}
+const animalActors = {};
+function makeAnimal(model) {
+  if (animalActors[model]) return animalActors[model];
+  const a = actor(loaded[model], model === 'cow' ? 1.6 : 1.75, false);
+  a.blob.scale.set(1.5, 2.6, 1); shadows(a);
+  a.head = a.root.getObjectByName('Head'); a.neck = a.root.getObjectByName('Neck1') || a.head;
+  return (animalActors[model] = a);
+}
+let animalBusy = null;
+async function setAnimal(id, keep = true) {
+  const next = ANIMALS.find(a => a.id === id) || ANIMALS[0];
+  if (!loaded[next.model]) {
+    if (!animalBusy) animalBusy = loadModel('models/' + next.model + '.json').then(g => { mergeChar(g); loaded[next.model] = g; }).finally(() => { animalBusy = null; });
+    try { await animalBusy; } catch (e) { toast('Could not load that animal', 1500); return animal; }
+    if (!loaded[next.model]) return animal;
+  }
+  const a = makeAnimal(next.model);
+  if (bull !== a) { a.wrap.position.copy(bull.wrap.position); a.wrap.rotation.y = bull.wrap.rotation.y; scene.remove(bull.wrap); scene.add(a.wrap); a.blob.visible = bull.blob.visible; a.play(bull.curName || 'Idle', { fade: 0 }); bull = a; if (perf.cheapen) perf.cheapen(); }
+  tint(bull, next.tint); animal = next; $('animalName').textContent = next.name;
+  if (keep) try { localStorage.setItem('khuntau-animal', next.id); } catch (e) {}
+  return animal;
+}
+$('animalBtn').addEventListener('click', () => { if (!bull || game.online) return; setAnimal(ANIMALS[(ANIMALS.indexOf(animal) + 1) % ANIMALS.length].id); });
+
+function onAllLoaded() {
+  for (const g of Object.values(loaded)) { g.scene.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(g.scene, true); g.userData.fit = { h: box.max.y - box.min.y, minY: box.min.y, scale: g.scene.scale.clone(), y: g.scene.position.y }; }
+  bull = makeAnimal('bull'); scene.add(bull.wrap); tint(bull, animal.tint);
+  if (animal.model !== 'bull') setAnimal(animal.id); $('animalName').textContent = animal.name;
+
+  player = actor(loaded.man, 1.72, false);
+  tint(player, { Skin: 0x7a5038, Shirt: 0xf3ede2, Pants: 0x2f6b3a, Belt: 0xc8372d, Hair: 0x15100c });
+  shadows(player); scene.add(player.wrap); giveHide(player); applyShirt();
+
+  const looks = [
+    ['woman', { Skin: 0x704428, Shirt: 0xf1ead9, Pants: 0xb8302a, Belt: 0xb8302a, Hair: 0x120c08 }],
+    ['worker', { Skin: 0x5e3a22, Shirt: 0x2f7a46, Vest: 0xf1ead9, Pants: 0x2f7a46, Hat: 0xf1ead9, Hair: 0x120c08 }],
+    ['man', { Skin: 0x5a3720, Shirt: 0xf1ead9, Pants: 0x8a5a2b, Belt: 0xe0b552, Hair: 0x1a120c }],
+    ['woman', { Skin: 0x5f3b23, Shirt: 0xe8c547, Pants: 0x1f5e8a, Belt: 0x1f5e8a, Hair: 0x120c08 }],
+  ];
+  const nCrowd = [6, 8, 12][QUALITY];
+  for (let i = 0; i < nCrowd; i++) {
+    const [kind, colors] = looks[i % looks.length];
+    const c = actor(loaded[kind], rand(1.55, 1.75), true);
+    tint(c, colors);
+    const a = i / nCrowd * Math.PI * 2 + 0.2, r = ARENA_R + rand(1.7, 2.6);
+    c.wrap.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+    c.wrap.rotation.y = Math.atan2(-c.wrap.position.x, -c.wrap.position.z);
+    c.play('Idle'); c.actions.Idle.time = rand(0, 2);
+    c.kind = kind; c.home = c.wrap.position.clone(); c.homeYaw = c.wrap.rotation.y;
+    c.mixer.addEventListener('finished', () => { if (!c.busy && !c.goingHome) c.play('Idle', { fade: 0.4 }); });
+    scene.add(c.wrap); crowd.push(c);
+  }
+  applyStage(START_STAGE);
+  player.mixer.addEventListener('finished', e => { if (game.p.state === 'free') player.play('Idle'); });
+  buildDrummers(nCrowd);
+  resetGame();
+  import('./story.js').then(m => {
+    story = m.initStory({ THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+      bull: () => bull, player: () => player, animal: () => animal,
+      musicLevel: v => { MUSIC_VOL.intro = v; refreshMusicVol(); },
+      startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
+      toMenu: () => { game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
+    });
+    $('storyBtn').disabled = false; renderStoryBtn();
+  }).catch(err => { console.error(err); $('storyBtn').hidden = true; });
+  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play';
+  $('createBtn').disabled = false; $('joinBtn').disabled = false;
+  const q = new URLSearchParams(location.search).get('room');
+  if (q && /^[A-Za-z0-9]{4}$/.test(q)) { $('onlineBox').hidden = false; $('codeIn').value = q.toUpperCase(); $('joinBtn').classList.remove('ghost'); $('createBtn').classList.add('ghost'); $('joinBtn').textContent = 'Join ' + q.toUpperCase(); }
+  $('loadBar').hidden = true;
+}
+// Models ship as glTF JSON with the binary embedded. The artifact frame blocks fetching data: URLs,
+// so decode the buffer here and hand GLTFLoader an in-memory GLB instead.
+async function loadModel(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(url + ' returned ' + res.status);
+  const json = await res.json();
+  const uri = json.buffers[0].uri; delete json.buffers[0].uri;
+  const raw = atob(uri.slice(uri.indexOf(',') + 1));
+  const bin = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
+  let js = new TextEncoder().encode(JSON.stringify(json));
+  const jl = Math.ceil(js.length / 4) * 4, bl = Math.ceil(bin.length / 4) * 4;
+  const out = new Uint8Array(12 + 8 + jl + 8 + bl); const dv = new DataView(out.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, out.length, true);
+  dv.setUint32(12, jl, true); dv.setUint32(16, 0x4E4F534A, true);
+  out.fill(0x20, 20, 20 + jl); out.set(js, 20);
+  dv.setUint32(20 + jl, bl, true); dv.setUint32(24 + jl, 0x004E4942, true);
+  out.set(bin, 28 + jl);
+  return new Promise((resolve, reject) => loader.parse(out.buffer, '', resolve, reject));
+}
+for (const [k, url] of Object.entries(files)) {
+  loadModel(url).then(g => {
+    mergeChar(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (loadedCount / 4 * 100) + '%';
+    if (loadedCount === 4) onAllLoaded();
+  }).catch(err => {
+    console.error(err);
+    $('startBtn').textContent = 'Could not load. Refresh to retry';
+    $('loadErr').textContent = String(err && err.message || err).slice(0, 140);
+  });
+}
+
+/* ---------- game state ---------- */
+const game = {
+  mode: 'menu', score: 0, lives: 3, t: 0, shake: 0,
+  p: { pos: new THREE.Vector3(0, 0, 7), yaw: Math.PI, state: 'free', t: 0, vel: new THREE.Vector3(), invuln: 0, rollCd: 0, rollDir: new THREE.Vector3(), grabbed: false },
+  b: { pos: new THREE.Vector3(0, 0, -3), yaw: 0, state: 'watch', t: 0, dur: 1, dir: new THREE.Vector3(), dist: 0, speed: 0, circle: 1, hitDone: false, hoof: 0 },
+  pithaReady: true, pithaTimer: 0, camDir: new THREE.Vector3(0, 0, 1), online: false,
+};
+
+let best = 0; try { best = +localStorage.getItem('khuntau-best') || 0; } catch (e) {}
+function difficulty() { return game.online ? net.d : clamp(game.score / 25, 0, 1); }
+const RANKS = [[0, 'Calf'], [5, 'Herder'], [12, 'Drum Beater'], [20, 'Bull Tamer'], [32, 'Khuntau Hero'], [50, 'Sohrai Legend']];
+function rankOf(pts) { let r = RANKS[0][1]; for (const [at, n] of RANKS) if (pts >= at) r = n; return r; }
+function nextRank(pts) { return RANKS.find(([at]) => at > pts) || null; }
+// challenge links: ?beat=14&from=Gouri
+const qs = new URLSearchParams(location.search);
+const challenge = (() => { const b = parseInt(qs.get('beat'), 10); if (!(b > 0 && b < 1000)) return null; const f = (qs.get('from') || '').replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 14); return { beat: b, from: f }; })();
+if (challenge) { const c = $('challenge'); c.textContent = `${challenge.from || 'Your friend'} scored ${challenge.beat}. Beat it!`; c.hidden = false; }
+function renderBestLine() { const el = $('bestLine'); el.hidden = best <= 0; el.textContent = `Best ${best} · ${rankOf(best)}`; }
+renderBestLine();
+/* ---------- reasons to come back: daily board, streak, missions, levels ---------- */
+const istDay = (off = 0) => new Date(Date.now() + 5.5 * 3600e3 + off * 86400e3).toISOString().slice(0, 10);
+const meta = (() => { let m = {}; try { m = JSON.parse(localStorage.getItem('khuntau-meta') || '{}') || {}; } catch (e) {} 
+  if (!/^[a-z0-9]{10,24}$/.test(m.pid || '')) m.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(36).padStart(2, '0')).join('').slice(0, 16);
+  return Object.assign({ xp: 0, streak: 0, bestStreak: 0, lastDay: '', day: '', cnt: {}, done: {}, shirt: 0 }, m); })();
+const saveMeta = () => { try { localStorage.setItem('khuntau-meta', JSON.stringify(meta)); } catch (e) {} };
+const LEVEL_NAMES = ['Calf', 'Herder', 'Drum Beater', 'Hide Waver', 'Bull Teaser', 'Bull Tamer', 'Ring Master', 'Khuntau Hero', 'Village Pride', 'Sohrai Legend'];
+const xpFor = (lvl) => 20 * lvl * (lvl - 1);                       // total XP needed to reach a level: 0, 40, 120, 240, 400…
+function levelOf(xp) { let l = 1; while (xpFor(l + 1) <= xp) l++; return l; }
+const levelName = (l) => LEVEL_NAMES[Math.min(l, LEVEL_NAMES.length) - 1];
+const SHIRTS = [[1, 0xf3ede2, 'Paste white'], [2, 0xffb347, 'Saffron'], [3, 0x3f8a4f, 'Sal green'], [5, 0xc8372d, 'Sindoor red'], [7, 0x2f5fa8, 'Indigo'], [10, 0xe8b33c, 'Festival gold']];
+// three missions a day, the same for everyone, picked from the date
+const MISSION_POOL = {
+  easy: [['pitha', 5, 'Snatch 5 pithas'], ['pitha', 8, 'Snatch 8 pithas'], ['dodge', 6, 'Dodge 6 charges'], ['runs', 3, 'Play 3 runs']],
+  skill: [['score', 12, 'Score 12 in one run'], ['score', 18, 'Score 18 in one run'], ['combo', 3, 'Reach a ×3 combo'], ['combo', 4, 'Reach a ×4 combo'], ['dodge', 12, 'Dodge 12 charges']],
+  fun: [['handi', 1, 'Drink a handi'], ['handi', 2, 'Drink 2 handi'], ['friends', 1, 'Play a round with friends'], ['pitha', 12, 'Snatch 12 pithas']],
+};
+function missionsFor(day) { let h = 0; for (const c of day) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const pick = (arr, salt) => arr[(h + salt * 7919) % arr.length];
+  let list = [pick(MISSION_POOL.easy, 1), pick(MISSION_POOL.skill, 2), pick(MISSION_POOL.fun, 3)];
+  if (list[0][0] === list[2][0]) list[2] = MISSION_POOL.fun[0];
+  if (list[0][0] === list[1][0]) list[1] = MISSION_POOL.skill[0];
+  return list.map(([k, n, label], i) => ({ id: i + k + n, k, n, label })); }
+const runGain = { xp: 0, notes: [] };
+function rollDay() { // called whenever we look at today's state
+  const d = istDay(); if (meta.day !== d) { meta.day = d; meta.cnt = {}; meta.done = {}; saveMeta(); }
+  if (meta.lastDay && meta.lastDay !== d && meta.lastDay !== istDay(-1) && meta.streak) { meta.streak = 0; saveMeta(); } // missed a day
+  return d;
+}
+function addXp(n, note) { const before = levelOf(meta.xp); meta.xp += n; runGain.xp += n; if (note) runGain.notes.push(note);
+  const after = levelOf(meta.xp); if (after > before) { runGain.notes.push(`Level ${after}: ${levelName(after)}`); const sh = SHIRTS.find(s => s[0] === after); if (sh) runGain.notes.push(`New shirt: ${sh[2]}`); if (game.mode === 'play') toast(`Level ${after}! ${levelName(after)}`, 1800); }
+  saveMeta(); }
+// progress: 'sum' kinds add up over the day, 'max' kinds keep the best single run
+function progress(k, v = 1, max = false) {
+  rollDay(); meta.cnt[k] = max ? Math.max(meta.cnt[k] || 0, v) : (meta.cnt[k] || 0) + v;
+  for (const m of missionsFor(meta.day)) if (m.k === k && !meta.done[m.id] && meta.cnt[k] >= m.n) {
+    meta.done[m.id] = 1; addXp(20, `Mission done: ${m.label}`);
+    if (game.mode === 'play') { toast('Mission done: ' + m.label, 1800); buzz([20, 40, 20]); }
+    if (missionsFor(meta.day).every(x => meta.done[x.id])) addXp(30, 'All 3 missions: +30 bonus');
+  }
+  saveMeta();
+}
+function markPlayedToday() { const d = rollDay(); if (meta.lastDay === d) return;
+  meta.streak = meta.lastDay === istDay(-1) ? meta.streak + 1 : 1; meta.bestStreak = Math.max(meta.bestStreak, meta.streak); meta.lastDay = d;
+  addXp(Math.min(50, 5 * meta.streak), meta.streak > 1 ? `Day ${meta.streak} streak: +${Math.min(50, 5 * meta.streak)} XP` : ''); }
+function applyShirt() { if (!player || game.online) return; const sh = SHIRTS[meta.shirt] || SHIRTS[0]; if (levelOf(meta.xp) < sh[0]) { meta.shirt = 0; } tint(player, { Shirt: (SHIRTS[meta.shirt] || SHIRTS[0])[1] }); }
+let boardData = null, boardTab = 'day';
+function renderToday() {
+  rollDay(); const lvl = levelOf(meta.xp), a = xpFor(lvl), b = xpFor(lvl + 1);
+  $('lvlLine').textContent = `Level ${lvl} · ${levelName(lvl)}`; $('xpFill').style.width = Math.round(100 * (meta.xp - a) / (b - a)) + '%';
+  const played = meta.lastDay === meta.day;
+  $('streakLine').textContent = meta.streak > 0 ? (played ? `Day ${meta.streak} streak` : `Day ${meta.streak} streak · play to keep it`) : 'Play today to start a streak';
+  const ul = $('missions'); ul.innerHTML = '';
+  for (const m of missionsFor(meta.day)) { const li = document.createElement('li'); if (meta.done[m.id]) li.className = 'done';
+    const t = document.createElement('span'); t.textContent = m.label; const c = document.createElement('span'); c.textContent = meta.done[m.id] ? '+20 XP' : `${Math.min(meta.cnt[m.k] || 0, m.n)}/${m.n}`; li.append(t, c); ul.appendChild(li); }
+  const box = $('shirts'); box.innerHTML = '';
+  SHIRTS.forEach(([need, col, name], i) => { const bt = document.createElement('button'); bt.type = 'button'; bt.style.background = '#' + col.toString(16).padStart(6, '0'); const locked = lvl < need;
+    bt.className = (i === meta.shirt ? 'on ' : '') + (locked ? 'locked' : ''); bt.dataset.lvl = 'L' + need; bt.title = bt.ariaLabel = locked ? `${name}: unlocks at level ${need}` : name;
+    bt.addEventListener('click', () => { if (locked) { toast(`${name} unlocks at level ${need}`, 1400); return; } meta.shirt = i; saveMeta(); applyShirt(); renderToday(); }); box.appendChild(bt); });
+  renderBoardLine();
+}
+function renderBoardLine() { const d = boardData, el = $('boardLine');
+  if (!d) { el.textContent = "Today's board"; return; }
+  if (d.me) el.textContent = `You are #${d.me.rank} of ${d.total} today` + (d.me.ahead ? ` · ${d.me.ahead.n} leads you by ${d.me.ahead.p - d.me.p}` : ' · defend it!');
+  else if (d.top[0]) el.textContent = `${d.top[0].n} leads today with ${d.top[0].p}`;
+  else el.textContent = 'Nobody has scored today. Be first!';
+}
+async function loadBoard() { try { const r = await fetch('/api/board?pid=' + meta.pid); if (r.ok) { boardData = await r.json(); renderBoardLine(); if (!$('boardScreen').hidden) renderBoardScreen(); } } catch (e) {} return boardData; }
+let runTicket = null;
+async function getTicket() { runTicket = null; try { const r = await fetch('/api/run?pid=' + meta.pid); if (r.ok) runTicket = (await r.json()).tok; } catch (e) {} }
+async function postScore(pts) { let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
+  if (!runTicket) return loadBoard();
+  try { const r = await fetch('/api/score', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, name, pts, lvl: levelOf(meta.xp), tok: runTicket }) }); runTicket = null; if (r.ok) { boardData = await r.json(); renderBoardLine(); } } catch (e) {} return boardData; }
+function renderBoardScreen() { const d = boardData, ol = $('boardList'); ol.innerHTML = '';
+  $('tabDay').classList.toggle('on', boardTab === 'day'); $('tabAll').classList.toggle('on', boardTab === 'all');
+  if (!d) { $('boardNote').textContent = 'Could not load the board. Check your connection.'; return; }
+  const rows = boardTab === 'day' ? d.top : d.all;
+  $('boardNote').textContent = boardTab === 'day' ? (d.total ? `${d.total} player${d.total > 1 ? 's' : ''} today · resets at midnight` : 'Nobody has scored today. Be first!') : 'Best single runs ever';
+  rows.forEach((r, i) => { const li = document.createElement('li'); if (r.me) li.className = 'me'; const a = document.createElement('span'); a.textContent = i + 1; const b = document.createElement('span'); b.textContent = r.n + ' '; const sm = document.createElement('small'); sm.textContent = levelName(r.l || 1); b.appendChild(sm); const c = document.createElement('b'); c.textContent = r.p; li.append(a, b, c); ol.appendChild(li); });
+  if (boardTab === 'day' && d.me && d.me.rank > rows.length) { const li = document.createElement('li'); li.className = 'me'; li.innerHTML = `<span>${d.me.rank}</span><span>You</span><b>${d.me.p}</b>`; ol.appendChild(li); }
+  $('ydayLine').textContent = d.yday ? `Yesterday's champion: ${d.yday.n} with ${d.yday.p}` : ' ';
+}
+// after any run (solo or online): streak, XP, missions, board
+async function finishRun(pts, online) {
+  markPlayedToday(); progress('runs'); progress('score', pts, true); if (online) progress('friends');
+  addXp(pts + (online ? 5 : 0), ''); saveMeta();
+  const g = $('gains'), notes = runGain.notes.filter(Boolean); g.hidden = false; g.innerHTML = '';
+  [`+${runGain.xp} XP` + (meta.streak ? ` · come back tomorrow for day ${meta.streak + 1}` : ''), ...notes.slice(-3)].forEach(t => { const d = document.createElement('div'); d.textContent = t; g.appendChild(d); });
+  runGain.xp = 0; runGain.notes = [];
+  let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
+  $('nameRow').hidden = !!name; const dr = $('dayRank'); dr.hidden = true;
+  if (!name && !online && pts > 0) { dr.hidden = false; dr.textContent = 'Add your name to go on today\'s board'; refreshRemind(); return backupProgress(); } // the ticket waits for the name
+  backupProgress(); refreshRemind();
+  if (pts <= 0) return;
+  // solo scores go up with this run's ticket; online rounds are reported by the room itself, so just read the board
+  let d; if (online) { await new Promise(r => setTimeout(r, 1500)); d = await loadBoard(); } else d = await postScore(pts);
+  if (!d || !d.me) return;
+  dr.hidden = false; dr.textContent = d.me.rank === 1 ? `#1 today of ${d.total}. The ring is yours!` : `#${d.me.rank} today of ${d.total} · ${d.me.ahead.p - d.me.p + 1} more to pass ${d.me.ahead.n}`;
+}
+$('boardBtn').addEventListener('click', () => { $('startScreen').hidden = true; $('boardScreen').hidden = false; renderBoardScreen(); loadBoard(); });
+$('boardClose').addEventListener('click', () => { $('boardScreen').hidden = true; $('startScreen').hidden = false; });
+$('tabDay').addEventListener('click', () => { boardTab = 'day'; renderBoardScreen(); });
+$('tabAll').addEventListener('click', () => { boardTab = 'all'; renderBoardScreen(); });
+$('boardNameBtn').addEventListener('click', async () => { const n = $('boardName').value.replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 14); if (!n) return;
+  try { localStorage.setItem('khuntau-name', n); } catch (e) {} if ($('nameIn') && !$('nameIn').value) $('nameIn').value = n; $('nameRow').hidden = true;
+  if (game.online) netSend({ t: 'hello', name: n });
+  const d = runTicket ? await postScore(Math.max(0, game.score | 0)) : await loadBoard(); if (d && d.me) toast(`Saved. You are #${d.me.rank} today`, 1600); else toast('Saved. Your next run goes on the board', 1600); });
+function sendMe() { const sh = SHIRTS[meta.shirt] || SHIRTS[0], lvl = levelOf(meta.xp); netSend({ t: 'me', pid: meta.pid, lvl, col: meta.shirt > 0 && lvl >= sh[0] ? '#' + sh[1].toString(16).padStart(6, '0') : null }); }
+// progress is also kept on the server under a short code, so a new phone or a cleared browser can get it back
+let backupT = 0;
+async function backupProgress() { clearTimeout(backupT); backupT = setTimeout(async () => {
+  let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
+  const { pid, code, ...data } = meta; data.best = best; data.name = name;
+  try { const r = await fetch('/api/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, data }) }); if (r.ok) { meta.code = (await r.json()).code; saveMeta(); if (!$('keepScreen').hidden) $('keepCode').textContent = meta.code; } } catch (e) {} }, 400); }
+$('keepBtn').addEventListener('click', () => { $('startScreen').hidden = true; $('keepScreen').hidden = false; $('keepCode').textContent = meta.code || '······'; $('keepNote').innerHTML = '&nbsp;'; backupProgress(); });
+$('keepClose').addEventListener('click', () => { $('keepScreen').hidden = true; $('startScreen').hidden = false; });
+$('restoreBtn').addEventListener('click', async () => { const code = $('restoreIn').value.trim().toUpperCase(); if (code.length !== 6) { $('keepNote').textContent = 'The code has 6 letters and numbers.'; return; }
+  if (code === meta.code) { $('keepNote').textContent = 'That is this phone\'s own code.'; return; }
+  try { const r = await fetch('/api/restore', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+    if (!r.ok) { $('keepNote').textContent = r.status === 404 ? 'No progress found for that code.' : 'Could not restore. Try again.'; return; }
+    const { pid, data } = await r.json(); const { best: b, name, ...rest } = data;
+    localStorage.setItem('khuntau-meta', JSON.stringify({ ...rest, pid, code })); if (b > 0) localStorage.setItem('khuntau-best', b); if (name) localStorage.setItem('khuntau-name', name);
+    $('keepNote').textContent = 'Restored. Reloading…'; setTimeout(() => location.reload(), 700);
+  } catch (e) { $('keepNote').textContent = 'Could not restore. Check your connection.'; } });
+// daily reminder (web push). Phones only allow it after a tap, and iPhones only once the game is on the home screen.
+const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+// offline: solo play still works; hide what needs the internet, bring it back when the connection returns
+function netState() {
+  const off = !navigator.onLine; $('offlineNote').hidden = !off;
+  for (const id of ['friendsBtn', 'boardBtn']) $(id).hidden = off;
+  if (off) { $('onlineBox').hidden = true; $('rooms').hidden = true; $('remindBtn').hidden = true; }
+  else { refreshRemind(); loadBoard(); if (typeof loadRooms === 'function') loadRooms(); }
+}
+addEventListener('online', netState); addEventListener('offline', netState);
+function refreshRemind() { const show = pushOK && !meta.push && Notification.permission !== 'denied'; $('remindBtn').hidden = !show; $('remindBtn2').hidden = !show || meta.lastDay !== istDay(); }
+async function turnOnReminders() {
+  try {
+    if (await Notification.requestPermission() !== 'granted') { toast('Reminders stay off', 1400); refreshRemind(); return; }
+    const reg = await navigator.serviceWorker.ready, key = (await (await fetch('/api/push/key')).json()).key;
+    const raw = Uint8Array.from(atob(key.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+    const r = await fetch('/api/push/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, endpoint: sub.endpoint }) });
+    if (!r.ok) throw new Error('sub'); meta.push = 1; saveMeta(); toast('Done. One reminder each evening, only if you have not played', 2400);
+  } catch (e) { toast('Could not turn on reminders on this browser', 1800); }
+  refreshRemind();
+}
+$('remindBtn').addEventListener('click', turnOnReminders); $('remindBtn2').addEventListener('click', turnOnReminders);
+renderToday(); loadBoard(); refreshRemind();
+
+/* ---------- open rooms on the home screen: see who is playing, ask to join, the host decides ---------- */
+const knockOut = { ws: null, id: null };
+function renderRooms(list) {
+  const box = $('rooms'), ul = $('roomList'); box.hidden = !list.length; $('roomsCount').textContent = list.length ? `${list.length} room${list.length > 1 ? 's' : ''} open` : '';
+  ul.innerHTML = '';
+  for (const r of list) { const li = document.createElement('li'), info = document.createElement('div'), dot = document.createElement('span'), sm = document.createElement('small'), bt = document.createElement('button');
+    dot.className = 'live'; info.append(dot, document.createTextNode(r.host + "'s room")); sm.textContent = `${r.n} of 6 players · ${r.phase === 'play' ? 'round on, you join the next one' : 'waiting to start'}`; info.appendChild(sm);
+    bt.type = 'button'; const mine = knockOut.id === r.id; bt.textContent = mine ? 'Asking… cancel' : 'Ask to join'; if (mine) bt.className = 'wait';
+    bt.addEventListener('click', () => mine ? cancelKnock() : askToJoin(r)); li.append(info, bt); ul.appendChild(li); }
+}
+let roomsCache = [];
+async function loadRooms() { if (!navigator.onLine || document.hidden || game.mode !== 'menu' || $('startScreen').hidden) return;
+  try { const r = await fetch('/api/rooms'); if (r.ok) { roomsCache = (await r.json()).rooms || []; renderRooms(roomsCache); } } catch (e) {} }
+setInterval(loadRooms, 7000); loadRooms(); netState();
+function cancelKnock() { if (knockOut.ws) { try { knockOut.ws.close(); } catch (e) {} } knockOut.ws = null; knockOut.id = null; renderRooms(roomsCache); }
+function askToJoin(r) {
+  const name = $('nameIn').value.trim().slice(0, 14) || savedName;
+  if (!name) { $('onlineBox').hidden = false; $('nameIn').focus(); $('netNote').textContent = 'Type your name, then tap Ask to join again.'; return; }
+  try { localStorage.setItem('khuntau-name', name); } catch (e) {} if (!$('nameIn').value) $('nameIn').value = name;
+  cancelKnock(); initAudio();
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/knock/' + r.id + '?name=' + encodeURIComponent(name));
+  knockOut.ws = ws; knockOut.id = r.id; renderRooms(roomsCache); let answered = false;
+  ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } answered = true; knockOut.ws = null; knockOut.id = null;
+    if (m.t === 'admit') { toast(`${r.host} let you in!`, 1400); connect(m.code); }
+    else { toast({ full: 'That room is full now', closed: 'That room is not taking requests', busy: 'Too many people are asking. Try again', noanswer: `${r.host} did not answer`, no: `${r.host} said not now` }[m.why] || 'Could not join', 2200); renderRooms(roomsCache); } };
+  ws.onclose = () => { if (!answered && knockOut.ws === ws) { knockOut.ws = null; knockOut.id = null; toast('That room is gone', 1600); loadRooms(); } };
+}
+// host side: one request at a time in a small bar, with the rest waiting behind it
+const knockIn = [];
+function showKnock() { const k = knockIn[0], bar = $('knockBar'); bar.hidden = !k; if (k) $('knockText').textContent = `${k.name} wants to join`; }
+function onKnock(m) { if (m.t === 'knock') { knockIn.push({ kid: m.kid, name: m.name }); if (knockIn.length === 1 && audio.ctx) play('bells', { vol: 0.5, rate: 1.25 }); buzz(30); }
+  else { const i = knockIn.findIndex(k => k.kid === m.kid); if (i >= 0) knockIn.splice(i, 1); } showKnock(); }
+function answerKnock(ok) { const k = knockIn.shift(); if (k) netSend({ t: 'admit', kid: k.kid, ok }); showKnock(); }
+$('knockYes').addEventListener('click', () => answerKnock(true)); $('knockNo').addEventListener('click', () => answerKnock(false));
+$('openBtn').addEventListener('click', () => netSend({ t: 'open', on: !net.open }));
+
+let popTimer;
+function pop(big, small) {
+  const el = $('pop'); $('popBig').textContent = big; $('popSmall').textContent = small || '';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(popTimer); popTimer = setTimeout(() => el.classList.remove('show'), 1100);
+}
+function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+function renderCombo() { const show = game.combo >= 2 && !game.online; $('comboChip').hidden = !show; if (show) $('combo').textContent = Math.min(game.combo, 5); }
+// the next player to beat on today's board, shown live during a solo run
+const rival = { passed: new Set(), bestSaid: false };
+function renderRival() {
+  const chip = $('rivalChip'); if (game.online || game.mode !== 'play' || !boardData || !boardData.top) { chip.hidden = true; return; }
+  const ahead = boardData.top.filter(r => !r.me && r.p >= game.score).sort((a, b) => a.p - b.p)[0];
+  if (ahead) { chip.hidden = false; $('rivalName').textContent = 'pass ' + ahead.n; $('rivalPts').textContent = ahead.p + 1 - game.score; }
+  else if (boardData.top.some(r => !r.me)) { chip.hidden = false; $('rivalName').textContent = 'today'; $('rivalPts').textContent = '#1'; }
+  else chip.hidden = true;
+}
+const FURY = [[10, 'The bull is angry!'], [20, 'The bull is furious!'], [35, 'The bull is raging!']];
+function award(pts, label) {
+  const before = game.score;
+  game.score += pts; $('score').textContent = game.score; pop('+' + pts, label);
+  if (!game.online) {
+    if (boardData && boardData.top) for (const r of boardData.top) if (!r.me && r.p >= before && r.p < game.score && !rival.passed.has(r.n)) { rival.passed.add(r.n); setTimeout(() => { toast(`You passed ${r.n}!`, 1500); crowdCheer(0.6); buzz([20, 30, 20]); }, 650); }
+    if (best > 0 && before <= best && game.score > best && !rival.bestSaid) { rival.bestSaid = true; setTimeout(() => { toast('New personal best! Keep going', 1700); }, 1300); }
+    const f = FURY[game.fury || 0]; if (f && game.score >= f[0]) { game.fury = (game.fury || 0) + 1; setTimeout(() => { if (game.mode === 'play') { hint(f[1], 1800); sfx.bellow(); game.shake = Math.max(game.shake || 0, 0.5); } }, 1900); }
+    renderRival();
+  }
+  if (challenge && !game.beaten && game.score > challenge.beat) { game.beaten = true; setTimeout(() => { toast(`You beat ${challenge.from || 'your friend'}!`, 1500); sfx.cheer(); }, 700); }
+}
+
+let tipTimers = [];
+const lampSvg = '<svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 5 0 8-3-3-2-5 0-8z" fill="#ffb347"/><path d="M3 14h18c-1 4-5 6-9 6s-8-2-9-6z" fill="#b5462a"/></svg>';
+let livesShown = -1;
+function renderLives() { if (livesShown === game.lives) return; livesShown = game.lives; $('lamps').innerHTML = [0, 1, 2].map(i => lampSvg.replace('<svg', `<svg class="${i < game.lives ? '' : 'out'}"`)).join(''); }
+
+let toastTimer;
+function toast(text, ms = 1100) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+let hintTimer;
+function hint(text, ms = 2600) { const h = $('hint'); h.textContent = text; h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
+
+function resetGame() {
+  if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.fury = 0; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = 12; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = 3; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
+  tipTimers.forEach(clearTimeout); tipTimers = [];
+  Object.assign(game.p, { state: 'free', t: 0, invuln: 0, rollCd: 0, teaseCd: 0, teaseT: -9 }); game.p.pos.set(0, 0, 7.5); game.p.yaw = Math.PI; game.p.vel.set(0, 0, 0);
+  Object.assign(game.b, { state: 'watch', t: 0, dur: 2.2 }); game.b.pos.set(0, 0, -3.5); game.b.yaw = 0;
+  game.pithaReady = true; pitha.visible = true; pitha.scale.setScalar(1);
+  $('score').textContent = '0'; renderLives(); renderCombo();
+  player.play('Idle'); bull.play('Idle');
+  game.hintsShown = {};
+}
+function startGame() {
+  game.menuOpen = false; $('pauseScreen').hidden = true;
+  initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
+  $('startScreen').hidden = true; $('overScreen').hidden = true; $('hudScore').hidden = false;
+  $('bestChip').hidden = best === 0 || innerWidth < 560; $('best').textContent = best; renderRival();
+  let played = false; try { played = !!localStorage.getItem('khuntau-played'); localStorage.setItem('khuntau-played', '1'); } catch (e) {}
+  const tips = isTouch
+    ? ['Drag the left side of the screen to move', 'Tap HIDE to make him charge, then ROLL aside', 'Stun him on the post, then GRAB the pitha']
+    : ['Move with WASD or the arrow keys', 'Press Q to wave the hide, then Space to roll aside', 'Stun him on the post, then press E to grab'];
+  if (!played) tips.forEach((t, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(t, 3000); }, 300 + i * 3600)));
+  else hint(isTouch ? 'HIDE to bait, ROLL to dodge, GRAB at the post' : 'Q bait · Space roll · E grab', 2200);
+  if (challenge) tipTimers.push(setTimeout(() => { if (game.mode === 'play') toast(`Beat ${challenge.beat}!`, 1200); }, played ? 2400 : 11200));
+}
+function gameOver() {
+  game.mode = 'over'; audio.intensity = 0;
+  tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
+  if (game.storyRun && story) { const won = game.pitha >= 3; setTimeout(() => { if (game.storyRun) story.afterRing(won); }, 1700); return; }
+  const pts = game.score, isBest = pts > best;
+  setTimeout(() => { setMusic('intro'); if (isBest && pts > 0) sfx.cheer(); }, 1500);
+  if (isBest) { best = pts; try { localStorage.setItem('khuntau-best', best); } catch (e) {} }
+  // freeze this moment for the share card
+  setTimeout(() => { try { renderer.render(scene, camera); lastShot = renderer.domElement.toDataURL('image/jpeg', 0.85); } catch (e) { lastShot = null; } }, 500);
+  setTimeout(() => {
+    const beat = challenge && pts > challenge.beat;
+    $('overTitle').textContent = beat ? `You beat ${challenge.from || 'them'}!` : isBest && pts > 0 ? 'New best!' : 'Horned!';
+    $('overScore').textContent = pts;
+    $('overLine').textContent = `points · ${game.pitha} pitha` + (!isBest && best ? ` · best ${best}` : '');
+    $('overRank').hidden = false; $('overRank').textContent = rankOf(pts);
+    const nx = nextRank(pts); $('overNext').hidden = false;
+    $('overNext').textContent = nx ? `${nx[0] - pts} more to ${nx[1]}` : 'Top rank. Legend of the ring.';
+    $('resultList').hidden = true; $('copyBtn').hidden = true; $('shareScoreBtn').hidden = false; $('menuBtn').hidden = false;
+    $('againBtn').disabled = false; $('againBtn').textContent = 'Play again';
+    $('copyNote').innerHTML = '&nbsp;';
+    $('overScreen').hidden = false; $('hudScore').hidden = true;
+    $('againBtn').focus(); finishRun(pts, false);
+  }, 1600);
+}
+let lastShot = null;
+async function shareScore() {
+  const pts = game.score, rank = rankOf(pts);
+  let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
+  const link = location.origin + '/?beat=' + pts + (name ? '&from=' + encodeURIComponent(name) : '');
+  const text = (challenge && pts > challenge.beat ? `I beat ${challenge.from || 'my friend'}'s ${challenge.beat} with ${pts} points` : `I scored ${pts} points`) + ` in Khuntau (${rank}) this Sohrai. Can you beat me? ${link}`;
+  const note = $('copyNote');
+  try {
+    const blob = await scoreCard(pts, rank);
+    const file = new File([blob], 'khuntau-score.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: 'Khuntau' }); return; }
+    if (navigator.share) { await navigator.share({ text, title: 'Khuntau' }); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'khuntau-score.png'; a.click();
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+    note.textContent = 'Score card saved. Attach it to your WhatsApp message.';
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+  }
+}
+async function scoreCard(pts, rank) {
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  try { await Promise.all([document.fonts.load('120px "Rubik Dirt"'), document.fonts.load('800 40px "Baloo 2"')]); } catch (e) {}
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3a1d10'); g.addColorStop(1, '#1a0c06'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  if (lastShot) {
+    const img = new Image(); img.src = lastShot; await img.decode().catch(() => {});
+    const ih = 780, s2 = Math.max(W / img.width, ih / img.height);
+    x.save(); x.beginPath(); x.rect(0, 0, W, ih); x.clip();
+    x.drawImage(img, (W - img.width * s2) / 2, (ih - img.height * s2) / 2, img.width * s2, img.height * s2); x.restore();
+    const fade = x.createLinearGradient(0, 480, 0, 790); fade.addColorStop(0, 'rgba(26,12,6,0)'); fade.addColorStop(1, 'rgba(26,12,6,1)'); x.fillStyle = fade; x.fillRect(0, 480, W, 320);
+  }
+  x.textAlign = 'center'; x.fillStyle = '#ffb347'; x.font = '600 34px "Noto Sans Ol Chiki", sans-serif'; x.fillText('ᱠᱷᱩᱱᱴᱟᱣ', W / 2, 90);
+  x.font = '120px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText('Khuntau', W / 2, 212); x.fillStyle = '#f6eedd'; x.fillText('Khuntau', W / 2, 205);
+  x.font = '240px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText(String(pts), W / 2, 1000); x.fillStyle = '#ffb347'; x.fillText(String(pts), W / 2, 990);
+  x.font = '800 44px "Baloo 2", sans-serif'; x.fillStyle = '#f6eedd'; x.fillText('points · ' + rank, W / 2, 1070);
+  x.font = '800 54px "Baloo 2", sans-serif'; x.fillStyle = '#ffb347'; x.fillText('Can you beat me?', W / 2, 1180);
+  x.font = '600 34px "Baloo 2", sans-serif'; x.fillStyle = 'rgba(246,238,221,.75)'; x.fillText(location.host, W / 2, 1260);
+  return await new Promise(r => c.toBlob(r, 'image/png'));
+}
+$('shareScoreBtn').addEventListener('click', shareScore);
+$('startBtn').addEventListener('click', () => { game.storyRun = false; startGame(); });
+$('storyBtn').addEventListener('click', () => { if (!story || game.online) return; initAudio(); game.storyRun = false; story.start(); });
+$('friendsBtn').addEventListener('click', () => { const box = $('onlineBox'); box.hidden = !box.hidden; if (!box.hidden) $('nameIn').focus(); });
+$('creditsBtn').addEventListener('click', () => { $('credits').hidden = !$('credits').hidden; });
+$('menuBtn').addEventListener('click', () => { game.mode = 'menu'; resetGame(); $('overScreen').hidden = true; $('startScreen').hidden = false; renderBestLine(); renderToday(); loadBoard(); applyShirt(); setMusic('intro'); });
+$('againBtn').addEventListener('click', () => { if (game.online) netSend({ t: 'start' }); else startGame(); });
+$('copyBtn').addEventListener('click', () => {
+  if (game.online) { showLobby(); return; }
+  return;
+  const txt = `I snatched ${game.score} pitha from the Khuntau bull this Sohrai 🐂 Can you beat me?`;
+  const note = $('copyNote');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => { note.textContent = 'Copied. Paste it with the game link.'; }, () => { note.textContent = txt; });
+  else note.textContent = txt;
+});
+
+/* ---------- input ---------- */
+const keys = {};
+const input = { x: 0, y: 0, roll: false, grab: false, tease: false };
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (game.mode === 'story' && story) { story.key(e); return; }
+  if (game.mode === 'over' && !game.online && !$('overScreen').hidden && (e.code === 'Enter' || e.code === 'Space') && document.activeElement?.id !== 'shareScoreBtn' && document.activeElement?.id !== 'menuBtn') { e.preventDefault(); startGame(); return; }
+  if (game.mode !== 'play') { if (game.mode === 'menu' && (e.code === 'Enter' || e.code === 'Space') && !$('startBtn').disabled && !['BUTTON', 'INPUT'].includes(document.activeElement?.tagName)) startGame(); return; }
+  if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') { input.roll = true; e.preventDefault(); }
+  if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'KeyJ') input.grab = true;
+  if (e.code === 'KeyQ' || e.code === 'KeyF' || e.code === 'KeyK') input.tease = true;
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+const joyzone = $('joyzone'), joyEl = $('joy'), knob = $('knob');
+joyzone.addEventListener('pointerdown', e => {
+  if (joy.id !== null) return; joy.id = e.pointerId; joy.ox = e.clientX; joy.oy = e.clientY; joy.x = joy.y = 0;
+  joyEl.style.display = 'block'; joyEl.style.left = e.clientX + 'px'; joyEl.style.top = (e.clientY - joyzone.getBoundingClientRect().top) + 'px';
+  knob.style.transform = ''; joyzone.setPointerCapture(e.pointerId);
+});
+joyzone.addEventListener('pointermove', e => {
+  if (e.pointerId !== joy.id) return;
+  let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy; const m = Math.hypot(dx, dy), R = 50;
+  if (m > R) { dx *= R / m; dy *= R / m; }
+  joy.x = dx / R; joy.y = dy / R; knob.style.transform = `translate(${dx}px, ${dy}px)`;
+});
+const joyEnd = e => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x = joy.y = 0; joyEl.style.display = 'none'; };
+joyzone.addEventListener('pointerup', joyEnd); joyzone.addEventListener('pointercancel', joyEnd);
+$('rollBtn').addEventListener('pointerdown', e => { e.preventDefault(); input.roll = true; });
+$('grabBtn').addEventListener('pointerdown', e => { e.preventDefault(); input.grab = true; });
+$('hideBtn').addEventListener('pointerdown', e => { e.preventDefault(); input.tease = true; });
+function readMove() {
+  if (game.menuOpen) { input.x = input.y = 0; input.roll = input.grab = input.tease = false; return; }
+  let x = joy.x, y = joy.y;
+  if (keys.KeyA || keys.ArrowLeft) x -= 1; if (keys.KeyD || keys.ArrowRight) x += 1;
+  if (keys.KeyW || keys.ArrowUp) y -= 1; if (keys.KeyS || keys.ArrowDown) y += 1;
+  const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+  input.x = x; input.y = y;
+}
+
+/* ---------- gameplay ---------- */
+const UP = new THREE.Vector3(0, 1, 0);
+function fwdOf(yaw, out) { return out.set(Math.sin(yaw), 0, Math.cos(yaw)); }
+function turnTo(cur, target, rate, dt) {
+  let d = target - cur; d = Math.atan2(Math.sin(d), Math.cos(d));
+  return cur + clamp(d, -rate * dt, rate * dt);
+}
+
+function setBull(state, dur) { const b = game.b; b.state = state; b.t = 0; b.dur = dur; }
+
+function updateBull(dt) {
+  if (game.online) { netBull(dt); return; }
+  const b = game.b, p = game.p, d = difficulty();
+  b.t += dt;
+  const toP = tmpV.subVectors(p.pos, b.pos); toP.y = 0;
+  const distP = toP.length();
+  const yawToP = Math.atan2(toP.x, toP.z);
+  const playing = game.mode === 'play' && p.state !== 'dead';
+
+  // is the post between bull and player?
+  const bp = tmpV2.copy(b.pos).negate(); // bull->post
+  const along = bp.dot(toP) / Math.max(distP, 0.001);
+  const perp = Math.sqrt(Math.max(bp.lengthSq() - along * along, 0));
+  const blocked = along > 0.5 && along < distP - 0.3 && perp < 0.75;
+
+  switch (b.state) {
+    case 'watch': {
+      if (blocked && playing) { // walk around the post to get a clear line
+        bull.play('Walk', { ts: 1.1 });
+        const ang = Math.atan2(b.pos.z, b.pos.x) + b.circle * dt * 0.9;
+        const r = clamp(b.pos.length(), 2.2, ROPE_L - 0.4);
+        const nx = Math.cos(ang) * r, nz = Math.sin(ang) * r;
+        b.yaw = turnTo(b.yaw, Math.atan2(nx - b.pos.x, nz - b.pos.z), 6, dt);
+        b.pos.set(nx, 0, nz);
+        if (b.t > 2.4) b.circle *= -1, b.t = 0;
+      } else {
+        bull.play(distP > 3.5 ? 'Idle' : 'Idle_2');
+        b.yaw = turnTo(b.yaw, yawToP, 3.2, dt);
+        const urgent = p.state === 'grab' || p.pos.length() < GRAB_R + 0.2;
+        const provoked = game.t - (p.teaseT ?? -9) < 1.4;
+        const wait = provoked ? 0.15 : urgent ? b.dur * 0.35 : b.dur;
+        if (playing && b.t > wait) {
+          const gentle = game.charges < 2; // first charges of a round are slow and readable
+          setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0)); sfx.snort();
+          b.provoked = provoked;
+        }
+      }
+      break;
+    }
+    case 'windup': {
+      bull.play('Idle_Headlow', { ts: 1.6 });
+      b.yaw = turnTo(b.yaw, yawToP, 4.5, dt);
+      arrow.material.opacity = 0.35 + 0.45 * Math.abs(Math.sin(b.t * 14));
+      if (b.t > b.dur) {
+        // aim with a small lead on the player's motion
+        const lead = tmpV2.copy(p.pos).addScaledVector(p.vel, 0.25 * d); lead.y = 0;
+        b.dir.subVectors(lead, b.pos).setY(0).normalize();
+        b.yaw = Math.atan2(b.dir.x, b.dir.z);
+        b.speed = lerp(8.5, 13.5, d) * (game.charges < 2 ? 0.82 : 1); b.dist = Math.max(distP + 2.5, 5); b.hitDone = false; b.hoof = 0;
+        b.minD = 99; game.charges++;
+        setBull('charge', 3);
+        if (!game.hintsShown.charge) { game.hintsShown.charge = true; hint(isTouch ? 'He is charging. Hit ROLL!' : 'He is charging. Press Space to roll!', 1800); }
+      }
+      break;
+    }
+    case 'charge': {
+      bull.play('Gallop', { fade: 0.1, ts: b.speed / 9 });
+      const step = b.speed * dt;
+      b.pos.addScaledVector(b.dir, step); b.dist -= step;
+      b.hoof -= dt; if (b.hoof <= 0) { b.hoof = 0.16; sfx.hoof(); emit(dustPool, tmpV2.copy(b.pos).setY(0.25).addScaledVector(b.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
+      // horns hit
+      const head = tmpV2.copy(b.pos).addScaledVector(b.dir, 1.0);
+      const hd = Math.hypot(head.x - p.pos.x, head.z - p.pos.z);
+      b.minD = Math.min(b.minD ?? 99, hd);
+      if (!b.hitDone && hd < 1.05 && p.invuln <= 0 && p.state !== 'roll' && p.state !== 'dead' && p.state !== 'celebrate') { b.hitDone = true; hitPlayer(); }
+      const r = b.pos.length();
+      if (r < 1.0 || r > ROPE_L || b.dist <= 0) closeCall(b, p);
+      if (r < 1.0) { // smacked the post
+        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35;
+        toast('Bonk!', 700);
+      } else if (r > ROPE_L) { // rope goes taut
+        b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
+        for (let i = 0; i < 6; i++) emit(dustPool, tmpV2.copy(b.pos).setY(0.2), { life: 0.9, vel: new THREE.Vector3(rand(-1.5, 1.5), rand(0.4, 1.4), rand(-1.5, 1.5)), size: 0.7, grow: 1.6 });
+      } else if (b.dist <= 0) {
+        setBull('recover', lerp(1.7, 0.85, d));
+      }
+      break;
+    }
+    case 'stunned':
+    case 'recover': {
+      if (b.state === 'recover') bull.play('Idle', { fade: 0.25 });
+      if (b.t > b.dur) setBull('watch', lerp(1.2, 0.5, d) * rand(0.8, 1.2));
+      if (b.t < 0.05 && playing && !game.hintsShown.tired && game.score < 2) { game.hintsShown.tired = true; setTimeout(() => hint('He is catching his breath. Grab now!', 1800), 200); }
+      break;
+    }
+  }
+  if (b.state !== 'windup') arrow.material.opacity = Math.max(0, arrow.material.opacity - dt * 4);
+
+  // keep the bull off the post and on its rope
+  const r = b.pos.length();
+  if (r < 1.0) b.pos.setLength(1.0);
+  if (r > ROPE_L) b.pos.setLength(ROPE_L);
+
+  bull.wrap.position.copy(b.pos);
+  bull.wrap.rotation.y = b.yaw;
+  arrow.position.set(b.pos.x, 0.03, b.pos.z);
+  arrow.rotation.y = b.yaw;
+  arrow.scale.set(1, 1, clamp(distP + 2, 3, 9));
+}
+
+function closeCall(b, p) {
+  if (game.mode !== 'play' || game.online || b.hitDone || p.state === 'dead' || (b.minD ?? 99) > 1.9) return;
+  progress('dodge');
+  if (b.provoked) { award(2, 'Daring dodge!'); game.slow = 0.3; } else award(1, 'Close call!');
+  crowdCheer(0.45, 1.15, 0, 'clap'); buzz(20);
+}
+function hitPlayer() {
+  const p = game.p, b = game.b;
+  game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; buzz([60, 40, 90]);
+  if (!game.online && game.combo >= 2) setTimeout(() => pop('Combo lost', ''), 250);
+  game.combo = 0; renderCombo();
+  p.vel.copy(b.dir).multiplyScalar(9).setY(0);
+  p.state = game.lives <= 0 ? 'dead' : 'hit'; p.t = 0; p.invuln = 2.2;
+  player.play(game.lives <= 0 ? 'Death' : 'RecieveHit', { once: true, fade: 0.06 });
+  toast(game.lives <= 0 ? 'Horned!' : 'Ouch!', 900);
+  for (let i = 0; i < 8; i++) emit(dustPool, tmpV2.copy(p.pos).setY(0.4), { life: 0.9, vel: new THREE.Vector3(rand(-2, 2), rand(0.5, 2), rand(-2, 2)), size: 0.5, grow: 1.4 });
+  if (game.online) { netSend({ t: 'hit' }); if (game.lives <= 0) hint('You are out. Watch, or go back to the lobby.', 3000); return; }
+  if (game.lives <= 0) gameOver();
+}
+
+function updatePlayer(dt) {
+  const p = game.p;
+  p.t += dt; p.invuln -= dt; p.rollCd -= dt; p.boost = (p.boost || 0) - dt; p.teaseCd = (p.teaseCd || 0) - dt;
+  // camera-relative movement
+  const camF = tmpV.copy(p.pos).sub(camera.position).setY(0).normalize();
+  const camR = tmpV2.crossVectors(camF, UP).normalize();
+  const move = new THREE.Vector3().addScaledVector(camF, -input.y).addScaledVector(camR, input.x);
+  const mag = Math.min(move.length(), 1);
+  const nearPost = p.pos.length() < GRAB_R;
+
+  if (p.state === 'free' && game.mode === 'play') {
+    if (input.roll && p.rollCd <= 0) {
+      p.state = 'roll'; p.t = 0; p.rollCd = 0.35;
+      p.rollDir.copy(mag > 0.1 ? move.normalize() : fwdOf(p.yaw, new THREE.Vector3()));
+      p.yaw = Math.atan2(p.rollDir.x, p.rollDir.z);
+      player.play('Roll', { once: true, fade: 0.06, ts: 1.5 }); sfx.whoosh();
+    } else if (input.tease && p.teaseCd <= 0) {
+      p.state = 'tease'; p.t = 0; p.teaseCd = 1.3; p.teaseT = game.t;
+      if (game.mode === 'play') { const b = game.b; p.yaw = Math.atan2(b.pos.x - p.pos.x, b.pos.z - p.pos.z); }
+      player.play('SwordSlash', { once: true, fade: 0.08, ts: 1.5 }); player.flap = 0.9;
+      sfx.tease(); if (game.online) netSend({ t: 'tease' });
+      if (!game.hintsShown.tease) { game.hintsShown.tease = true; hint('He saw the hide! Get ready to roll.', 1600); }
+    } else if (input.grab && nearPost && game.pithaReady) {
+      p.state = 'grab'; p.t = 0; p.grabbed = false; p.vel.set(0, 0, 0);
+      p.yaw = Math.atan2(-p.pos.x, -p.pos.z);
+      player.play('Jump', { once: true, fade: 0.08, ts: 1.15 });
+    } else if (input.grab && !nearPost) {
+      hint('Get inside the dotted ring at the post first.', 1500);
+    } else {
+      const speed = 5.4 * mag * ((p.boost || 0) > 0 ? 1.3 : 1);
+      p.vel.copy(move).setLength(speed);
+      if (mag > 0.08) { p.yaw = turnTo(p.yaw, Math.atan2(move.x, move.z), 12, dt); player.play(mag > 0.55 ? 'Run' : 'Walk', { ts: mag > 0.55 ? 1 : 1.2 }); }
+      else { p.vel.set(0, 0, 0); player.play('Idle'); }
+      p.pos.addScaledVector(p.vel, dt);
+    }
+  } else if (p.state === 'celebrate') {
+    p.vel.set(0, 0, 0);
+    if (p.celebKind === 'dance') p.yaw += dt * 10;
+    const maxT = p.celebKind === 'hifive' ? 2.6 : 1.4;
+    if (mag > 0.35 || input.roll) p.state = 'free';
+    else if (p.t > maxT) { p.state = 'free'; player.play('Idle', { fade: 0.2 }); }
+  } else if (p.state === 'tease') {
+    p.vel.copy(move).setLength(5.4 * mag * 0.35); p.pos.addScaledVector(p.vel, dt);
+    if (input.roll && p.t > 0.12) { p.state = 'free'; input.roll = true; } // a roll cancels the wave
+    else if (p.t > 0.6) { p.state = 'free'; player.play('Idle'); }
+  } else if (p.state === 'roll') {
+    const k = 1 - p.t / 0.6;
+    p.vel.copy(p.rollDir).multiplyScalar(9.5 * Math.max(k, 0.2));
+    p.pos.addScaledVector(p.vel, dt);
+    if (p.t > 0.6) { p.state = 'free'; p.invuln = Math.max(p.invuln, 0.12); }
+  } else if (p.state === 'grab') {
+    if (!p.grabbed && p.t > 0.42 && game.online) { p.grabbed = true; netSend({ t: 'grab' }); }
+    if (!p.grabbed && p.t > 0.42) {
+      p.grabbed = true; game.pithaReady = false; game.pithaTimer = 0; pitha.visible = false;
+      game.combo++; game.pitha++; renderCombo(); sfx.grab(); buzz(40); progress('pitha'); progress('combo', Math.min(game.combo, 5), true);
+      const gold = pitha.userData.gold, pts = Math.min(game.combo, 5) + (gold ? 3 : 0);
+      if (gold) { setGold(false); crowdCheer(0.9); buzz([30, 30, 60]); game.slow = 0.25; }
+      award(pts, gold ? `Golden pitha! +${pts}` : game.combo >= 2 ? `×${pts} combo · ${['Hoy!', 'Johar!', 'Got it!', 'Snatched!'][game.pitha % 4]}` : ['Snatched!', 'Hoy!', 'Got it!', 'Johar!'][game.pitha % 4]);
+      const wp = pitha.getWorldPosition(new THREE.Vector3());
+      for (let i = 0; i < 14; i++) emit(sparkPool, wp, { life: 0.9, vel: new THREE.Vector3(rand(-2, 2), rand(1, 3.5), rand(-2, 2)), size: 0.35, grow: -0.2, grav: 4, color: i % 2 ? 0xffc66b : 0xfff1c9 });
+      crowd.forEach((c, i) => setTimeout(() => { if (!c.busy && !c.goingHome) c.play('Victory', { once: true, fade: 0.2 }); }, i * 60));
+      if (game.pitha === 1) setTimeout(() => hint('Grab again without getting hit for a combo', 2400), 1200);
+    }
+    if (p.t > 0.95) {
+      if (game.online) { p.state = 'free'; player.play('Idle', { fade: 0.15 }); } // the room decides; celebration starts on its answer
+      else celebrate(CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)], () => game.p.pos, true);
+    }
+  } else if (p.state === 'hit' || p.state === 'dead') {
+    p.vel.multiplyScalar(Math.pow(0.02, dt));
+    p.pos.addScaledVector(p.vel, dt);
+    if (p.state === 'hit' && p.t > 0.9) { p.state = 'free'; player.play('Idle'); }
+  } else if (game.mode !== 'play') {
+    p.vel.set(0, 0, 0);
+  }
+  if (p.state !== 'free' || !input.roll) input.roll = false;
+  input.grab = input.tease = false;
+  flapHide(player, dt);
+  $('hideBtn').classList.toggle('cool', p.teaseCd > 0);
+
+  // collisions: post, bull body, arena edge
+  const pr = Math.hypot(p.pos.x, p.pos.z);
+  if (pr < 0.45) { p.pos.setLength(0.45); }
+  const b = game.b, dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z, bd = Math.hypot(dx, dz);
+  if (bd < 0.95 && bd > 0.001 && p.state !== 'dead') { p.pos.x = b.pos.x + dx / bd * 0.95; p.pos.z = b.pos.z + dz / bd * 0.95; }
+  if (pr > ARENA_R) p.pos.setLength(ARENA_R);
+  p.pos.y = 0;
+
+  player.wrap.position.copy(p.pos);
+  if (p.state === 'celebrate' && p.celebKind === 'dance') player.wrap.position.y = Math.abs(Math.sin(p.t * 9)) * 0.28;
+  player.wrap.rotation.y = p.yaw;
+  player.wrap.visible = !game.spectator && !(p.invuln > 0 && p.state === 'free' && Math.floor(p.invuln * 12) % 2 === 0);
+
+  const ready = nearPost && game.pithaReady && p.state === 'free' && game.mode === 'play';
+  $('grabBtn').classList.toggle('ready', ready);
+}
+
+// now and then the pitha comes back golden: 3 extra points, so every respawn is worth a look
+function setGoldQuiet() { pitha.userData.gold = false; const m = pitha.userData.disc.material, h = pitha.userData.halo; m.color.set(0xc98a3d); if (m.emissive) { m.emissive.set(0x3a1c00); m.emissiveIntensity = 0.3; } h.material.color.set(0xffc66b); h.scale.setScalar(1.3); }
+function setGold(on) {
+  pitha.userData.gold = on; const m = pitha.userData.disc.material, h = pitha.userData.halo;
+  m.color.set(on ? 0xffd24a : 0xc98a3d); if (m.emissive) { m.emissive.set(on ? 0x8a5a00 : 0x3a1c00); m.emissiveIntensity = on ? 0.9 : 0.3; }
+  h.material.color.set(on ? 0xfff3a0 : 0xffc66b); h.scale.setScalar(on ? 2.1 : 1.3);
+  if (on) { sfx.grab && play('bells', { vol: 0.45, rate: 1.5 }); if (!game.hintsShown.gold) { game.hintsShown.gold = true; hint('Golden pitha! Worth 3 extra points.', 2400); } else toast('Golden pitha!', 1000); }
+}
+function updatePitha(dt) {
+  if (game.online) {
+    if (net.pr && !game.pithaReady) { game.pithaReady = true; pitha.visible = true; pitha.scale.setScalar(0.01); }
+    if (!net.pr && game.pithaReady) { game.pithaReady = false; pitha.visible = false; }
+  } else if (!game.pithaReady) {
+    game.pithaTimer += dt;
+    if (game.pithaTimer > 1.1) { game.pithaReady = true; pitha.visible = true; pitha.scale.setScalar(0.01); setGold(game.pitha >= 2 && Math.random() < 0.22); }
+  }
+  if (pitha.userData.gold && pitha.visible) { // a golden pitha sparkles so it reads from across the ring
+    pitha.userData.spark = (pitha.userData.spark || 0) - dt;
+    if (pitha.userData.spark <= 0) { pitha.userData.spark = 0.12; emit(sparkPool, pitha.getWorldPosition(tmpV2).clone(), { life: 0.7, vel: new THREE.Vector3(rand(-0.8, 0.8), rand(0.6, 1.8), rand(-0.8, 0.8)), size: 0.22, grow: -0.2, grav: 2, color: 0xfff1a8 }); }
+  }
+  if (pitha.visible && pitha.scale.x < 1) pitha.scale.setScalar(Math.min(1, pitha.scale.x + dt * 3));
+  pitha.rotation.y += dt * 0.6;
+  pitha.userData.halo.material.opacity = 0.35 + 0.25 * Math.sin(game.t * 4);
+}
+
+/* ---------- handi: a clay pot of rice beer that turns up in the ring and gives back a life ---------- */
+const handi = new THREE.Group(); handi.visible = false; scene.add(handi);
+{
+  const pts = [[0, 0], [0.12, 0.01], [0.2, 0.06], [0.235, 0.15], [0.22, 0.25], [0.16, 0.33], [0.11, 0.37], [0.12, 0.41], [0.135, 0.43]].map(([x, y]) => new THREE.Vector2(x, y));
+  const clay = Mat({ color: 0xa4552c, roughness: 0.8 });
+  const pot = new THREE.Mesh(new THREE.LatheGeometry(pts, 16), clay); pot.castShadow = true; handi.add(pot);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.228, 0.014, 6, 20), Mat({ color: 0xf2e8d0, roughness: 0.6 })); band.rotation.x = Math.PI / 2; band.position.y = 0.19; handi.add(band);
+  const brew = new THREE.Mesh(new THREE.CircleGeometry(0.12, 14), Mat({ color: 0xf3ead2, roughness: 0.4, emissive: 0x5a4a20, emissiveIntensity: 0.3 })); brew.rotation.x = -Math.PI / 2; brew.position.y = 0.415; handi.add(brew);
+  const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.03, 6, 1, true), Mat({ color: 0x4f7d35, roughness: 0.8, side: THREE.DoubleSide })); leaf.position.set(0.05, 0.44, 0.02); leaf.rotation.z = 0.5; handi.add(leaf);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x9dff9a, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending }));
+  glow.scale.setScalar(1.25); glow.position.y = 0.25; handi.add(glow); handi.userData.glow = glow;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 32), new THREE.MeshBasicMaterial({ color: 0x9dff9a, transparent: true, opacity: 0.6, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; handi.add(ring); handi.userData.ring = ring;
+  handi.scale.setScalar(1.5);
+}
+const HANDI_R = 1.35, HANDI_LIFE = 12;
+const hs = { on: false, life: 0, next: 12, sentAt: -9 };
+function spawnHandiAt(x, z) { handi.position.set(x, 0, z); handi.visible = true; handi.userData.pop = 0; const hsn = (game.hintsShown ||= {}); if (!hsn.handi) { hsn.handi = true; hint('Handi! Run over it for an extra life.', 2200); } }
+function drinkHandi(full, pos) {
+  for (let i = 0; i < 12; i++) emit(sparkPool, pos, { life: 0.8, vel: new THREE.Vector3(rand(-1.5, 1.5), rand(1.2, 3), rand(-1.5, 1.5)), size: 0.3, grow: -0.2, grav: 4, color: i % 2 ? 0x9dff9a : 0xfff1c9 });
+  if (audio.ctx) { const t = audio.ctx.currentTime; [0, 0.11, 0.22].forEach((d, i) => tone(t + d, 'sine', 300 - i * 40, 160 - i * 20, 0.12, 0.35, audio.sfxBus)); play('bells', { vol: 0.5, rate: 1.4, when: 0.3 }); }
+}
+function handiEffectLocal(full) { // my player drank it
+  progress('handi');
+  game.p.boost = 4; buzz(30);
+  if (full) { award(1, 'Handi! Full of life +1'); } else { toast('Handi! +1 life', 1200); }
+}
+function updateHandi(dt) {
+  if (!game.online) {
+    if (game.mode !== 'play') { handi.visible = false; hs.on = false; return; }
+    if (!hs.on) { hs.next -= dt; if (hs.next <= 0) { const a = rand(0, 6.283), r = rand(3.2, 9.5); hs.on = true; hs.life = HANDI_LIFE; spawnHandiAt(Math.cos(a) * r, Math.sin(a) * r); } }
+    else { hs.life -= dt; if (hs.life <= 0) { hs.on = false; handi.visible = false; hs.next = rand(14, 20); } }
+  }
+  if (!handi.visible) return;
+  const u = handi.userData; u.pop = Math.min(1, (u.pop || 0) + dt * 3);
+  handi.scale.setScalar(1.5 * (u.pop < 1 ? 0.3 + 0.7 * Math.sin(u.pop * Math.PI / 2) * 1.08 : 1));
+  handi.rotation.y += dt * 1.2; handi.position.y = 0.06 + Math.sin(game.t * 3) * 0.05;
+  const blink = !game.online && hs.life < 2.5 ? (Math.sin(game.t * 18) > 0 ? 1 : 0.25) : 1;
+  u.glow.material.opacity = (0.35 + 0.2 * Math.sin(game.t * 4)) * blink; u.ring.material.opacity = 0.55 * blink;
+  const p = game.p;
+  if (game.mode === 'play' && !game.spectator && p.state !== 'dead' && p.pos.distanceTo(tmpV.set(handi.position.x, 0, handi.position.z)) < HANDI_R) {
+    if (game.online) { if (game.t - hs.sentAt > 0.3) { hs.sentAt = game.t; netSend({ t: 'handi', x: +p.pos.x.toFixed(2), z: +p.pos.z.toFixed(2) }); } }
+    else { const full = game.lives >= 3; if (!full) { game.lives++; renderLives(); } handiEffectLocal(full); drinkHandi(full, handi.position); hs.on = false; handi.visible = false; hs.next = rand(14, 20); }
+  }
+}
+
+/* ---------- celebrations after a grab ---------- */
+const party = { partner: null, target: null, phase: 'none', t: 0, kind: '', spot: new THREE.Vector3(), f: new THREE.Vector3(), fixedF: false, isLocal: false, clapped: false };
+const CELEBRATIONS = ['hifive', 'hifive', 'hifive', 'dance', 'dance', 'victory'];
+function pickPartner(pos) {
+  let best = null, bd = 1e9;
+  for (const c of crowd) if (c.kind !== 'man' && c.wrap.visible && !c.busy && !c.goingHome) { const d = c.wrap.position.distanceTo(pos); if (d < bd) { bd = d; best = c; } }
+  return best;
+}
+function sendHome(c) { c.goingHome = true; c.play('Run', { fade: 0.15, ts: 1.1 }); }
+function celebrate(kind, getTarget, isLocal) {
+  if (party.partner) sendHome(party.partner);
+  Object.assign(party, { kind, t: 0, isLocal, target: getTarget, phase: 'none', partner: null, clapped: false, fixedF: false });
+  if (isLocal) { // high-five side-on to the camera so both people stay in view
+    const camF = tmpV.copy(game.p.pos).sub(camera.position).setY(0).normalize();
+    party.f.crossVectors(camF, UP).normalize(); party.fixedF = true;
+  }
+  if (isLocal) {
+    const p = game.p; if (p.state === 'dead') return;
+    p.state = 'celebrate'; p.t = 0; p.celebKind = kind; p.vel.set(0, 0, 0);
+    player.play('Victory', { once: true, fade: 0.12, ts: kind === 'dance' ? 1.6 : 1.1 });
+  }
+  if (kind === 'hifive') {
+    const tp = getTarget(); const c = tp && pickPartner(tp);
+    if (c) { party.partner = c; c.busy = true; party.phase = 'run'; c.play('Run', { fade: 0.1, ts: 1.25 }); }
+  }
+}
+function updateParty(dt) {
+  for (const c of crowd) if (c.goingHome) { // finished partners jog back to their spot
+    const to = tmpV.subVectors(c.home, c.wrap.position).setY(0), d = to.length();
+    if (d < 0.15) { c.wrap.position.copy(c.home); c.wrap.rotation.y = c.homeYaw; c.goingHome = false; c.busy = false; c.play('Idle', { fade: 0.3 }); }
+    else { c.wrap.rotation.y = Math.atan2(to.x, to.z); c.wrap.position.addScaledVector(to.normalize(), Math.min(d, 9 * dt)); }
+  }
+  const c = party.partner; if (!c) return;
+  party.t += dt;
+  const tp = party.target();
+  const gaveUp = !tp || (party.isLocal && game.p.state !== 'celebrate');
+  if (gaveUp && party.phase === 'run') { sendHome(c); party.partner = null; return; }
+  if (!party.fixedF) party.f.subVectors(c.home, tp).setY(0).normalize();
+  const f = party.f, right = tmpV2.set(-f.z, 0, f.x); // the grabber's right-hand side when facing f
+  if (party.phase === 'run') {
+    // stand facing them, shifted so both right hands meet in the middle
+    party.spot.copy(tp).addScaledVector(f, 0.95).addScaledVector(right, -0.36); party.spot.y = 0;
+    const to = tmpV.subVectors(party.spot, c.wrap.position).setY(0), d = to.length();
+    if (d < 0.12 || party.t > 1.7) {
+      c.wrap.position.copy(party.spot); c.wrap.rotation.y = Math.atan2(-f.x, -f.z);
+      party.phase = 'five'; party.t = 0; party.clapped = false;
+      c.play('Shoot_OneHanded', { once: true, fade: 0.08, ts: 1.6 });
+      if (party.isLocal) { game.p.yaw = Math.atan2(f.x, f.z); player.play('Shoot_OneHanded', { once: true, fade: 0.08, ts: 1.6 }); }
+    } else { c.wrap.rotation.y = Math.atan2(to.x, to.z); c.wrap.position.addScaledVector(to.normalize(), Math.min(d, 11 * dt)); }
+  } else if (party.phase === 'five') {
+    if (!party.clapped && party.t > 0.22) {
+      party.clapped = true; sfx.highfive();
+      const mid = tmpV.copy(c.wrap.position).add(tp).multiplyScalar(0.5).setY(1.05);
+      for (let i = 0; i < 10; i++) emit(sparkPool, mid, { life: 0.6, vel: new THREE.Vector3(rand(-1.6, 1.6), rand(0.4, 2.2), rand(-1.6, 1.6)), size: 0.28, grow: -0.15, grav: 3, color: i % 2 ? 0xffd27a : 0xffffff });
+    }
+    if (party.t > 0.75) {
+      sendHome(c); party.partner = null; party.phase = 'none';
+      if (party.isLocal && game.p.state === 'celebrate') { game.p.state = 'free'; player.play('Idle', { fade: 0.2 }); }
+    }
+  }
+}
+
+/* ---------- camera ---------- */
+const camLook = new THREE.Vector3();
+function updateCamera(dt) {
+  const portrait = camera.aspect < 1;
+  if (game.mode === 'story' && story) { story.cam(dt, portrait); return; }
+  if (game.mode === 'menu' || game.mode === 'lobby') {
+    const a = game.t * 0.12;
+    camera.position.set(Math.sin(a) * 13, 5.5, Math.cos(a) * 13);
+    camLook.set(0, 1.2, 0); camera.lookAt(camLook);
+    return;
+  }
+  const p = game.p.pos;
+  const fromPost = tmpV.set(p.x, 0, p.z);
+  if (fromPost.length() > 1.2) game.camDir.lerp(fromPost.normalize(), 1 - Math.pow(0.02, dt)).normalize();
+  const back = portrait ? 8.6 : 7.2, up = portrait ? 6.2 : 4.6;
+  const target = tmpV2.copy(p).addScaledVector(game.camDir, back).setY(up);
+  camera.position.lerp(target, 1 - Math.pow(0.003, dt));
+  const look = new THREE.Vector3().copy(p).lerp(new THREE.Vector3(0, 0, 0), 0.4).setY(1.1);
+  camLook.lerp(look, 1 - Math.pow(0.002, dt));
+  camera.lookAt(camLook);
+  if (game.shake > 0 && !reduceMotion) {
+    camera.position.x += rand(-1, 1) * game.shake * 0.25; camera.position.y += rand(-1, 1) * game.shake * 0.2;
+  }
+  game.shake = Math.max(0, game.shake - dt * 1.8);
+}
+
+function updateDecor(dt) {
+  // rope from post to bull's neck
+  if (bull.neck) {
+    const n = bull.neck.getWorldPosition(tmpV);
+    const len = n.distanceTo(ropeAnchor);
+    rope.position.copy(ropeAnchor); rope.lookAt(n); rope.scale.set(1, 1, len);
+    // garland sits on the neck, turned with the bull
+    garland.position.copy(n);
+    garland.rotation.set(0, game.b.yaw, 0); garland.rotateX(-1.0);
+  }
+  for (const f of flames) { f.userData.p += dt * 9; f.scale.setScalar(0.24 + Math.sin(f.userData.p) * 0.03 + Math.sin(f.userData.p * 2.3) * 0.02); }
+}
+
+
+/* ---------- online play ---------- */
+const net = { ws: null, id: 0, code: '', host: 0, roster: [], phase: 'lobby', snaps: [], pr: 1, d: 0, tl: 120, sendT: 0, pingT: 0, bstate: -1, remotes: new Map(), wantClose: false };
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+let savedName = ''; try { savedName = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
+$('nameIn').value = savedName;
+function myName() { const n = $('nameIn').value.trim().slice(0, 14); try { localStorage.setItem('khuntau-name', n); } catch (e) {} return n || 'Player'; }
+function roomLink() { return location.origin + location.pathname + '?room=' + net.code; }
+function netSend(m) { if (net.ws && net.ws.readyState === 1) net.ws.send(JSON.stringify(m)); }
+function nameOf(id) { const r = net.roster.find(p => p.id === id); return r ? r.name : 'Someone'; }
+
+function connect(code, isRetry) {
+  initAudio(); if (!isRetry) net.retries = 0;
+  net.code = code; net.wantClose = false; net.snaps = []; net.off = undefined; net.jit = undefined; $('netNote').textContent = 'Connecting…';
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/' + code);
+  net.ws = ws;
+  ws.onopen = () => { net.retries = 0; netSend({ t: 'hello', name: myName() }); sendMe(); $('netNote').innerHTML = '&nbsp;'; };
+  ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onNet(m); };
+  ws.onclose = () => {
+    if (net.ws !== ws) return;
+    net.ws = null;
+    if (!net.wantClose && net.retries < 4) { // brief network blip: rejoin the same room
+      net.retries++; toast('Reconnecting…', 1200);
+      setTimeout(() => { if (!net.wantClose) connect(net.code, true); }, 800 * net.retries);
+      return;
+    }
+    if (!net.wantClose) toast('Connection lost', 1600);
+    leaveOnline(true);
+  };
+  ws.onerror = () => { $('netNote').textContent = 'Could not reach the room. Check your internet and try again.'; };
+}
+function leaveOnline(keepCode) {
+  stopVoice();
+  game.menuOpen = false; $('pauseScreen').hidden = true;
+  net.wantClose = true; if (net.ws) { try { net.ws.close(); } catch (e) {} net.ws = null; }
+  for (const r of net.remotes.values()) scene.remove(r.a.wrap);
+  net.remotes.clear(); crowdBudget();
+  game.online = false; game.mode = 'menu'; game.spectator = false; setMusic('intro');
+  $('copyBtn').hidden = true; $('shareScoreBtn').hidden = false; $('menuBtn').hidden = false; $('resultList').hidden = true; $('againBtn').disabled = false; $('againBtn').textContent = 'Play again';
+  ['lobbyScreen', 'overScreen', 'hudScore', 'board', 'timerChip'].forEach(id => $(id).hidden = true);
+  $('startScreen').hidden = false;
+  if (keepCode) { $('codeIn').value = net.code; $('joinBtn').textContent = 'Rejoin ' + net.code; }
+  else history.replaceState(null, '', location.pathname);
+  resetGame(); renderToday(); loadBoard(); applyShirt(); knockIn.length = 0; showKnock(); loadRooms();
+}
+function showLobby() {
+  game.mode = 'lobby'; game.online = true; game.spectator = false; setMusic('intro');
+  ['startScreen', 'overScreen', 'hudScore', 'board', 'timerChip'].forEach(id => $(id).hidden = true);
+  $('lobbyScreen').hidden = false; $('roomCode').textContent = net.code;
+  renderLobby();
+}
+function renderLobby() {
+  const ul = $('plist'); ul.innerHTML = '';
+  for (const p of net.roster) {
+    const li = document.createElement('li');
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = p.col; li.appendChild(dot);
+    li.appendChild(document.createTextNode(p.name + (p.id === net.id ? ' (you)' : '')));
+    if (p.id === net.host || p.voice) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = [p.id === net.host ? 'host' : '', p.voice ? 'voice' : ''].filter(Boolean).join(' · '); li.appendChild(t); }
+    ul.appendChild(li);
+  }
+  const amHost = net.host === net.id;
+  $('hostStartBtn').hidden = !amHost;
+  $('openBtn').hidden = !amHost; $('openBtn').textContent = net.open ? 'Shown on home screens: on' : 'Shown on home screens: off';
+  $('hostStartBtn').textContent = net.roster.length < 2 ? 'Start round (solo)' : `Start round · ${net.roster.length} players`;
+  $('lobbyNote').textContent = amHost ? 'Share the code. Start when everyone is in.' : 'Waiting for the host to start the round…';
+}
+let boardKey = '';
+function renderBoard(ps) {
+  // only touch the page when a score, life or name actually changed (this ran 10x a second and caused hitches)
+  const key = ps.map(p => p[0] + ':' + p[5] + ':' + p[6] + ':' + p[7] + ':' + p[8]).join('|') + '#' + net.roster.map(r => r.id + r.name).join(',');
+  if (key === boardKey) return; boardKey = key;
+  const b = $('board'); b.innerHTML = '';
+  const list = ps.filter(p => p[8]).sort((x, y) => y[6] - x[6]);
+  for (const p of list) {
+    const r = net.roster.find(q => q.id === p[0]); if (!r) continue;
+    const row = document.createElement('div'); row.className = 'r' + (p[7] ? '' : ' out') + (p[0] === net.id ? ' me' : '');
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.col; row.appendChild(dot);
+    row.appendChild(document.createTextNode(r.name + ' ' + '●'.repeat(p[5])));
+    const sc = document.createElement('b'); sc.textContent = p[6]; row.appendChild(sc);
+    b.appendChild(row);
+  }
+}
+
+function nameTag(text, col) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
+  x.font = '700 30px "Baloo 2", system-ui, sans-serif'; const w = Math.min(240, x.measureText(text).width + 44);
+  x.fillStyle = 'rgba(20,10,6,.7)'; x.beginPath(); x.roundRect((256 - w) / 2, 8, w, 46, 23); x.fill();
+  x.fillStyle = col; x.beginPath(); x.arc((256 - w) / 2 + 20, 31, 8, 0, 7); x.fill();
+  x.fillStyle = '#f6eedd'; x.textBaseline = 'middle'; x.fillText(text, (256 - w) / 2 + 34, 33, w - 44);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+  sp.scale.set(2.0, 0.5, 1); sp.position.y = 2.2; sp.renderOrder = 10; return sp;
+}
+// keep the number of animated characters roughly constant: every extra player sends a villager home
+function crowdBudget() {
+  let keep = crowd.length;
+  if (QUALITY < 2) keep -= net.remotes.size * (QUALITY === 0 ? 2 : 1);
+  if (perf.thin) keep = Math.ceil(keep / 2);
+  keep = Math.max(3, keep);
+  crowd.forEach((c, i) => { if (!c.busy && !c.goingHome) c.wrap.visible = i < keep; });
+}
+function syncRemotes() {
+  const ids = new Set(net.roster.map(p => p.id));
+  for (const [id, r] of net.remotes) if (!ids.has(id)) { scene.remove(r.a.wrap); net.remotes.delete(id); }
+  for (const p of net.roster) {
+    const ex = net.remotes.get(p.id);
+    if (ex && ex.col !== p.col) { tint(ex.a, { Shirt: p.col }); ex.col = p.col; ex.name = null; } // they picked a shirt
+    if (ex && ex.name !== p.name) { // name arrived after the player joined: redraw their tag
+      ex.a.wrap.remove(ex.tag); ex.tag.material.map.dispose(); ex.tag.material.dispose();
+      ex.tag = nameTag(p.name, p.col); ex.a.wrap.add(ex.tag); ex.name = p.name;
+    }
+    if (p.id === net.id || ex) continue;
+    const a = actor(loaded[p.id % 2 ? 'man' : 'woman'], 1.72, true);
+    tint(a, { Skin: [0x6e4630, 0x7a5038, 0x5e3a22][p.id % 3], Shirt: p.col, Pants: 0x3b3a36, Hair: 0x15100c });
+    if (QUALITY > 0) shadows(a); a.play('Idle'); giveHide(a);
+    const tag = nameTag(p.name, p.col); a.wrap.add(tag);
+    scene.add(a.wrap);
+    net.remotes.set(p.id, { a, tag, anim: 'Idle', name: p.name, col: p.col });
+  }
+  const me = net.roster.find(p => p.id === net.id);
+  if (me) { tint(player, { Shirt: me.col }); }
+  crowdBudget(); if (perf.cheapen) perf.cheapen();
+}
+
+function onNet(m) {
+  switch (m.t) {
+    case 'full': $('netNote').textContent = 'That room is full (6 players).'; net.wantClose = true; break;
+    case 'welcome':
+      net.id = m.id; net.phase = m.phase;
+      if (voice.on) { [...voice.pcs.keys()].forEach(closePeer); netSend({ t: 'voice', on: true }); } // rejoined with a new id
+      history.replaceState(null, '', '?room=' + net.code);
+      if (game.mode === 'play' && m.phase === 'play') { game.spectator = true; game.p.state = 'dead'; hint('Reconnected. You will be back in next round.', 2600); }
+      else showLobby();
+      if (m.phase === 'play') hint('A round is in progress. You will join the next one.', 3000);
+      break;
+    case 'roster':
+      net.roster = m.players; net.host = m.host; net.phase = m.phase; net.open = m.open !== false; syncVoice();
+      if (net.host !== net.id && knockIn.length) { knockIn.length = 0; showKnock(); }
+      syncRemotes(); if (game.mode === 'lobby') renderLobby();
+      if (game.mode === 'over') updateOverButtons();
+      break;
+    case 's': {
+      net.pr = m.pr; net.d = m.d; net.tl = m.tl; net.phase = m.ph;
+      if (m.h && (!handi.visible || handi.position.x !== m.h[0] || handi.position.z !== m.h[1])) spawnHandiAt(m.h[0], m.h[1]);
+      else if (!m.h && handi.visible) handi.visible = false;
+      { // place each snapshot on the server's clock so uneven arrival (mobile data) doesn't show up as stutter
+        const now = performance.now(), ts = typeof m.ts === 'number' ? m.ts : now, off = now - ts;
+        if (net.off === undefined || off < net.off || Math.abs(off - net.off) > 2000) net.off = off; else net.off += 0.02; // follow the fastest path, drift up slowly
+        const late = off - net.off; net.jit = net.jit === undefined ? late : net.jit * 0.9 + late * 0.1;
+        net.snaps.push({ t: ts, b: m.b, ps: m.ps });
+      }
+      if (net.snaps.length > 40) net.snaps.shift();
+      if (game.mode === 'play') {
+        $('timer').textContent = m.tl; renderBoard(m.ps);
+        const mine = m.ps.find(p => p[0] === net.id);
+        if (mine) { game.lives = mine[5]; game.score = mine[6]; $('score').textContent = game.score; renderLives(); }
+      }
+      break;
+    }
+    case 'rtc': onRtc(m.from, m.d); break;
+    case 'knock': case 'knockGone': onKnock(m); break;
+    case 'ev': onNetEvent(m); break;
+  }
+}
+function onNetEvent(m) {
+  switch (m.e) {
+    case 'start': {
+      resetGame(); game.mode = 'play'; game.online = true; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
+      const sp = m.spawn.find(s => s[0] === net.id);
+      const inRound = !!sp;
+      if (sp) { game.p.pos.set(sp[1], 0, sp[2]); game.p.yaw = Math.atan2(-sp[1], -sp[2]); }
+      game.spectator = !sp;
+      if (!sp) game.p.state = 'dead';
+      ['startScreen', 'lobbyScreen', 'overScreen'].forEach(id => $(id).hidden = true);
+      $('hudScore').hidden = !inRound; $('board').hidden = false; $('timerChip').hidden = false; $('bestChip').hidden = true;
+      toast('Round on!', 1000);
+      hint(isTouch ? 'Wave the HIDE to pull the bull onto you, so a friend can grab. Or grab first!' : 'Q waves the hide and pulls the bull onto you. Team up, or race for the pitha!', 3200);
+      break;
+    }
+    case 'grab': {
+      const wp = pitha.getWorldPosition(new THREE.Vector3());
+      for (let i = 0; i < 14; i++) emit(sparkPool, wp, { life: 0.9, vel: new THREE.Vector3(rand(-2, 2), rand(1, 3.5), rand(-2, 2)), size: 0.35, grow: -0.2, grav: 4, color: i % 2 ? 0xffc66b : 0xfff1c9 });
+      sfx.grab(); game.pithaReady = false; pitha.visible = false;
+      crowd.forEach((c, i) => setTimeout(() => { if (!c.busy && !c.goingHome) c.play('Victory', { once: true, fade: 0.2 }); }, i * 60));
+      const kind = m.kind || 'victory';
+      if (m.id === net.id) { progress('pitha'); celebrate(kind, () => game.p.pos, true); }
+      else celebrate(kind, () => { const r = net.remotes.get(m.id); return r && r.a.wrap.visible ? r.a.wrap.position : null; }, false);
+      if (m.id === net.id) toast(['Snatched!', 'Hoy!', 'Got it!', 'Johar!'][m.score % 4], 900);
+      else toast(nameOf(m.id) + ' got it!', 900);
+      break;
+    }
+    case 'hit': if (m.id !== net.id) { sfx.hit(); toast(nameOf(m.id) + (m.lives ? ' got horned!' : ' is out!'), 900); } break;
+    case 'snort': sfx.snort(); break;
+    case 'tease': if (m.id !== net.id) { sfx.tease(); const r = net.remotes.get(m.id); if (r) r.a.flap = 0.9; } break;
+    case 'bonk': sfx.bonk(); game.shake = Math.max(game.shake, 0.3); break;
+    case 'snap': sfx.snap(); game.shake = Math.max(game.shake, 0.2); break;
+    case 'handi': { handi.visible = false; drinkHandi(m.full, tmpV2.set(m.x, 0.3, m.z).clone());
+      if (m.id === net.id) handiEffectLocal(m.full); else toast(nameOf(m.id) + ' drank the handi!', 1000); break; }
+    case 'over': if (game.mode === 'lobby') { const w = m.results && m.results[0]; toast(w ? (w.id === net.id ? 'You won the round!' : w.name + ' won the round') : 'Round over', 2200); renderLobby(); } else showResults(m); break;
+  }
+}
+function showResults(m) {
+  game.mode = 'over'; game.menuOpen = false; $('pauseScreen').hidden = true; $('hint').classList.remove('show');
+  setTimeout(() => { setMusic('intro'); sfx.cheer(); }, 1400);
+  const top = m.results[0];
+  $('overTitle').textContent = !top ? 'Round over' : top.id === net.id ? 'You win!' : top.name + ' wins!';
+  const mine = m.results.find(r => r.id === net.id);
+  if (mine) finishRun(mine.score, true); else { $('gains').hidden = true; $('dayRank').hidden = true; $('nameRow').hidden = true; }
+  $('overScore').textContent = mine ? mine.score : '–';
+  $('overLine').textContent = m.why === 'time' ? 'Time is up' : 'The bull got everyone';
+  const ul = $('resultList'); ul.innerHTML = ''; ul.hidden = false;
+  for (const r of m.results) {
+    const li = document.createElement('li');
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.col; li.appendChild(dot);
+    li.appendChild(document.createTextNode(r.name + (r.id === net.id ? ' (you)' : '')));
+    const pts = document.createElement('span'); pts.className = 'pts'; pts.textContent = r.score; li.appendChild(pts);
+    ul.appendChild(li);
+  }
+  $('copyBtn').textContent = 'Back to lobby'; $('copyBtn').hidden = false; $('shareScoreBtn').hidden = true; $('menuBtn').hidden = true; $('overRank').hidden = true; $('overNext').hidden = true;
+  updateOverButtons();
+  setTimeout(() => { if (game.mode === 'over') { $('overScreen').hidden = false; $('hudScore').hidden = true; $('board').hidden = true; $('timerChip').hidden = true; } }, 1400);
+}
+function updateOverButtons() {
+  const amHost = net.host === net.id;
+  $('againBtn').disabled = !amHost; $('againBtn').textContent = amHost ? 'Play again' : 'Waiting for host…';
+}
+
+$('createBtn').addEventListener('click', () => { let c = ''; for (let i = 0; i < 4; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; connect(c); });
+$('joinBtn').addEventListener('click', () => {
+  const c = $('codeIn').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(c)) { $('netNote').textContent = 'Room codes have 4 letters or numbers.'; $('codeIn').focus(); return; }
+  connect(c);
+});
+$('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('joinBtn').click(); });
+$('hostStartBtn').addEventListener('click', () => netSend({ t: 'start' }));
+$('leaveBtn').addEventListener('click', () => leaveOnline(false));
+$('outLobbyBtn').addEventListener('click', () => { gallop(false); showLobby(); toast(net.phase === 'play' ? 'The round is finishing. The next one starts from here.' : 'Back in the lobby', 2200); });
+$('shareBtn').addEventListener('click', () => {
+  const text = `Come play Khuntau with me this Sohrai! Snatch the pitha before the bull gets you. Room ${net.code}: ${roomLink()}`;
+  if (navigator.share) { navigator.share({ title: 'Khuntau', text }).catch(() => {}); return; }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+});
+$('copyLinkBtn').addEventListener('click', () => {
+  const link = roomLink(), note = $('shareNote');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(() => { note.textContent = 'Link copied'; }, () => { note.textContent = link; });
+  else note.textContent = link;
+});
+
+// interpolate the room's snapshots ~120 ms behind real time
+const REMOTE_ONE_SHOT = new Set(['Roll', 'Jump', 'RecieveHit', 'Death', 'Victory']);
+function sampleSnaps() {
+  const s = net.snaps; if (!s.length) return null;
+  const rt = performance.now() - (net.off || 0) - clamp(70 + 2 * (net.jit || 0), 90, 260);
+  let i = s.length - 1; while (i > 0 && s[i - 1].t > rt) i--;
+  const b = s[Math.max(0, i - 1)], a = s[i];
+  if (!b || b === a || a.t <= rt) return { a, b: a, k: 1 };
+  const k = clamp((rt - b.t) / (a.t - b.t), 0, 1);
+  return { a, b, k };
+}
+const lerpAng = (x, y, k) => x + Math.atan2(Math.sin(y - x), Math.cos(y - x)) * k;
+const BSTATE = ['watch', 'windup', 'charge', 'stunned', 'recover', 'watch'];
+function netBull(dt) {
+  const smp = sampleSnaps(); if (!smp) return;
+  const A = smp.a.b, B = smp.b.b, k = smp.k, g = game.b;
+  g.pos.set(lerp(B[0], A[0], k), 0, lerp(B[1], A[1], k));
+  g.yaw = lerpAng(B[2], A[2], k);
+  const st = A[3]; g.state = BSTATE[st];
+  fwdOf(g.yaw, g.dir);
+  if (st !== net.bstate) {
+    if (st === 3) bull.play(Math.random() < 0.5 ? 'Idle_HitReact1' : 'Idle_HitReact2', { once: true, fade: 0.08 });
+    net.bstate = st; g.hitDone = false; g.hoof = 0;
+  }
+  if (st === 0) bull.play('Idle'); else if (st === 5) bull.play('Walk', { ts: 1.1 });
+  else if (st === 1) bull.play('Idle_Headlow', { ts: 1.6 }); else if (st === 2) bull.play('Gallop', { fade: 0.1, ts: 1.3 });
+  else if (st === 4) bull.play('Idle', { fade: 0.25 });
+  if (st === 1) arrow.material.opacity = 0.35 + 0.45 * Math.abs(Math.sin(game.t * 14));
+  else arrow.material.opacity = Math.max(0, arrow.material.opacity - dt * 4);
+  if (st === 2) {
+    g.hoof -= dt; if (g.hoof <= 0) { g.hoof = 0.16; sfx.hoof(); emit(dustPool, tmpV2.copy(g.pos).setY(0.25).addScaledVector(g.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
+    const p = game.p, head = tmpV2.copy(g.pos).addScaledVector(g.dir, 1.0);
+    if (game.mode === 'play' && !g.hitDone && Math.hypot(head.x - p.pos.x, head.z - p.pos.z) < 1.05 && p.invuln <= 0 && p.state !== 'roll' && p.state !== 'dead' && p.state !== 'celebrate') { g.hitDone = true; hitPlayer(); }
+  }
+  bull.wrap.position.copy(g.pos); bull.wrap.rotation.y = g.yaw;
+  arrow.position.set(g.pos.x, 0.03, g.pos.z); arrow.rotation.y = g.yaw; arrow.scale.set(1, 1, 7);
+}
+function netFrame(dt) {
+  if (!game.online) return;
+  // remote players
+  const smp = sampleSnaps();
+  if (smp) {
+    const ia = new Map(smp.a.ps.map(p => [p[0], p])), ib = new Map(smp.b.ps.map(p => [p[0], p]));
+    for (const [id, r] of net.remotes) {
+      const A = ia.get(id), B = ib.get(id) || A;
+      if (!A) { r.a.wrap.visible = false; continue; }
+      r.a.wrap.visible = game.mode !== 'play' || A[8] === 1;
+      r.a.wrap.position.set(lerp(B[1], A[1], smp.k), A[4] === 'Victory' && A[1] === B[1] && A[2] === B[2] ? Math.abs(Math.sin(performance.now() / 111)) * 0.18 : 0, lerp(B[2], A[2], smp.k));
+      r.a.wrap.rotation.y = lerpAng(B[3], A[3], smp.k);
+      if (A[4] !== r.anim && A[4] === 'SwordSlash') r.a.flap = 0.9;
+      flapHide(r.a, dt);
+      if (A[4] !== r.anim) { r.anim = A[4]; r.a.play(A[4], { once: REMOTE_ONE_SHOT.has(A[4]), fade: 0.1, ts: A[4] === 'Roll' ? 1.5 : A[4] === 'Jump' ? 1.15 : 1 }); }
+      r.a.mixer.update(dt);
+      // don't walk through other players
+      if (game.mode === 'play' && game.p.state !== 'dead') {
+        const dx = game.p.pos.x - r.a.wrap.position.x, dz = game.p.pos.z - r.a.wrap.position.z, d = Math.hypot(dx, dz);
+        if (d < 0.6 && d > 0.001 && r.a.wrap.visible) { game.p.pos.x += dx / d * (0.6 - d); game.p.pos.z += dz / d * (0.6 - d); }
+      }
+    }
+  }
+  // tell the room where I am
+  net.sendT -= dt;
+  if (game.mode === 'play' && net.sendT <= 0) {
+    net.sendT = 0.066;
+    const p = game.p;
+    netSend({ t: 'p', x: +p.pos.x.toFixed(2), z: +p.pos.z.toFixed(2), yaw: +p.yaw.toFixed(2), a: player.curName || 'Idle', st: p.state });
+  }
+}
+setInterval(() => { if (net.ws) netSend({ t: 'ping', c: Date.now() }); }, 5000);
+
+/* ---------- voice chat: direct player-to-player audio (WebRTC), signalled through the room ---------- */
+const voice = { on: false, muted: false, stream: null, pcs: new Map(), audios: new Map(), tries: new Map() };
+const voiceOk = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.RTCPeerConnection);
+let ICE = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
+voice.relay = false;
+async function loadIce() { // ask the server for relay (TURN) servers so voice works across different networks
+  try { const j = await (await fetch('/turn', { cache: 'no-store' })).json(); if (j.iceServers && j.iceServers.length) { ICE = j.iceServers.concat(ICE); voice.relay = !!j.relay; } } catch (e) {}
+}
+function renderVoice() {
+  const b = $('micBtn'), l = $('voiceBtn');
+  b.classList.toggle('on', voice.on && !voice.muted); b.classList.toggle('muted', voice.on && voice.muted);
+  $('micSlash').style.display = voice.on && !voice.muted ? 'none' : '';
+  b.setAttribute('aria-label', !voice.on ? 'Turn on voice chat' : voice.muted ? 'Unmute microphone' : 'Mute microphone');
+  l.textContent = !voice.on ? 'Turn on voice chat' : voice.muted ? 'Mic muted · tap to unmute' : 'Voice on · tap to mute';
+  refreshMusicVol();
+}
+async function toggleVoice() {
+  if (voice.on) { voice.muted = !voice.muted; voice.stream.getAudioTracks().forEach(t => { t.enabled = !voice.muted; }); renderVoice(); return; }
+  try {
+    voice.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000 }, video: false });
+    watchLevel('me', voice.stream);
+  } catch (e) { toast('Microphone blocked. Allow it in browser settings.', 2200); return; }
+  await loadIce();
+  if (!game.online) { voice.stream.getTracks().forEach(t => t.stop()); voice.stream = null; return; }
+  voice.on = true; voice.muted = false; voice.tries.clear(); renderVoice();
+  netSend({ t: 'voice', on: true });
+  toast('Voice on. Music and crowd noise are off so you can hear each other.', 2200);
+}
+function renderVoiceStatus() {
+  const el = $('shareNote'); if (!voice.on) return;
+  const others = net.roster.filter(p => p.voice && p.id !== net.id);
+  if (!others.length) { el.textContent = 'Voice is on. Waiting for a friend to turn theirs on.'; return; }
+  el.textContent = 'Voice: ' + others.map(p => { const pc = voice.pcs.get(p.id); const st = pc ? pc.connectionState : 'waiting';
+    return p.name + ' ' + (st === 'connected' ? '(connected)' : (voice.tries.get(p.id) || 0) > 2 ? (voice.relay ? '(blocked by network)' : '(different network: relay not set up)') : '(connecting…)'); }).join(', ');
+}
+function stopVoice() {
+  [...voice.pcs.keys()].forEach(closePeer);
+  if (voice.stream) voice.stream.getTracks().forEach(t => t.stop());
+  voice.stream = null; voice.on = false; voice.muted = false; levels.delete('me'); renderVoice();
+}
+function closePeer(id) {
+  const pc = voice.pcs.get(id); if (pc) { pc.onconnectionstatechange = pc.onicecandidate = pc.ontrack = null; try { pc.close(); } catch (e) {} voice.pcs.delete(id); }
+  const a = voice.audios.get(id); if (a) { a.srcObject = null; a.remove(); voice.audios.delete(id); } levels.delete(id);
+}
+function makePc(id) {
+  const pc = new RTCPeerConnection({ iceServers: ICE }); pc._q = [];
+  voice.stream.getTracks().forEach(t => pc.addTrack(t, voice.stream));
+  pc.onicecandidate = e => { if (e.candidate) netSend({ t: 'rtc', to: id, d: { c: e.candidate } }); };
+  pc.ontrack = e => { let a = voice.audios.get(id); if (!a) { a = document.createElement('audio'); a.autoplay = true; a.playsInline = true; a.style.display = 'none'; document.body.appendChild(a); voice.audios.set(id, a); } a.srcObject = e.streams[0]; a.volume = 1; watchLevel(id, e.streams[0]); a.play().catch(() => { addEventListener('pointerdown', () => a.play().catch(() => {}), { once: true }); }); };
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') { voice.tries.set(id, 0); toast(`Voice connected: ${nameOf(id)}`, 1600); renderVoiceStatus(); }
+    if (pc.connectionState === 'disconnected') { toast(`Voice lost: ${nameOf(id)}. Reconnecting…`, 1800); renderVoiceStatus(); }
+    if (pc.connectionState !== 'failed') return;
+    closePeer(id);
+    const n = (voice.tries.get(id) || 0) + 1; voice.tries.set(id, n);
+    if (n <= 2) setTimeout(syncVoice, 1500);
+    else toast(`Voice with ${nameOf(id)} is blocked by the network`, 2600);
+    renderVoiceStatus();
+  };
+  voice.pcs.set(id, pc); return pc;
+}
+// clearer voice: Opus tuned for speech (40 kbps, loss recovery, no silence gaps that make it choppy)
+function tuneSdp(desc) {
+  let sdp = desc.sdp; const m = sdp.match(/a=rtpmap:(\d+) opus\/48000/i); if (!m) return desc;
+  const pt = m[1], want = 'maxaveragebitrate=40000;useinbandfec=1;usedtx=0;stereo=0;sprop-stereo=0;maxplaybackrate=48000';
+  const re = new RegExp('a=fmtp:' + pt + ' (.*)');
+  sdp = re.test(sdp) ? sdp.replace(re, (_, p) => 'a=fmtp:' + pt + ' ' + p.split(';').filter(x => !/^(maxaveragebitrate|useinbandfec|usedtx|stereo|sprop-stereo|maxplaybackrate)=/.test(x.trim())).concat(want).join(';'))
+                     : sdp.replace(m[0], m[0] + '\r\na=fmtp:' + pt + ' ' + want);
+  return { type: desc.type, sdp };
+}
+async function boostSender(pc) {
+  for (const sd of pc.getSenders()) { if (!sd.track || sd.track.kind !== 'audio') continue;
+    try { const p = sd.getParameters(); if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+      p.encodings[0].maxBitrate = 40000; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; await sd.setParameters(p); } catch (e) {} }
+}
+// who is talking right now (level meters on each voice), used to duck game sounds under speech
+const levels = new Map();
+function watchLevel(id, stream) {
+  if (!audio.ctx) return; try {
+    const an = audio.ctx.createAnalyser(); an.fftSize = 512; audio.ctx.createMediaStreamSource(stream).connect(an);
+    levels.set(id, { an, buf: new Float32Array(512), hold: 0 });
+  } catch (e) {}
+}
+function voiceMix(dt) {
+  if (!audio.ctx || !audio.sfxBus) return;
+  let talking = false;
+  if (voice.on) for (const [id, L] of levels) {
+    if (id === 'me' && voice.muted) continue;
+    L.an.getFloatTimeDomainData(L.buf); let e = 0; for (let i = 0; i < L.buf.length; i += 2) e += L.buf[i] * L.buf[i];
+    if (Math.sqrt(e / (L.buf.length / 2)) > 0.025) L.hold = 0.35; else L.hold -= dt;
+    if (L.hold > 0) talking = true;
+  }
+  const sfxG = !voice.on ? 1 : talking ? 0.4 : 0.8, drumG = !voice.on ? 1 : talking ? 0.12 : 0.3, t = audio.ctx.currentTime;
+  audio.sfxBus.gain.setTargetAtTime(sfxG, t, talking ? 0.05 : 0.4); audio.drumBus.gain.setTargetAtTime(drumG, t, talking ? 0.05 : 0.4);
+}
+async function callPeer(id) {
+  try { const pc = makePc(id); await pc.setLocalDescription(tuneSdp(await pc.createOffer())); boostSender(pc); netSend({ t: 'rtc', to: id, d: { sdp: pc.localDescription } }); } catch (e) { closePeer(id); }
+}
+function syncVoice() {
+  if (!voice.on || !net.id) return;
+  const live = new Set(net.roster.filter(p => p.voice && p.id !== net.id).map(p => p.id));
+  for (const id of [...voice.pcs.keys()]) if (!live.has(id)) closePeer(id);
+  // the lower id always places the call, so two players never call each other at once
+  for (const id of live) if (!voice.pcs.has(id) && net.id < id && (voice.tries.get(id) || 0) <= 2) callPeer(id);
+  renderVoiceStatus();
+}
+async function onRtc(from, d) {
+  if (!voice.on || !d) return;
+  try {
+    let pc = voice.pcs.get(from);
+    if (d.sdp && d.sdp.type === 'offer') {
+      if (pc) closePeer(from);
+      pc = makePc(from); await pc.setRemoteDescription(d.sdp);
+      await pc.setLocalDescription(tuneSdp(await pc.createAnswer())); boostSender(pc);
+      netSend({ t: 'rtc', to: from, d: { sdp: pc.localDescription } });
+    } else if (d.sdp && pc) { await pc.setRemoteDescription(d.sdp); }
+    else if (d.c && pc) { if (pc.remoteDescription) await pc.addIceCandidate(d.c); else pc._q.push(d.c); }
+    if (pc && pc.remoteDescription && pc._q.length) { for (const c of pc._q.splice(0)) await pc.addIceCandidate(c).catch(() => {}); }
+  } catch (e) { console.warn('voice', e); }
+}
+if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
+renderVoice();
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket };
+
+/* ---------- pause, quit, full screen ---------- */
+function openPause() {
+  if ((game.mode !== 'play' && game.mode !== 'story') || game.menuOpen) return;
+  game.menuOpen = true; $('hint').classList.remove('show'); game.pausedFrom = game.mode;
+  if (!game.online) { game.mode = 'paused'; gallop(false); if (music.cur === 'game') music.game.pause(); }
+  $('pauseNote').hidden = !game.online;
+  $('quitBtn').textContent = game.online ? 'Leave room' : 'Quit to menu';
+  $('pauseScreen').hidden = false; $('resumeBtn').focus();
+}
+function closePause() {
+  if (!game.menuOpen) return;
+  game.menuOpen = false; $('pauseScreen').hidden = true;
+  if (game.mode === 'paused') { game.mode = game.pausedFrom || 'play'; clock.getDelta(); if (music.cur === 'game') music.game.play().catch(() => {}); }
+}
+function quitToMenu() {
+  game.menuOpen = false; $('pauseScreen').hidden = true;
+  if (game.online) { leaveOnline(false); return; }
+  tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
+  game.storyRun = false; if (story && story.active()) { story.stop(); story.toMenu(); return; }
+  game.mode = 'menu'; resetGame(); gallop(false); renderStoryBtn();
+  ['overScreen', 'hudScore'].forEach(id => $(id).hidden = true);
+  $('startScreen').hidden = false; renderBestLine(); setMusic('intro');
+}
+$('pauseBtn').addEventListener('click', openPause);
+$('resumeBtn').addEventListener('click', closePause);
+$('quitBtn').addEventListener('click', quitToMenu);
+addEventListener('keydown', e => {
+  if (e.code !== 'Escape' && e.code !== 'KeyP') return;
+  if (document.activeElement?.tagName === 'INPUT') return;
+  if (game.menuOpen) closePause();
+  else if (game.mode === 'play' || game.mode === 'story') openPause();
+  else if (game.mode === 'over' && !game.online && e.code === 'Escape') quitToMenu();
+});
+// auto-pause solo games when the phone locks or the player switches apps
+document.addEventListener('visibilitychange', () => { if (document.hidden && (game.mode === 'play' || game.mode === 'story') && !game.online) openPause(); });
+
+const fsRoot = document.documentElement;
+const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+const inFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function toggleFs() {
+  try {
+    if (inFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { const req = fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen; const r = req.call(fsRoot, { navigationUI: 'hide' }); if (r && r.catch) r.catch(() => {}); }
+  } catch (e) {}
+}
+function renderFs() {
+  const on = inFs();
+  $('fsIcon').innerHTML = on ? '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>' : '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>';
+  $('fsBtn').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
+  $('fsBtn2').textContent = on ? 'Exit full screen' : 'Full screen';
+}
+if (fsSupported) {
+  $('fsBtn').hidden = false; $('fsBtn2').hidden = false;
+  $('fsBtn').addEventListener('click', toggleFs); $('fsBtn2').addEventListener('click', toggleFs);
+  document.addEventListener('fullscreenchange', renderFs); document.addEventListener('webkitfullscreenchange', renderFs);
+}
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock();
+const controlsEl = document.getElementById('controls');
+const _pm = new THREE.Matrix4(), _fr = new THREE.Frustum(), _sp = new THREE.Sphere(new THREE.Vector3(), 2.4);
+function frame() {
+  const inStory = game.mode === 'story' && story;
+  const showCtl = inStory ? story.wantsControls() && !game.menuOpen : game.mode === 'play' && !game.spectator && game.p.state !== 'dead' && !game.menuOpen;
+  if (controlsEl.hidden === showCtl) controlsEl.hidden = !showCtl;
+  const showOut = game.online && game.mode === 'play' && !game.menuOpen && (game.spectator || game.p.state === 'dead');
+  if ($('outLobbyBtn').hidden === showOut) $('outLobbyBtn').hidden = !showOut;
+  if ((game.mode !== 'play' || game.online) && !$('rivalChip').hidden) $('rivalChip').hidden = true;
+  const showPause = (game.mode === 'play' || game.mode === 'story') && !game.menuOpen;
+  if ($('pauseBtn').hidden === showPause) $('pauseBtn').hidden = !showPause;
+  const showMic = voiceOk && game.online; if ($('micBtn').hidden === showMic) $('micBtn').hidden = !showMic;
+  const showFs = fsSupported && !(showPause && innerWidth < 480); if ($('fsBtn').hidden === showFs) $('fsBtn').hidden = !showFs; // phones: it lives in the pause menu
+  const rawDt = Math.min(clock.getDelta(), 0.05);
+  if (game.slow > 0) game.slow -= rawDt;
+  const dt = game.slow > 0 && !game.online ? rawDt * 0.3 : rawDt; // a breath of slow motion on the best moments
+  if (game.mode === 'paused') { renderer.render(scene, camera); requestAnimationFrame(frame); return; }
+  game.t += dt;
+  if (bull && player) {
+    readMove();
+    if (inStory) { try { story.update(dt); } catch (e) { if (!story.err) { story.err = 1; console.error(e); } } } // one bad frame in the village must never freeze the game
+    else {
+      updatePlayer(dt); updateBull(dt); updatePitha(dt); updateHandi(dt);
+      if (game.storyRun && game.mode === 'play' && game.pitha >= 3 && !game.storyWon) { // story finale: three pitha wins the day
+        game.storyWon = true; game.slow = 0.5; crowdCheer(1); toast('3 pitha! The village roars', 1700);
+        setTimeout(() => { if (game.storyRun && game.mode === 'play') { game.mode = 'over'; gallop(false); story.afterRing(true); } }, 2000);
+      }
+    }
+    updateDecor(dt);
+    netFrame(dt);
+    updateParty(dt);
+    bull.mixer.update(dt); player.mixer.update(dt);
+    perf.odd = !perf.odd; perf.cdt = (perf.cdt || 0) + dt;
+    // villagers and drummers the camera can't see are neither animated nor drawn
+    _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm);
+    const seen = (a) => { _sp.center.copy(a.wrap.position); _sp.center.y += 0.9; return _fr.intersectsSphere(_sp); };
+    for (const c of crowd) c.root.visible = (!inStory && (c.busy || c.goingHome)) || seen(c);
+    for (const d of drummers) d.root.visible = seen(d);
+    if (QUALITY === 2 && perf.stage < 3) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(dt); }
+    else if (perf.odd) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(perf.cdt); perf.cdt = 0; } // villagers animate at half rate on phones and tablets
+    updateDrummers(dt);
+    // drums follow the bull's mood
+    const s = game.b.state;
+    const want = inStory ? 0.05 : game.mode !== 'play' ? 0.05 : s === 'windup' ? 0.85 : s === 'charge' ? 1 : 0.25 + difficulty() * 0.3;
+    audio.intensity = lerp(audio.intensity, want, 1 - Math.pow(0.05, dt));
+    gallop(!inStory && game.b.state === 'charge' && (game.mode === 'play' || game.online));
+  }
+  updateParticles(dt);
+  updateCamera(dt);
+  renderer.render(scene, camera);
+  adaptQuality(clock.elapsedTime); voiceMix(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// Keep the frame rate up on any device. The game watches its own speed (in the menu too, before the first run)
+// and turns things down one step at a time until it runs smoothly, then remembers the answer for next time.
+//   1 slightly softer picture · 2 no real-time shadows · 3 simple lighting · 4 half the crowd · 5, 6 softer picture
+function applyStage(n) {
+  perf.stage = n;
+  perf.scale = n >= 6 ? 0.55 : n >= 5 ? 0.7 : n >= 1 ? 0.85 : 1; renderer.setPixelRatio(targetPR());
+  setShadows(n < 2);
+  if (n >= 3 && !CHEAP && !perf.lambert) { // mid-session switch; from the next launch everything is built cheap from the start
+    perf.lambert = true; scene.environment = null; const cache = new Map();
+    const cheap = (m) => { if (!m || !m.isMeshStandardMaterial) return m; let l = cache.get(m); if (!l) { l = new THREE.MeshLambertMaterial({ color: m.color, map: m.map, vertexColors: m.vertexColors, transparent: m.transparent, opacity: m.opacity, side: m.side, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity, alphaTest: m.alphaTest, depthWrite: m.depthWrite, flatShading: m.flatShading }); cache.set(m, l); } return l; };
+    charMat = cheap(charMat); perf.cheapen = () => scene.traverse(o => { if (o.isMesh) o.material = cheap(o.material); }); perf.cheapen();
+  }
+  perf.thin = n >= 4; if (crowd.length) crowdBudget();
+}
+function adaptQuality(now) {
+  if ((game.mode !== 'play' && game.mode !== 'menu' && game.mode !== 'story') || document.hidden || !bull) { perf.t = now; perf.n = 0; perf.acc = 0; perf.hold = Math.max(perf.hold, 1); return; }
+  const d = now - perf.t; perf.t = now; if (d <= 0) return;
+  if (perf.hold > 0) { perf.hold -= Math.min(d, 0.5); perf.n = 0; perf.acc = 0; perf.longs = 0; return; } // let loading, a new stage or a tab switch settle first
+  if (d > 0.5) { // frames taking over half a second: far too slow to measure normally, so step down at once
+    if (++perf.longs >= 3 && perf.stage < 6 && !QFORCED) { perf.longs = 0; stepDown(); }
+    return;
+  }
+  perf.longs = 0;
+  perf.acc += d; perf.n++;
+  if (perf.acc < 1.2) return;
+  const fps = perf.n / perf.acc; perf.acc = 0; perf.n = 0; perf.fps = fps;
+  if (fps >= 45 || perf.stage >= 6 || perf.capped || QFORCED) { perf.bad = 0; return; }
+  if (++perf.bad < 2) return; // two slow readings in a row, so one hiccup doesn't cost quality
+  perf.bad = 0; perf.hist.push(fps);
+  // some phones lock games to 30 frames a second (battery saver). Turning quality down can't help there, so stop.
+  if (perf.hist.length >= 3 && fps < perf.hist[perf.hist.length - 3] * 1.08 && Math.abs(fps - 30) < 4) { perf.capped = true; return; }
+  stepDown();
+}
+function stepDown() { applyStage(perf.stage + 1); perf.hold = 2; perf.bad = 0; try { localStorage.setItem('khuntau-perf', JSON.stringify({ q: QUALITY, stage: perf.stage })); } catch (e) {} }
+document.addEventListener('visibilitychange', () => { perf.hold = Math.max(perf.hold, 1.5); perf.longs = 0; });
+function uiScale() {
+  const w = innerWidth, h = innerHeight, short = Math.min(w, h);
+  let k;
+  if (short < 520) k = clamp(short / 400, 0.78, 1);                       // phones (portrait and landscape)
+  else if (isTouch) k = clamp(short / 700, 1.05, 1.3);                     // tablets: bigger thumbs targets
+  else k = clamp(Math.min(w / 1280, h / 760), 1, 1.45);                     // laptops and big monitors
+  document.documentElement.style.setProperty('--ui', k.toFixed(3));
+}
+addEventListener('resize', () => {
+  uiScale();
+  renderer.setPixelRatio(targetPR());
+  camera.aspect = innerWidth / innerHeight;
+  camera.fov = camera.aspect < 1 ? 62 : 50;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+dispatchEvent(new Event('resize'));
+document.addEventListener('visibilitychange', () => {
+  const el = music.cur === 'game' ? music.game : music.cur === 'intro' ? music.intro : null;
+  if (document.hidden && audio.ctx) { audio.ctx.suspend(); if (el) el.pause(); }
+  else if (audio.ctx) { audio.ctx.resume(); if (el) el.play().catch(() => {}); }
+});
+</script>
+
+</body>
+</html>

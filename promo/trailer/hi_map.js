@@ -1,0 +1,17 @@
+window.__SAT = {
+  'EVERY HARVEST': 'हर फ़सल पर',
+  'THE DRUMS BEGIN': 'ढोल बज उठे',
+  'SOHRAI': 'सोहराय',
+  'ONE BULL  ·  ONE KHUNT': 'एक बैल  ·  एक खूँटा',
+  'THE PITHA': 'पीठा',
+  'ONLY THE BRAVE': 'सिर्फ़ बहादुर',
+  'WAVE THE HIDE': 'खाल लहराओ',
+  'DODGE THE CHARGE': 'हमले से बचो',
+  'SNATCH THE PITHA': 'पीठा छीनो',
+  'COMBOS  ·  RANKS  ·  BRAGGING RIGHTS': 'कॉम्बो  ·  रैंक  ·  रोज़ का लीडरबोर्ड',
+  'PLAY WITH FRIENDS': 'दोस्तों संग खेलो',
+  'LIVE VOICE CHAT  ·  UP TO 6 PLAYERS': 'लाइव वॉइस चैट  ·  6 खिलाड़ी तक',
+  'BEAT THEIR SCORE': 'उनका स्कोर तोड़ो',
+  'THE SOHRAI BULL GAME': 'सोहराय का बैल खेल',
+  'PLAY FREE  ·  IN YOUR BROWSER': 'मुफ़्त खेलो  ·  अपने ब्राउज़र में',
+};
