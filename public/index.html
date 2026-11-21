@@ -60,7 +60,7 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
 #hint { position: fixed; z-index: 5; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); pointer-events: none; font-size: 15px; background: var(--glass); padding: 6px 14px; border-radius: 999px; opacity: 0; transition: opacity .3s; width: max-content; max-width: min(88vw, 520px); text-align: center; box-sizing: border-box; }
 #hint.show { opacity: 1; }
-.touch:not(.story-on) #hint { bottom: calc(232px + env(safe-area-inset-bottom, 0px)); } /* above the HIDE / ROLL / GRAB buttons it talks about */
+@media (orientation: portrait) { .touch:not(.story-on) #hint { bottom: calc(232px + env(safe-area-inset-bottom, 0px)); } } /* above the HIDE / ROLL / GRAB buttons it talks about; in landscape they sit to the side */
 
 /* Touch controls */
 #outLobbyBtn { position: fixed; z-index: 6; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); }
@@ -1375,13 +1375,15 @@ let backupT = 0;
 async function backupProgress() { clearTimeout(backupT); backupT = setTimeout(async () => {
   let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
   const { pid, code, ...data } = meta; data.best = best; data.name = name;
-  try { const r = await fetch('/api/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, data }) }); if (r.ok) { meta.code = (await r.json()).code; saveMeta(); if (!$('keepScreen').hidden) $('keepCode').textContent = meta.code; } } catch (e) {} }, 400); }
+  try { const r = await fetch('/api/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, data }) }); if (r.ok) { meta.code = (await r.json()).code; saveMeta(); if (!$('keepScreen').hidden) $('keepCode').textContent = meta.code; }
+    else if (!$('keepScreen').hidden && !meta.code) $('keepNote').textContent = r.status === 429 ? 'Too many requests from your network right now. Try again in a minute.' : 'Could not get a code. Try again later.'; }
+  catch (e) { if (!$('keepScreen').hidden && !meta.code) $('keepNote').textContent = 'No connection. The code comes when you are online.'; } }, 400); }
 $('keepBtn').addEventListener('click', () => { $('startScreen').hidden = true; $('keepScreen').hidden = false; $('keepCode').textContent = meta.code || '······'; $('keepNote').innerHTML = '&nbsp;'; backupProgress(); });
 $('keepClose').addEventListener('click', () => { $('keepScreen').hidden = true; $('startScreen').hidden = false; });
 $('restoreBtn').addEventListener('click', async () => { const code = $('restoreIn').value.trim().toUpperCase(); if (code.length !== 6) { $('keepNote').textContent = 'The code has 6 letters and numbers.'; return; }
   if (code === meta.code) { $('keepNote').textContent = 'That is this phone\'s own code.'; return; }
   try { const r = await fetch('/api/restore', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
-    if (!r.ok) { $('keepNote').textContent = r.status === 404 ? 'No progress found for that code.' : 'Could not restore. Try again.'; return; }
+    if (!r.ok) { $('keepNote').textContent = r.status === 404 ? 'No progress found for that code.' : r.status === 429 ? 'Too many requests from your network right now. Try again in a minute.' : 'Could not restore. Try again.'; return; }
     const { pid, data } = await r.json(); const { best: b, name, ...rest } = data;
     localStorage.setItem('khuntau-meta', JSON.stringify({ ...rest, pid, code })); if (b > 0) localStorage.setItem('khuntau-best', b); if (name) localStorage.setItem('khuntau-name', name);
     $('keepNote').textContent = 'Restored. Reloading…'; setTimeout(() => location.reload(), 700);
@@ -1405,6 +1407,7 @@ async function turnOnReminders() {
     const raw = Uint8Array.from(atob(key.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
     const r = await fetch('/api/push/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid: meta.pid, endpoint: sub.endpoint }) });
+    if (r.status === 429) { toast('Too many requests from your network right now. Try again in a minute.', 2400); refreshRemind(); return; }
     if (!r.ok) throw new Error('sub'); meta.push = 1; saveMeta(); toast('Done. One reminder each evening, only if you have not played', 2400);
   } catch (e) { toast('Could not turn on reminders on this browser', 1800); }
   refreshRemind();
@@ -1500,9 +1503,11 @@ function resetGame() {
   player.play('Idle'); bull.play('Idle');
   game.hintsShown = {};
 }
+// ring buttons speak the story's language only during the story finale (online and normal rounds stay English)
+function ringLabels() { for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w); }
 function startGame() {
   game.menuOpen = false; $('pauseScreen').hidden = true;
-  for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w);
+  ringLabels();
   initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hudScore').hidden = false;
   $('bestChip').hidden = best === 0 || innerWidth < 560; $('best').textContent = best; renderRival();
@@ -2197,7 +2202,7 @@ function onNet(m) {
 }
 function onNetEvent(m) {
   switch (m.e) {
-    case 'start': {
+    case 'start': { game.storyRun = false; ringLabels();
       resetGame(); game.mode = 'play'; game.online = true; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
       const sp = m.spawn.find(s => s[0] === net.id);
       const inRound = !!sp;

@@ -47,5 +47,17 @@ await sleep(2200);
 // 4. one tap 0.4 s late for the first note: that note is a Miss (a later note may still catch it, which is fair)
 r = await chart(`(i) => i === 0 ? ${learned} + 0.4 : null`);
 check(r.states[0] === 2, 'a tap 0.4 s late does not count for the note it was meant for')
+// 5. the real input path: pointerdown on the pads (no tap time passed in; evTime() reads the event)
+await sleep(2200);
+await page.evaluate(() => { const d = __k.story.debug; d.today().drum = 0; d.S.mode = 'walk'; __k.game.p.pos.copy(d.W.drumStand); });
+await page.waitForFunction(() => { const n = __k.story.debug.S.near; return n && n.label === 'BEAT'; }, { timeout: 20000 });
+await page.evaluate(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
+await page.waitForFunction(() => __k.story.debug.S.mode === 'drum' && __k.story.debug.drum.notes.length > 0, { timeout: 10000 });
+r = await page.evaluate(() => new Promise(done => {
+  const d = __k.story.debug, lag = 0.045 + d.calib();
+  d.drum.notes.forEach(n => setTimeout(() => document.getElementById(n.lane === 'T' ? 'padT' : 'padU').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' })), (n.time + lag - performance.now() / 1000) * 1000));
+  const iv = setInterval(() => { if (d.drum.done) { clearInterval(iv); done({ hits: d.drum.hits, n: d.drum.notes.length }); } }, 50);
+}));
+check(r.hits >= r.n * 0.9, `real pad taps (pointerdown -> evTime -> strike) register (${r.hits}/${r.n})`);
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 4).join(' | ') : '')); }
 await finish(browser);

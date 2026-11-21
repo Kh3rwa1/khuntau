@@ -35,8 +35,8 @@ const jip = async (ip, path, body) => (await fetch(BASE + path, { method: 'POST'
 { const ip = '10.9.' + (Math.random() * 250 | 0) + '.1'; let last = 0; for (let i = 0; i < 45; i++) last = await jip(ip, '/api/restore', { code: 'QQQQQQ' });
   check(last === 429, 'one address guessing codes gets slowed down');
   check(await jip('10.8.0.' + (Math.random() * 250 | 0), '/api/restore', { code: 'QQQQQQ' }) === 404, 'other players can still restore while one address is blocked'); }
-{ const ip = '10.7.' + (Math.random() * 250 | 0) + '.1'; const st = []; for (let i = 0; i < 8; i++) st.push(await jip(ip, '/api/save', { pid: rid(), data: { a: 1 } }));
-  check(st.slice(0, 6).every(x => x === 200) && st[7] === 429, 'one address inventing new player ids is capped'); }
+{ const ip = '10.7.' + (Math.random() * 250 | 0) + '.1'; const st = []; for (let i = 0; i < 34; i++) st.push(await jip(ip, '/api/save', { pid: rid(), data: { a: 1 } }));
+  const first = st.indexOf(429); check(first >= 30 && first <= 31, `one address inventing new player ids is capped after 30 a minute (room for carrier NAT); first 429 at ${first + 1}`); }
 
 // ---------- rooms ----------
 const code = 'T' + Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, 'Q');

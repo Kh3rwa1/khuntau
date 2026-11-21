@@ -432,7 +432,7 @@ export class Board extends DurableObject {
 
   async fetch(request) {
     const url = new URL(request.url), sql = this.ctx.storage.sql, path = url.pathname;
-    const ip = request.headers.get("cf-connecting-ip") || "local"; // set by Cloudflare on every request from the internet
+    const ip = request.headers.get("cf-connecting-ip") || "local"; // set by Cloudflare on every request. Per-IP limits stay roomy: Indian mobile carriers put many phones behind one IP
     let m = {};
     if (request.method === "POST") { const txt = await request.text(); if (txt.length > 6000) return new Response("too big", { status: 413 }); try { m = txt ? JSON.parse(txt) : {}; } catch { return new Response("bad json", { status: 400 }); } }
 
@@ -480,13 +480,13 @@ export class Board extends DurableObject {
       if (this.flood("v" + m.pid, 20)) return new Response("slow down", { status: 429 });
       const data = JSON.stringify(m.data); if (data.length > 2500) return new Response("too big", { status: 413 });
       let code = sql.exec("SELECT code FROM saves WHERE pid = ?", m.pid).toArray()[0]?.code;
-      if (!code && (this.flood("vn" + ip, 6) || this.flood("vn", 300))) return new Response("slow down", { status: 429 });
+      if (!code && (this.flood("vn" + ip, 30) || this.flood("vn", 600))) return new Response("slow down", { status: 429 });
       if (!code) { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; do { code = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => A[b % 32]).join(""); } while (sql.exec("SELECT 1 FROM saves WHERE code = ?", code).toArray().length); }
       sql.exec("INSERT INTO saves (pid, code, data, at) VALUES (?, ?, ?, ?) ON CONFLICT(pid) DO UPDATE SET data = excluded.data, at = excluded.at", m.pid, code, data, Date.now());
       return this.json({ code });
     }
     if (path === "/api/restore" && request.method === "POST") {
-      if (this.flood("restore" + ip, 10) || this.flood("restore", 600)) return new Response("slow down", { status: 429 });
+      if (this.flood("restore" + ip, 20) || this.flood("restore", 600)) return new Response("slow down", { status: 429 });
       const code = String(m.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
       const r = sql.exec("SELECT pid, data FROM saves WHERE code = ?", code).toArray()[0];
       if (!r) return new Response("no such code", { status: 404 });
@@ -498,7 +498,7 @@ export class Board extends DurableObject {
     if (path === "/api/push/sub" && request.method === "POST") {
       const ep = String(m.endpoint || "");
       if (!okPid(m.pid) || !okPushHost(ep) || ep.length > 700) return new Response("bad subscription", { status: 400 });
-      if (this.flood("p" + m.pid, 10) || this.flood("pn" + ip, 8) || this.flood("pn", 300)) return new Response("slow down", { status: 429 });
+      if (this.flood("p" + m.pid, 10) || this.flood("pn" + ip, 30) || this.flood("pn", 600)) return new Response("slow down", { status: 429 });
       if (m.off) sql.exec("DELETE FROM subs WHERE endpoint = ?", ep);
       else sql.exec("INSERT INTO subs (endpoint, pid, played, sent, at) VALUES (?, ?, ?, '', ?) ON CONFLICT(endpoint) DO UPDATE SET pid = excluded.pid", ep, m.pid, istDay(), Date.now());
       return this.json({ ok: 1 });

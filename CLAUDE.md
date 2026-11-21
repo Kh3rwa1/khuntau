@@ -17,7 +17,7 @@ npm install                 # wrangler + puppeteer (downloads its own Chrome)
 npx wrangler dev            # local game with the Worker, Durable Objects and API
 npx wrangler deploy         # deploy to khuntau.dulalkisku0.workers.dev (needs `npx wrangler login` once)
 node tests/serve.mjs        # static server for tests on 127.0.0.1:8791 (no /api; leaderboard calls 404, that is fine)
-npm test                    # with serve.mjs running: story playthroughs at phone and laptop sizes
+npm test                    # with serve.mjs running: story (EN + Hindi), ring, drum, walk, offline, draw calls, 429 messages
 node tests/walk.mjs         # walking feel: holds the stick into people, fails on any stall over 1 s
 npx wrangler dev --local --port 8787 --ip 127.0.0.1 &  then  npm run test:online   # rooms, board, tickets, abuse limits
 ```
@@ -76,12 +76,13 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Tests only logged, never failed | fixed | `tests/check.mjs`; every test exits 1 on a failed check |
 | Door test walked into the back wall | fixed | `story2.mjs` walks yard to door, asserts inside |
 | Free drumming after the story | works (test was wrong) | `story1.mjs` free-play check |
-| Ring hint covered the HIDE button on phones | fixed | `net-guest-3-play.jpg` from online-ui |
+| Ring hint covered the HIDE button on phones | fixed | portrait only (landscape keeps it off the post): `net-guest-3-play.jpg`, `l-h-ring.jpg`; online rounds reset ring button labels to English |
 | Draw calls | cut + guarded | garland was 22 meshes (22 calls) on the animal everywhere; merged to 2. Ring 66→46, akhra 107→88, edge 83→63. `tests/calls.mjs` budgets tightened (60/40/105/80) |
 | Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks) and `tests/online-ui.mjs` (two phones: list, ask, accept, start, play); per-IP limits on restore/save/push, room reports throttled |
 | Offline / service worker | fixed + tested | `tests/offline.mjs`: boots, story, cow with the server really down; story.js now network-first so a deploy can't pair a new page with old story code |
 | Ring game end to end | tested | `tests/ring.mjs`: grab, refill, bait+hit, roll dodge, handi, game over, score on the board, play again |
-| Drum timing | fixed + tested | `tests/drum.mjs`: clicks booked on the audio clock minus speaker delay; taps use the touch time; late taps no longer marked Miss before they land; oldest open note gets the tap; each phone learns its offset (`khuntau-drumlag`) |
+| Drum timing | fixed + tested | `tests/drum.mjs` (incl. real pad pointerdown path): clicks booked on the audio clock minus speaker delay; taps use the touch time; late taps no longer marked Miss before they land; oldest open note gets the tap; each phone learns its offset (`khuntau-drumlag`) |
+| Busy server (429) on shared mobile IPs | fixed + tested | per-IP limits roomy for carrier NAT (30 new saves/min); keep-progress and reminders say 'try again in a minute' instead of blank/false errors; `tests/busy.mjs` |
 | Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
 | In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
 | Deploy from cloud | blocked | Dulor: add `CLOUDFLARE_API_TOKEN` (Workers edit) to the cloud environment secrets |
