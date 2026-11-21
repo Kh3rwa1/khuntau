@@ -1415,6 +1415,7 @@ function renderVillages() {
   if (!d) { $('boardNote').textContent = 'Loading villages…'; $('ydayLine').textContent = ' '; return; }
   $('boardNote').textContent = d.total ? `${d.total} village${d.total > 1 ? 's' : ''} today · 10 best players count` : 'No village has 3 players yet today. Bring yours!';
   d.top.forEach((r, i) => { const li = document.createElement('li'); if (r.me) li.className = 'me'; const a = document.createElement('span'); a.textContent = i + 1; const b = document.createElement('span'); b.textContent = r.v + ' '; const sm = document.createElement('small'); sm.textContent = `${r.d} · ${r.n}`; b.appendChild(sm); const c = document.createElement('b'); c.textContent = r.p; li.append(a, b, c); ol.appendChild(li); });
+  if (d.me && d.me.rank > d.top.length) { const li = document.createElement('li'); li.className = 'me'; const a = document.createElement('span'); a.textContent = d.me.rank; const b = document.createElement('span'); b.textContent = d.me.v + ' '; const sm = document.createElement('small'); sm.textContent = `${d.me.d} · ${d.me.n}`; b.appendChild(sm); const c = document.createElement('b'); c.textContent = d.me.p; li.append(a, b, c); ol.appendChild(li); } // your village, even below the top 20
   if (d.me && !d.me.rank && meta.vil) { const li = document.createElement('li'); li.className = 'me'; const b = document.createElement('span'); b.textContent = `${meta.vil.v}: ${d.me.n} of 3 players today`; li.append(document.createElement('span'), b, document.createElement('b')); ol.appendChild(li); }
   const w = vboard.week && vboard.week.top[0]; $('ydayLine').textContent = w ? `This week: ${w.v} leads with ${w.p}` : ' ';
 }
@@ -1656,6 +1657,7 @@ async function shareScore() {
   const pts = game.score, rank = rankOf(pts);
   let name = ''; try { name = localStorage.getItem('khuntau-name') || ''; } catch (e) {}
   const link = location.origin + '/?beat=' + pts + (name ? '&from=' + encodeURIComponent(name) : '');
+  if (meta.vil) await Promise.race([loadVillages(), new Promise(r => setTimeout(r, 800))]); // fresh standings if they come quickly: this round may have changed them
   const vb = meta.vil && vboard && vboard.today && vboard.today.me, above = vb && vb.above;
   if (meta.vil) track('share.vil');
   const text = (challenge && pts > challenge.beat ? `I beat ${challenge.from || 'my friend'}'s ${challenge.beat} with ${pts} points` : `I scored ${pts} points`)

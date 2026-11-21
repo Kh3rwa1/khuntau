@@ -49,9 +49,10 @@ async function run(W, H, t, mobile) {
   await shot('4-tab');
   // share names our village and the one above
   await page.evaluate(() => document.getElementById('boardClose').click());
-  await page.evaluate(() => { __k.game.score = 4; }); await page.evaluate(() => document.getElementById('shareScoreBtn').click()); await sleep(1500);
+  await page.evaluate(() => { __k.game.score = 4; }); await page.evaluate(() => document.getElementById('shareScoreBtn').click()); await page.waitForFunction(() => !!window.__shared, { timeout: 8000 }).catch(() => {});
   const sh = await page.evaluate(() => window.__shared && window.__shared.text || '');
   const above = ((await (await fetch(BASE + '/api/vboard?pid=' + me)).json()).today.me || {}).above; // the village right above ours on today's board
+  if (!(above && sh.includes(`Help us pass ${above.v}!`))) console.log('  share text was:', sh, '| above:', JSON.stringify(above));
   check(sh.includes(`${tag} Home (Godda)`) && !!above && sh.includes(`Help us pass ${above.v}!`), `${t}: share text names your village and the one right above it (${above && above.v})`);
   { const e = realErrors(logs); check(!e.length, `${t}: no page errors` + (e.length ? ': ' + e.slice(0, 3).join(' | ') : '')); }
   await ctx.close();
