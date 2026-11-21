@@ -25,10 +25,10 @@ async function run(W, H, tag, mobile, ch) {
   check(Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) > 1.5, `${tag}: holding W walks the player`);
   check(!inside, `${tag}: walking into a house wall does not pass through it`); await shot('d-wall');
   // go indoors: stand in the yard facing the door and walk to it
-  await page.evaluate(() => { const d = __k.story.debug, h = __k.houses[0], f = h.d / 2 + 4.4; __k.game.p.pos.set(h.x + Math.sin(h.rot) * f, 0, h.z + Math.cos(h.rot) * f); d.S.camYaw = h.rot; d.S.lookT = performance.now() / 1000 + 99; d.snapCam(); });
+  await page.evaluate(() => { const d = __k.story.debug, h = __k.houses[0], f = h.d / 2 + 4.4; __k.game.p.pos.set(h.x + Math.sin(h.rot) * f, 0, h.z + Math.cos(h.rot) * f); d.S.camYaw = h.rot; d.S.lookT = performance.now() / 1000 + 99; d.snapCam(); d.S.near = null; }); // clear the last prompt: it was computed before the teleport
   await page.keyboard.down('KeyW');
   // let go of W the moment ENTER shows, like a player reaching the door (a fast machine would otherwise walk on past it)
-  const gotDoor = await page.waitForFunction(() => { const n = __k.story.debug.S.near; if (n && n.label === 'ENTER') { dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' })); return true; } return false; }, { timeout: 8000, polling: 'raf' }).then(() => true, () => false);
+  const gotDoor = await page.waitForFunction(() => { const n = __k.story.debug.S.near, h = __k.houses[0], p = __k.game.p.pos, f = h.d / 2 + 1; if (n && n.label === 'ENTER' && Math.hypot(p.x - (h.x + Math.sin(h.rot) * f), p.z - (h.z + Math.cos(h.rot) * f)) < 1.6) { dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' })); return true; } return false; }, { timeout: 8000, polling: 'raf' }).then(() => true, () => false);
   await page.keyboard.up('KeyW'); await page.evaluate(() => { __k.story.debug.S.lookT = -9; });
   check(gotDoor, `${tag}: walking to the door shows ENTER`);
   check(await page.evaluate(() => { const n = __k.story.debug.S.near; return !!n && n.label === 'ENTER'; }), `${tag}: still at the door after letting go`);
