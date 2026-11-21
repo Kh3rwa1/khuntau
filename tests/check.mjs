@@ -30,3 +30,17 @@ export async function watchLatin(page) {
 export const latinSeen = (page) => page.evaluate(() => [...window.__latin]);
 // Chrome flags for machines without a GPU (CI): SWGL=1 renders WebGL in software.
 export const SW = process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [];
+// Archery like a player: drag on the screen to put the crosshair on (tu, tv) metres from the bull, wait for the sway
+// to bring it close, let go. Real pointer events on #tapzone. Returns the aim error at release, in metres.
+export function dragShoot(page, tu = 0, tv = 0, tol = 0.08) {
+  return page.evaluate((tu, tv, tol) => new Promise((done, fail) => {
+    const a = __k.story.debug.arch, z = document.getElementById('tapzone'), x0 = innerWidth * 0.5, y0 = innerHeight * 0.75;
+    const fire = (type, x, y) => z.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'touch', clientX: x, clientY: y, isPrimary: true }));
+    const start = performance.now();
+    (function ready() { if (a.fly || a.wait > 0) return requestAnimationFrame(ready);
+      fire('pointerdown', x0, y0); const ppm = a.ppm; fire('pointermove', x0 + (tu - a.u) * ppm, y0 - (tv - a.v) * ppm);
+      (function hold() { const e = Math.hypot(a.u + a.su - tu, a.v + a.sv - tv);
+        if (e < tol || performance.now() - start > 6000) { fire('pointerup', x0, y0); done(e); } else requestAnimationFrame(hold); })();
+    })();
+  }), tu, tv, tol);
+}

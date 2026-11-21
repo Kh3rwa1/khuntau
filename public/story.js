@@ -60,7 +60,7 @@ export function initStory(C) {
     'One more to paint': 'एक और रंगना है', '# more to paint': '# और रंगने हैं', 'Oiled': 'तेल लग गया', 'The horns shine': 'सींग चमक रहे हैं', 'Garlanded': 'माला पहना दी', 'Marigolds for the day': 'आज के लिए गेंदे के फूल',
     'Play anything. The village follows your hands.': 'कुछ भी बजाओ। गाँव तुम्हारे हाथों के पीछे चलता है।', 'The village is dancing!': 'गाँव नाच रहा है!', 'The beat is yours': 'ताल तुम्हारी है', 'Need #. Try again': '# चाहिए। फिर कोशिश करो',
     'Sohrai Day complete': 'सोहराय का दिन पूरा', 'Johar!': 'जोहार!', 'Three more pitha': 'तीन और पीठा', 'Perfect': 'वाह', 'Good': 'ठीक', 'Early': 'जल्दी', 'Miss': 'चूक', 'Again': 'फिर से',
-    'Tap on the green': 'हरे पर दबाओ', 'Hit!': 'लगा!', 'Bullseye!': 'बीचोंबीच!', 'Missed': 'चूक गया', 'Sharp eye': 'पक्की नज़र', 'Archery contest': 'तीरंदाज़ी',
+    'Tap on the green': 'हरे पर दबाओ', 'Drag to aim, let go to shoot': 'खींचकर निशाना लगाओ, छोड़कर तीर चलाओ', 'Drag to aim, let go to shoot. Or arrow keys and Space': 'खींचकर निशाना लगाओ, छोड़कर तीर चलाओ। या तीर वाली कुंजियाँ और Space', 'Hit!': 'लगा!', 'Bullseye!': 'बीचोंबीच!', 'Missed': 'चूक गया', 'Sharp eye': 'पक्की नज़र', 'Archery contest': 'तीरंदाज़ी',
     'Tap to cast': 'काँटा डालने के लिए दबाओ', 'Wait for the bite…': 'मछली का इंतज़ार…', 'PULL!': 'खींचो!', 'Too early': 'बहुत जल्दी', 'It got away': 'निकल गई', 'Got one!': 'पकड़ ली!', '# fish': '# मछली', 'A good catch': 'अच्छा शिकार', 'Fishing': 'मछली पकड़ना',
     'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'They give you pitha': 'उन्होंने पीठा दिया', 'They give you rice': 'उन्होंने चावल दिया', 'They give you handi': 'उन्होंने हँड़िया दी', 'Three houses sung': 'तीन घरों पर गा लिया', 'Tamak played': 'तामाक बजा लिया',
     'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: sing at three houses (#/#)': 'आज: तीन घरों पर गाओ (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
@@ -566,37 +566,62 @@ export function initStory(C) {
   }
 
   /* ---------- tap games: archery and fishing share one full-screen tap layer ---------- */
-  $('tapzone').addEventListener('pointerdown', (e) => { if (e.target.id === 'tapQuit') return; e.preventDefault(); S.tap = true; });
+  $('tapzone').addEventListener('pointerdown', (e) => { if (e.target.id === 'tapQuit') return; e.preventDefault();
+    if (S.mode === 'aim') { arch.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, u: arch.u, v: arch.v }; arch.held = 0; try { $('tapzone').setPointerCapture(e.pointerId); } catch (x) {} return; }
+    S.tap = true; });
+  // archery: the crosshair follows the drag (so the thumb never covers the target), letting go shoots
+  $('tapzone').addEventListener('pointermove', (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return;
+    const g = 1 / Math.max(arch.ppm || 120, 20); arch.u = clamp(d.u + (e.clientX - d.x) * g, -1.8, 1.8); arch.v = clamp(d.v - (e.clientY - d.y) * g, -1.4, 1.4); });
+  const archRelease = (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return; arch.drag = null; S.tap = true; };
+  $('tapzone').addEventListener('pointerup', archRelease); $('tapzone').addEventListener('pointercancel', (e) => { if (arch.drag && arch.drag.id === e.pointerId) arch.drag = null; });
+  const reticle = document.createElement('div'); reticle.id = 'reticle'; reticle.hidden = true;
+  reticle.style.cssText = 'position:absolute;left:0;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:3px solid #fff6e0;box-shadow:0 0 0 2px rgba(20,10,6,.85),inset 0 0 0 2px rgba(20,10,6,.85);pointer-events:none;will-change:transform';
+  reticle.innerHTML = '<i style="position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#ffb347;box-shadow:0 0 0 2px rgba(20,10,6,.85)"></i>';
+  $('tapzone').appendChild(reticle);
   $('tapQuit').addEventListener('click', () => { if (S.mode === 'aim' || S.mode === 'fish') tapStop(); });
-  function tapOpen(mode, text) { S.mode = mode; S.tap = false; $('tapzone').hidden = false; $('aim').hidden = mode !== 'aim'; tapHint(text); $('tapScore').textContent = ''; game.p.vel.set(0, 0, 0); C.player().play('Idle', { fade: 0.15 }); }
+  function tapOpen(mode, text) { S.mode = mode; S.tap = false; $('tapzone').hidden = false; reticle.hidden = mode !== 'aim'; tapHint(text); $('tapScore').textContent = ''; game.p.vel.set(0, 0, 0); C.player().play('Idle', { fade: 0.15 }); }
   function tapHint(text) { $('tapHint').textContent = tr(text); }
-  function tapStop() { S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
+  function tapStop() { reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
 
   const arch = { n: 0, hits: 0, t: 0, fly: null, wait: 0, over: false };
   function archStart() {
     const p = game.p; p.pos.copy(ARCH); p.yaw = Math.atan2(W.aDir.x, W.aDir.z);
-    Object.assign(arch, { n: 0, hits: 0, t: rand(0, 6), fly: null, wait: 0.4, over: false }); for (const a of W.arrows) a.visible = false;
+    Object.assign(arch, { n: 0, hits: 0, t: rand(0, 6), fly: null, wait: 0.4, over: false, drag: null, held: 0 }); archNock(); for (const a of W.arrows) a.visible = false;
     S.focus = { pos: ARCH.clone().addScaledVector(W.aDir, -2.2).addScaledVector(W.aSide, 1.15).setY(2.3), look: TARGET.clone().addScaledVector(W.aSide, 0.35).setY(FACE_Y - 0.15) };
     $('hint').classList.remove('show');
-    tapOpen('aim', 'Tap on the green'); $('tapScore').textContent = '0/5';
+    tapOpen('aim', C.isTouch ? 'Drag to aim, let go to shoot' : 'Drag to aim, let go to shoot. Or arrow keys and Space'); $('tapScore').textContent = '0/5';
   }
+  // each arrow starts with the aim off the target, so every shot is aimed
+  function archNock() { const a = rand(0, Math.PI * 2), r = rand(0.9, 1.3); arch.u = Math.cos(a) * r; arch.v = Math.sin(a) * r * 0.7; arch.held = 0; }
+  const FACE_R = 0.62, BULL_R = 0.13, archPt = V(), archPt2 = V();
   function archUpdate(dt) {
-    arch.t += dt * (2.3 + arch.n * 0.55); const x = Math.sin(arch.t) * Math.cos(arch.t * 0.37 + 1);
-    $('aimMark').style.left = (50 + x * 46).toFixed(1) + '%';
+    // sway: a held bow never sits still; it grows a little per arrow and a lot if you hold too long (tired arms)
+    arch.t += dt; if (arch.drag) arch.held += dt;
+    const A = 0.07 + arch.n * 0.025 + Math.max(0, arch.held - 2.5) * 0.12, t = arch.t;
+    arch.su = A * Math.sin(t * 1.9) * Math.cos(t * 0.63); arch.sv = A * 0.8 * Math.sin(t * 2.4 + 1.1);
+    const u = arch.u + arch.su, v = arch.v + arch.sv;
+    // crosshair: the aim point on the target's face, projected to the screen
+    archPt.copy(TARGET).addScaledVector(W.aDir, -0.32).addScaledVector(W.aSide, u).setY(FACE_Y + v);
+    archPt2.copy(archPt).addScaledVector(W.aSide, 1).project(camera); archPt.project(camera);
+    const sw = innerWidth / 2, sh = innerHeight / 2, rx = (archPt.x + 1) * sw, ry = (1 - archPt.y) * sh;
+    arch.ppm = Math.abs((archPt2.x - archPt.x) * sw); arch.scr = [rx, ry];
+    reticle.style.transform = `translate3d(${rx.toFixed(1)}px,${ry.toFixed(1)}px,0)`;
+    const r = Math.hypot(u, v); reticle.style.borderColor = r < FACE_R ? '#9dff9a' : '#fff6e0'; reticle.style.opacity = arch.fly || arch.wait > 0 || arch.over ? 0.35 : 1;
     if (arch.fly) {
       const f = arch.fly; f.k = Math.min(1, f.k + dt / 0.42); f.a.position.lerpVectors(f.from, f.to, f.k); f.a.position.y += Math.sin(f.k * Math.PI) * 0.5;
       if (f.k >= 1) { arch.fly = null; arch.wait = 0.55;
         if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = f.bull ? 0.16 : 0.09; } else { f.a.visible = false; toast('Missed', 700); }
         $('tapScore').textContent = arch.hits + '/5';
-        if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); } }
+        if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); }
+        else archNock(); }
     } else if (arch.wait > 0) arch.wait -= dt;
     else if (S.tap && !arch.over) {
-      const hit = Math.abs(x) < 0.17, a = W.arrows[arch.n++], pl = C.player();
+      const hit = r < FACE_R, a = W.arrows[arch.n++], pl = C.player();
       pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); C.sfx.whoosh();
-      const from = game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5), k = x / 0.17, ang = rand(0, Math.PI * 2), rad = Math.min(Math.abs(k), 1) * 0.56;
-      const to = hit ? TARGET.clone().addScaledVector(W.aSide, Math.sign(k || 1) * Math.abs(Math.cos(ang)) * rad).setY(FACE_Y + Math.sin(ang) * rad).addScaledVector(W.aDir, -(0.32 + 0.4))
-        : TARGET.clone().addScaledVector(W.aSide, x * 2.6 + Math.sign(x || 1) * 0.6).setY(1.0).addScaledVector(W.aDir, 3);
-      a.visible = true; a.position.copy(from); a.lookAt(to); arch.fly = { a, from, to, k: 0, hit, bull: Math.abs(x) < 0.06 };
+      const from = game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5);
+      // the arrow goes where the crosshair was: stuck in the face, or past the target and gone
+      const to = TARGET.clone().addScaledVector(W.aSide, u).setY(FACE_Y + v).addScaledVector(W.aDir, hit ? -(0.32 + 0.4) : 3);
+      a.visible = true; a.position.copy(from); a.lookAt(to); arch.fly = { a, from, to, k: 0, hit, bull: r < BULL_R };
     }
     W.target.rotation.z *= Math.pow(0.02, dt); S.tap = false;
   }
@@ -882,6 +907,8 @@ export function initStory(C) {
     const k = e.code;
     if (S.dlg) { if (k === 'Enter' || k === 'Space' || k === 'KeyE') { e.preventDefault(); nextLine(); } return; }
     if (pick.on) { if (k === 'ArrowLeft' || k === 'KeyA') stepPick(-1); else if (k === 'ArrowRight' || k === 'KeyD') stepPick(1); else if (k === 'Enter' || k === 'KeyE') $('pickOk').click(); return; }
+    if (S.mode === 'aim') { const st = 0.06, mv = { ArrowLeft: [-st, 0], KeyA: [-st, 0], ArrowRight: [st, 0], KeyD: [st, 0], ArrowUp: [0, st], KeyW: [0, st], ArrowDown: [0, -st], KeyS: [0, -st] }[k];
+      if (mv) { e.preventDefault(); arch.u = clamp(arch.u + mv[0], -1.8, 1.8); arch.v = clamp(arch.v + mv[1], -1.4, 1.4); return; } }
     if (S.mode === 'aim' || S.mode === 'fish') { if (e.repeat) return; if (k === 'Space' || k === 'Enter' || k === 'KeyE') { e.preventDefault(); S.tap = true; } return; }
     if (S.mode === 'drum' || S.mode === 'echo') { if (e.repeat) return; if (k === 'KeyF' || k === 'KeyD' || k === 'ArrowLeft') strike('T', evTime(e)); else if (k === 'KeyJ' || k === 'KeyK' || k === 'ArrowRight') strike('U', evTime(e)); else if (drum.free && (k === 'Enter' || k === 'KeyE')) drumStop(); return; }
     if (k === 'KeyE' || k === 'Enter' || k === 'Space') { e.preventDefault(); S.act = true; }

@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { check, finish, realErrors, watchLatin, latinSeen } from './check.mjs';
+import { check, finish, realErrors, watchLatin, latinSeen, dragShoot } from './check.mjs';
 const HI = !!process.env.HI;
 import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -20,10 +20,11 @@ const mode = (m) => page.waitForFunction((m) => __k.story.debug.S.mode === m, { 
 console.log('label', await page.$eval('#storyBtn', e => e.textContent));
 await ev(() => document.getElementById('storyBtn').click()); await sleep(2500); console.log('obj', await page.$eval('#objText', e => e.textContent));
 // archery
-await ev(() => { const o = __k.story.debug.S; }); 
-const pts = await ev(() => { const d = __k.story.debug; return null; });
 await ev(() => { __k.game.p.pos.set(Math.cos(0.35 + 0.698132 * 1.5) * 18.5, 0, Math.sin(0.35 + 0.698132 * 1.5) * 18.5); }); await near('SHOOT'); await shot('01-arch-near'); await act(); await mode('aim'); await sleep(1500); await shot('02-aim');
-for (let n = 0; n < 5; n++) { await page.waitForFunction(() => { const a = __k.story.debug.arch; const x = parseFloat(document.getElementById('aimMark').style.left); return !a.fly && a.wait <= 0 && Math.abs(x - 50) < 5; }, { timeout: 60000, polling: 'raf' }); await tap(); if (n === 2) { await sleep(400); await shot('03-arrow'); } await sleep(300); }
+// drag-to-aim with real pointer events: four aimed at the bull, one deliberately wide
+const aims = [[0, 0], [0.1, -0.1], [1.25, 0.2], [0, 0], [0, 0.05]];
+for (let n = 0; n < 5; n++) { const err = await dragShoot(page, aims[n][0], aims[n][1]); if (n === 0) { await sleep(150); await shot('03-arrow'); } check(err < 0.12, `arrow ${n + 1}: crosshair dragged onto its mark (${err.toFixed(2)} m)`); await page.waitForFunction(() => !__k.story.debug.arch.fly, { timeout: 10000 }); await sleep(100); }
+check(await ev(() => __k.story.debug.arch.hits) === 4, `aimed arrows hit, the wide one misses (${await ev(() => __k.story.debug.arch.hits)}/5)`);
 await mode('walk'); check(await ev(() => __k.story.debug.arch.hits) >= 3 && await ev(() => __k.story.debug.save.td.arch) === 1, 'archery: 3+ hits counts for the day'); await shot('04-arch-done');
 // fishing
 await ev(() => { const a = 0.35 + 0.698132 * 4.5; __k.game.p.pos.set(Math.cos(a) * 20.7, 0, Math.sin(a) * 20.7); }); await near('FISH'); await act(); await mode('fish'); await sleep(1500); await shot('05-fish');

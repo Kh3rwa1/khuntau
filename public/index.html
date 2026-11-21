@@ -246,9 +246,6 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 #tapHint { position: absolute; left: 50%; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-family: var(--font-display); font-size: clamp(24px, 6.5vw, 40px); color: var(--paste); text-shadow: 0 3px 0 var(--ochre), 0 8px 24px rgba(0, 0, 0, .55); width: max-content; max-width: 92vw; text-align: center; pointer-events: none; }
 #tapScore { position: absolute; left: 50%; top: calc(62px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); font-family: var(--font-display); font-size: 26px; color: var(--saffron); pointer-events: none; }
 #tapScore:empty { display: none; }
-#aim { position: absolute; left: 50%; bottom: calc(136px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(82vw, 440px); height: 30px; border-radius: 15px; background: rgba(20, 10, 6, .72); border: 2px solid rgba(246, 238, 221, .5); pointer-events: none; }
-#aimZone { position: absolute; left: 42.2%; width: 15.6%; top: 0; bottom: 0; background: rgba(157, 255, 154, .6); }
-#aimMark { position: absolute; top: -9px; left: 50%; width: 7px; height: 48px; margin-left: -3.5px; background: var(--saffron); border-radius: 4px; box-shadow: 0 0 0 2px var(--ink); }
 #tapQuit { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: calc(60px + env(safe-area-inset-top, 0px)); min-width: 0; }
 .storyrow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 460px) { .hud-tl .chip small, #timerChip small { display: none; } .hud .chip { padding: 5px 9px; } .lamps svg { width: 18px; height: 18px; } }
@@ -298,7 +295,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
   <button class="pad" id="padU" type="button" aria-label="Beat the tumdak"><span>TUMDAK<small class="only-keys">J</small></span></button>
   <button class="btn small" id="padDone" type="button" hidden>Done</button>
 </div>
-<div id="tapzone" hidden><div id="tapScore" class="chip"></div><div id="aim" hidden><i id="aimZone"></i><b id="aimMark"></b></div><div id="tapHint"></div><button class="btn small ghost" id="tapQuit" type="button">Leave</button></div>
+<div id="tapzone" hidden><div id="tapScore" class="chip"></div><div id="tapHint"></div><button class="btn small ghost" id="tapQuit" type="button">Leave</button></div>
 <div id="toast"></div>
 <div id="pop"><b id="popBig"></b><span id="popSmall"></span></div>
 <div id="hint"></div>

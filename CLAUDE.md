@@ -81,17 +81,17 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Online rooms, board, tickets | fixed + tested | `tests/online.mjs` (33 checks) and `tests/online-ui.mjs` (two phones: list, ask, accept, start, play); per-IP limits on restore/save/push, room reports throttled |
 | Offline / service worker | fixed + tested | `tests/offline.mjs`: boots, story, cow with the server really down; story.js now network-first so a deploy can't pair a new page with old story code |
 | Ring game end to end | tested | `tests/ring.mjs`: grab, refill, bait+hit, roll dodge, handi, game over, score on the board, play again |
-| Drum timing | fixed + tested | `tests/drum.mjs` (incl. real pad pointerdown path): clicks booked on the audio clock minus speaker delay; taps use the touch time; late taps no longer marked Miss before they land; oldest open note gets the tap; each phone learns its offset (`khuntau-drumlag`) |
+| Drum timing | fixed + tested | `tests/drum.mjs` (incl. real pad pointerdown path; clicks proven heard on the beat within 2.2 ms with a 120 ms speaker lag): clicks booked on the audio clock minus speaker delay; taps use the touch time; late taps no longer marked Miss before they land; oldest open note gets the tap; each phone learns its offset (`khuntau-drumlag`) |
 | Busy server (429) on shared mobile IPs | fixed + tested | per-IP limits roomy for carrier NAT (30 new saves/min); keep-progress and reminders say 'try again in a minute' instead of blank/false errors; `tests/busy.mjs` |
 | Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
 | In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
-| Deploy from cloud | blocked | Dulor: add `CLOUDFLARE_API_TOKEN` (Workers edit) to the cloud environment secrets |
+| Deploy | ready, needs one secret | `.github/workflows/ci.yml` tests every push and deploys `main` when green. Dulor: add repo secret `CLOUDFLARE_API_TOKEN` (Workers edit; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts) |
 | Real-phone feel (A34 fps, drum timing by touch) | blocked | Dulor: play the village and drum on the A34, report fps feel and early/late |
 | Santali story text | blocked | needs a Santali speaker to write/check; never machine-invent it |
 | Customs order and details | blocked | Dulor to correct anything wrong for his village |
 | Story mode multiplayer | design choice | single-player by design; the ring is the online mode |
 | Play Store (TWA, `com.tumdah.khuntau`) | blocked | Dulor: developer account type and creation date |
-| Drag-to-aim archery | proposal | redesign, not a fix; build only if Dulor asks |
+| Archery was a timing bar with a picture glued on | rebuilt | drag-to-aim: crosshair follows the drag (thumb never covers the target), held-bow sway that grows if you hold too long, release to shoot, arrow lands where you aimed; arrow keys + Space on laptops. `story3.mjs` aims with real pointer drags; `drag-*.jpg` at 1280x720 and 780x390 |
 
 ## Promo videos (`promo/`)
 Rendered by filming the game in headless Chrome with a virtual clock, then compositing with a 2D canvas.
