@@ -22,7 +22,7 @@ node tests/walk.mjs         # walking feel: holds the stick into people, fails o
 npx wrangler dev --local --port 8787 --ip 127.0.0.1 &  then  npm run test:online   # rooms, board, tickets, abuse limits
 ```
 Run tests from the repo root. Screenshots land in `tests/out/`; look at them, don't just trust "no errors".
-`?debug` in the URL exposes `window.__k` (game, story, bull, player, setAnimal, houses, renderer, perf, …);
+`?fps` shows an on-screen meter (fps, worst frame, quality stage, draw calls) for checking real phones. `?debug` in the URL exposes `window.__k` (game, story, bull, player, setAnimal, houses, renderer, perf, …);
 `__k.story.debug` has the story's state, save, drum/arch/fish/echo state and helpers. `?q=low` forces low quality.
 
 ## Layout
@@ -86,7 +86,8 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Hindi coverage | fixed + tested | `HI=1` runs of story1/story3 fail on any English word on screen; the ring finale's own lines and buttons now go through the story's translator; the singing objective key never matched |
 | In-game credits text, banana leaves | fixed | Credits name Dulor's music and three.js/fonts; leaves rebuilt (YXZ lean, lit), `arch-p-1aim.jpg` |
 | Deploy | ready, needs one secret | `.github/workflows/ci.yml` tests every push and deploys `main` when green. Dulor: add repo secret `CLOUDFLARE_API_TOKEN` (Workers edit; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts) |
-| Real-phone feel (A34 fps, drum timing by touch) | blocked | Dulor: play the village and drum on the A34, report fps feel and early/late |
+| Slow-phone safety net | tested | `tests/slowphone.mjs`: CPU throttled 6x, auto quality on: steps itself down, remembers it, story still walks |
+| Real-phone feel on the A34 | needs Dulor's phone | open `https://khuntau.dulalkisku0.workers.dev/?fps` on the A34 after the next deploy: read the meter in the village and at the akhra (green 45+, yellow 28+, red below), play the drum chart twice and say early/late/fine |
 | Santali story text | blocked | needs a Santali speaker to write/check; never machine-invent it |
 | Customs order and details | blocked | Dulor to correct anything wrong for his village |
 | Story mode multiplayer | design choice | single-player by design; the ring is the online mode |
