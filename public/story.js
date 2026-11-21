@@ -5,7 +5,7 @@
 export function initStory(C) {
   const { THREE, scene, camera, game, input, $, Mat, rand, lerp, clamp } = C;
   const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
-  const UP = V(0, 1, 0), t1 = V(), t2 = V(), t3 = V();
+  const UP = V(0, 1, 0), t1 = V(), t2 = V(), t3 = V(), t4 = V(), ZERO = V();
   const now = () => performance.now() / 1000;
 
   /* ---------- saved progress ---------- */
@@ -665,15 +665,30 @@ export function initStory(C) {
   }
 
   /* ---------- every frame ---------- */
-  function collide(p) {
+  // Push p out of a round obstacle. If the walk was going into it, turn the blocked part of the step into a
+  // sideways slide (to the side the player is already on), so you glide round people instead of stopping dead.
+  function pushOut(p, cx, cz, rr, v, step) {
+    let ex = p.x - cx, ez = p.z - cz; const d = Math.hypot(ex, ez);
+    if (d >= rr) return;
+    if (d < 1e-4) { ex = 1; ez = 0; } else { ex /= d; ez /= d; }
+    p.x = cx + ex * rr; p.z = cz + ez * rr;
+    const vin = -(v.x * ex + v.z * ez); // speed going into the obstacle
+    if (vin <= 0 || step <= 0) return;
+    const side = (v.z * ex - v.x * ez) >= 0 ? 1 : -1; // which way round is shorter
+    const tx = -ez * side, tz = ex * side, s = vin * step;
+    p.x += tx * s; p.z += tz * s;
+    const ox = p.x - cx, oz = p.z - cz, o = Math.hypot(ox, oz); p.x = cx + ox / o * rr; p.z = cz + oz / o * rr;
+  }
+  function collide(p, v = ZERO, step = 0) {
     if (S.inside) {
       const { W: RW, D: RD } = ROOM, I = W.inside, lx = p.x - IN.x, lz = p.z - IN.z;
       let x = clamp(lx, -RW / 2 + 0.4, RW / 2 - 0.4), z = clamp(lz, -RD / 2 + 0.4, RD / 2 - 0.25);
       const b = I.box, dx = x - b.x, dz = z - b.z;
       if (Math.abs(dx) < b.hx + 0.3 && Math.abs(dz) < b.hz + 0.3) { if (b.hx + 0.3 - Math.abs(dx) < b.hz + 0.3 - Math.abs(dz)) x = b.x + Math.sign(dx || 1) * (b.hx + 0.3); else z = b.z + Math.sign(dz || 1) * (b.hz + 0.3); }
-      const circ = I.circles.concat([[mother.wrap.position.x - IN.x, mother.wrap.position.z - IN.z, 0.45]]);
-      for (const [cx, cz, r] of circ) { const ex = x - cx, ez = z - cz, d = Math.hypot(ex, ez), rr = r + 0.3; if (d < rr && d > 1e-4) { x = cx + ex / d * rr; z = cz + ez / d * rr; } }
-      p.set(IN.x + x, IN.y, IN.z + z); return;
+      const circ = I.circles.concat([[mother.wrap.position.x - IN.x, mother.wrap.position.z - IN.z, 0.35]]);
+      const q = t4.set(x, 0, z);
+      for (const [cx, cz, r] of circ) pushOut(q, cx, cz, r + 0.3, v, step);
+      p.set(IN.x + q.x, IN.y, IN.z + q.z); return;
     }
     for (const h of C.houses) { // pushed out of each house's footprint
       const c = Math.cos(h.rot), s = Math.sin(h.rot), dx = p.x - h.x, dz = p.z - h.z;
@@ -683,10 +698,10 @@ export function initStory(C) {
         p.x = h.x + lx * c + lz * s; p.z = h.z - lx * s + lz * c;
       }
     }
-    const circ = [[POND.x, POND.z, 3.0], [TARGET.x, TARGET.z, 0.5], [0, 0, 0.5], [game.b.pos.x, game.b.pos.z, 1.15], [AKHRA.x, AKHRA.z, 0.75], [majhi.wrap.position.x, majhi.wrap.position.z, 0.5], [W.tumdak.position.x, W.tumdak.position.z, 0.45]];
+    const circ = [[POND.x, POND.z, 3.0], [TARGET.x, TARGET.z, 0.5], [0, 0, 0.5], [game.b.pos.x, game.b.pos.z, 1.15], [AKHRA.x, AKHRA.z, 0.75], [majhi.wrap.position.x, majhi.wrap.position.z, 0.35], [W.tumdak.position.x, W.tumdak.position.z, 0.45]];
     for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) { t3.copy(GOHAL).addScaledVector(W.gR, sx * 2.1).addScaledVector(W.gF, sz * 1.7); circ.push([t3.x, t3.z, 0.3]); }
-    for (const c of dancers) circ.push([c.wrap.position.x, c.wrap.position.z, 0.45]);
-    for (const [cx, cz, r] of circ) { const ex = p.x - cx, ez = p.z - cz, d = Math.hypot(ex, ez), rr = r + 0.32; if (d < rr && d > 1e-4) { p.x = cx + ex / d * rr; p.z = cz + ez / d * rr; } }
+    for (const c of dancers) if (c.wrap.visible) circ.push([c.wrap.position.x, c.wrap.position.z, 0.35]); // hidden dancers (slow phones) don't block
+    for (const [cx, cz, r] of circ) pushOut(p, cx, cz, r + 0.32, v, step);
     const pr = Math.hypot(p.x, p.z); if (pr > VILLAGE_R) { p.x *= VILLAGE_R / pr; p.z *= VILLAGE_R / pr; }
     p.y = 0;
   }
@@ -706,7 +721,7 @@ export function initStory(C) {
       pl.play(mag > 0.55 ? 'Run' : 'Walk', { ts: (mag > 0.55 ? 1 : 1.2) * (S.inside ? 0.8 : 1) });
       p.pos.addScaledVector(p.vel, dt);
     } else { p.vel.set(0, 0, 0); if (free && (pl.curName === 'Run' || pl.curName === 'Walk')) pl.play('Idle'); }
-    collide(p.pos);
+    collide(p.pos, p.vel, dt);
     pl.wrap.position.copy(p.pos); pl.wrap.rotation.y = p.yaw; pl.wrap.visible = true;
     input.roll = input.grab = input.tease = false;
 

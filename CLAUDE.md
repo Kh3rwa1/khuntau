@@ -17,6 +17,7 @@ npx wrangler dev            # local game with the Worker, Durable Objects and AP
 npx wrangler deploy         # deploy to khuntau.dulalkisku0.workers.dev (needs `npx wrangler login` once)
 node tests/serve.mjs        # static server for tests on 127.0.0.1:8791 (no /api; leaderboard calls 404, that is fine)
 npm test                    # with serve.mjs running: story playthroughs at phone and laptop sizes
+node tests/walk.mjs         # walking feel: holds the stick into people, fails on any stall over 1 s
 ```
 Run tests from the repo root. Screenshots land in `tests/out/`; look at them, don't just trust "no errors".
 `?debug` in the URL exposes `window.__k` (game, story, bull, player, setAnimal, houses, renderer, perf, …);
@@ -63,7 +64,6 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 4. Phones that played before need a full close and reopen to pick up the new service worker.
 
 ## Known weak points (open)
-- Walking in the village snags on villagers and dancers (collision circles stop you instead of sliding).
 - Real-phone feel is unverified: frame rate in the village and touch drum timing on the Galaxy A34.
 - Archery target is thin and far; hits are hard to see on a small screen.
 - Story is English and Hindi only; Santali text not done (needs a Santali speaker to check).
