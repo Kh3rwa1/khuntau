@@ -4,7 +4,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...(process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), '--no-sandbox', '--mute-audio'] });
 const page = await browser.newPage(); const logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.setViewport({ width: 1280, height: 720 });
-await page.goto('http://127.0.0.1:8791/?debug', { waitUntil: 'domcontentloaded' });
+await page.goto('http://127.0.0.1:8791/?debug' + (process.env.CI ? '&q=low' : ''), { waitUntil: 'domcontentloaded' }); // CI has no GPU (see story2.mjs)
 await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
 await page.click('#storyBtn'); await sleep(2500);
 await page.keyboard.press('Enter'); await sleep(500); await page.keyboard.press('Enter'); await sleep(800); await page.screenshot({ path: 'tests/out/lap-1.jpg', type: 'jpeg', quality: 70 });

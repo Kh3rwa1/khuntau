@@ -7,7 +7,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ protocolTimeout: 240000, args: [...SW, '--no-sandbox', '--mute-audio'] });
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
-const cdp = await page.createCDPSession(); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+const cdp = await page.createCDPSession(); await cdp.send('Emulation.setCPUThrottlingRate', { rate: process.env.CI ? 1 : 6 }); // CI's software rendering is already slower than any phone
 await page.evaluateOnNewDocument(() => { localStorage.removeItem('khuntau-perf'); localStorage.setItem('khuntau-story', JSON.stringify({ ch: 5, done: 1, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); });
 await page.goto('http://127.0.0.1:8791/?debug&fps', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.__k && __k.perf, { timeout: 120000, polling: 50 });

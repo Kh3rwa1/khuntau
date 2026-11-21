@@ -7,7 +7,8 @@ async function run(W, H, tag, mobile, ch) {
   page.on('console', m => { if (m.type() === 'error') logs.push(m.text()); }); page.on('pageerror', e => logs.push('PAGEERROR ' + e.message + (e.stack || '').split('\n').slice(0, 3).join(' | ')));
   if (mobile) await page.emulate({ viewport: { width: W, height: H, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36' }); else await page.setViewport({ width: W, height: H });
   await page.evaluateOnNewDocument((ch) => { localStorage.setItem('khuntau-story', JSON.stringify({ ch, painted: ch > 1 ? [1, 1, 1] : [1, 0, 0], chosen: ch > 2 ? 1 : 0, oiled: ch > 2 ? 1 : 0, garland: ch > 2 ? 1 : 0 })); }, ch);
-  await page.goto('http://127.0.0.1:8791/?debug' + (mobile ? '&q=low' : ''), { waitUntil: 'domcontentloaded' });
+  // CI has no GPU: full-quality desktop renders at 1-3 fps there, which no real device does, so CI uses low quality
+  await page.goto('http://127.0.0.1:8791/?debug' + (mobile || process.env.CI ? '&q=low' : ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
   const shot = n => page.screenshot({ path: `tests/out/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 });
   const pos = () => page.evaluate(() => [__k.game.p.pos.x, __k.game.p.pos.z].map(v => +v.toFixed(1)));
