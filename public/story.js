@@ -82,20 +82,29 @@ export function initStory(C) {
     'HIDE': 'खाल', 'ROLL': 'लुढ़को', 'GRAB': 'झपटो',
     'Brown bull': 'भूरा बैल', 'White bull': 'सफ़ेद बैल', 'Black bull': 'काला बैल', 'Red cow': 'लाल गाय', 'White cow': 'सफ़ेद गाय', '# of #': '# / #',
   };
-  let LANG = 'en'; try { LANG = localStorage.getItem('khuntau-lang') === 'hi' ? 'hi' : 'en'; } catch (e) {}
-  const T = new Proxy({}, { get: (_, k) => (LANG === 'hi' && T_HI[k]) || T_EN[k] });
+  // Santali (Ol Chiki): empty until a Santali speaker fills design/santali-strings.csv; `node tools/santali-import.mjs`
+  // writes it in here. The language button offers Santali only once there is text. Never machine-translate this.
+  /* SANTALI:BEGIN */
+  const T_SAT = {};
+  const SAT = {};
+  /* SANTALI:END */
+  const LANGS = ['en', 'hi', ...(Object.keys(SAT).length ? ['sat'] : [])];
+  let LANG = 'en'; try { const l = localStorage.getItem('khuntau-lang'); if (LANGS.includes(l)) LANG = l; } catch (e) {}
+  const T = new Proxy({}, { get: (_, k) => (LANG === 'hi' && T_HI[k]) || (LANG === 'sat' && T_SAT[k]) || T_EN[k] });
   function tr(s) {
-    if (LANG !== 'hi' || s == null) return s; s = String(s); if (HI[s]) return HI[s];
+    const table = LANG === 'hi' ? HI : LANG === 'sat' ? SAT : null;
+    if (!table || s == null) return s; s = String(s); if (table[s]) return table[s];
     const nums = []; const key = s.replace(/\d+/g, m => { nums.push(m); return '#'; }); let i = 0;
-    return HI[key] ? HI[key].replace(/#/g, () => nums[i++]) : s;
+    return table[key] ? table[key].replace(/#/g, () => nums[i++]) : s;
   }
+  const langName = (l) => ({ en: 'English', hi: 'हिन्दी', sat: SAT['Santali'] || 'Santali' })[l];
   const toast = (a, ms) => C.toast(tr(a), ms), pop = (a, b) => C.pop(tr(a), tr(b)), hint = (a, ms) => C.hint(tr(a), ms);
   function applyLang() {
     $('pickOk').textContent = tr('Tie this one to the khunt'); $('padDone').textContent = tr('Done'); $('tapQuit').textContent = tr('Leave');
     $('padT').firstElementChild.firstChild.nodeValue = tr('TAMAK'); $('padU').firstElementChild.firstChild.nodeValue = tr('TUMDAK');
-    $('langBtn').textContent = LANG === 'hi' ? 'English' : 'हिन्दी'; S.objKey = ''; S.label = '\u0000';
+    $('langBtn').textContent = langName(LANGS[(LANGS.indexOf(LANG) + 1) % LANGS.length]); document.documentElement.classList.toggle('lang-sat', LANG === 'sat'); S.objKey = ''; S.label = '\u0000';
   }
-  $('langBtn').addEventListener('click', () => { LANG = LANG === 'hi' ? 'en' : 'hi'; try { localStorage.setItem('khuntau-lang', LANG); } catch (e) {} applyLang(); });
+  $('langBtn').addEventListener('click', () => { LANG = LANGS[(LANGS.indexOf(LANG) + 1) % LANGS.length]; try { localStorage.setItem('khuntau-lang', LANG); } catch (e) {} applyLang(); });
 
   /* ---------- places ---------- */
   const H = C.houses[0], hc = Math.cos(H.rot), hs = Math.sin(H.rot);
