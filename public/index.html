@@ -1139,8 +1139,8 @@ let charMat = Mat({ vertexColors: true, roughness: 0.8 });
 // accessories folded into a person's skinned mesh at load: no extra draw calls, each item rides its bone and is
 // coloured per person through tint(). Everyone of a kind wears them (the player too, on the man model).
 const ACC = {
-  woman: [['Necklace', 'neck', 0xd8352a], ['Bangles', 'wrists', 0xf2b134]],
-  worker: [['Necklace', 'neck', 0x2f7ad9], ['Bangles', 'wrists', 0xd8352a]],
+  woman: [['Necklace', 'neck', 0xd8352a], ['Bangles', 'wrists', 0xf2b134], ['Sari', 'sari', 0xefe6cf], ['SariBorder', 'sari', 0xb8302a], ['Pallu', 'sari', 0xefe6cf]],
+  worker: [['Necklace', 'neck', 0x2f7ad9], ['Bangles', 'wrists', 0xd8352a], ['Sari', 'sari', 0x2f7a46], ['SariBorder', 'sari', 0xf1ead9], ['Pallu', 'sari', 0x2f7a46]],
   man: [['Gamchha', 'scarf', 0xc8372d]],
   bull: [['Sindur', 'forehead', 0xc8301c]], // vermilion on the forehead, shown once decorated (bulls only: on the cow's head shape it sat like a cap; her horns go red when oiled)
 };
@@ -1174,9 +1174,54 @@ function accessories(mesh, kind, faceAt, allMeshes) {
   const up = neck.clone().sub(hips).normalize(), T = neck.distanceTo(hips), H = head.distanceTo(neck);
 
   const along = (g, axis) => g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), axis)); // torus axis -> limb axis
+  // A sari fitted to this body: a skirt from the waist to the ankles and a pallu across the chest over the left shoulder.
+  // Each ring of the cloth is pushed out past the body's own vertices (rays from the hip or chest axis), so it fits
+  // the model it is built on. Tight at the hips where the hands hang in Idle; the lower skirt follows the thighs.
+  const sariParts = () => {
+    const sl = at('Shoulder.L'), sr = at('Shoulder.R'), abd = at('Abdomen'), tor = at('Torso'), foot = at('Foot.L');
+    if (!sl || !sr || !abd || !tor || !foot || bi('UpperLeg.L') < 0 || bi('UpperLeg.R') < 0) return {};
+    const right = sr.clone().sub(sl); right.addScaledVector(up, -right.dot(up)).normalize();
+    const back = right.clone().cross(up).normalize(); // (right, up, back) is right-handed like a cylinder's (x, y, z)
+    const cls = (names) => new Set(names.map(bi).filter(i => i >= 0));
+    const legBones = cls(['Hips', 'Abdomen', 'UpperLeg.L', 'UpperLeg.R', 'LowerLeg.L', 'LowerLeg.R', 'Body']), chestBones = cls(['Abdomen', 'Torso', 'Neck', 'Shoulder.L', 'Shoulder.R']);
+    const legV = [], chestV = [], v = new THREE.Vector3();
+    for (const m of (allMeshes || [mesh])) { const p = m.geometry.attributes.position, si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight;
+      for (let i = 0; i < p.count; i++) { let b = si.getX(i), w = sw.getX(i); for (let j = 1; j < 4; j++) if (sw.getComponent(i, j) > w) { w = sw.getComponent(i, j); b = si.getComponent(i, j); }
+        if (legBones.has(b)) legV.push(v.fromBufferAttribute(p, i).clone()); if (chestBones.has(b)) chestV.push(v.fromBufferAttribute(p, i).clone()); } }
+    // how far out along dir the body reaches near the ray from c (within dh along axis and lat sideways)
+    const reach = (verts, c, dir, axis, dh, lat) => { let r = -1; const w = new THREE.Vector3();
+      for (const q of verts) { w.subVectors(q, c); const a = w.dot(dir); if (a <= 0) continue; const h = w.dot(axis); if (Math.abs(h) > dh) continue;
+        w.addScaledVector(dir, -a).addScaledVector(axis, -h); if (w.length() < lat) r = Math.max(r, a); } return r; };
+    const SEG = 18, top = abd.clone().sub(hips).dot(up) * 0.55, bot = foot.clone().sub(hips).dot(up) + T * 0.07, NR = 12;
+    const ringH = (t) => top + (bot - top) * t, dirAt = (j, d = new THREE.Vector3()) => { const th = j / SEG * Math.PI * 2; return d.copy(right).multiplyScalar(Math.sin(th)).addScaledVector(back, Math.cos(th)); };
+    // radius per ring and direction: never narrower than the ring above (cloth hangs), a little flare at the hem
+    const R = []; for (let k = 0; k <= NR; k++) { const t = k / NR, c = hips.clone().addScaledVector(up, ringH(t)), row = [];
+      for (let j = 0; j < SEG; j++) { const r = reach(legV, c, dirAt(j), up, T * 0.07, T * 0.11), fb = Math.abs(Math.cos(j / SEG * Math.PI * 2)) * Math.min(1, Math.max(0, (t - 0.15) / 0.4)); // room in front and behind for a striding knee
+        row.push(Math.max(r > 0 ? r + T * (0.035 + 0.1 * fb) : 0, k ? R[k - 1][j] : T * 0.2) + (k ? t * T * 0.02 : 0)); }
+      R.push(row); }
+    const radius = (t, j) => { const f = t * NR, k = Math.min(NR - 1, Math.floor(f)), u = f - k; return R[k][j] * (1 - u) + R[k + 1][j] * u; };
+    const iH = bi('Hips'), iR = bi('UpperLeg.R'), iL = bi('UpperLeg.L');
+    const band = (t0, t1, rings) => { const g = new THREE.CylinderGeometry(1, 1, 1, SEG, rings, true), p = g.attributes.position, n = p.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), d = new THREE.Vector3();
+      for (let i = 0; i < n; i++) { const t = t0 + (t1 - t0) * (0.5 - p.getY(i)), th = Math.atan2(p.getX(i), p.getZ(i)), j = ((Math.round(th / (Math.PI * 2) * SEG) % SEG) + SEG) % SEG;
+        d.copy(right).multiplyScalar(Math.sin(th)).addScaledVector(back, Math.cos(th)); const P = hips.clone().addScaledVector(up, ringH(t)).addScaledVector(d, radius(t, j)); p.setXYZ(i, P.x, P.y, P.z);
+        const s = Math.sin(th), f = Math.min(1, Math.max(0, (t - 0.18) / 0.82)) * 0.8; // the thighs carry the lower skirt
+        si.set([iH, iR, iL, 0], i * 4); sw.set([1 - f, f * (0.5 + 0.5 * s), f * (0.5 - 0.5 * s), 0], i * 4); }
+      g.computeVertexNormals(); g.deleteAttribute('uv'); g.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+      g.setIndex(new THREE.BufferAttribute(new Uint32Array(g.index.array), 1)); return g; };
+    // pallu: a band round the chest, low at the right hip, high over the left shoulder
+    const al = 0.62, nrm = up.clone().multiplyScalar(Math.cos(al)).addScaledVector(right, Math.sin(al)), aa = right.clone().multiplyScalar(Math.cos(al)).addScaledVector(up, -Math.sin(al));
+    const pc = tor.clone().addScaledVector(up, T * 0.08), pg = new THREE.CylinderGeometry(1, 1, T * 0.2, 22, 1, true), pp = pg.attributes.position, d = new THREE.Vector3();
+    const pr = []; for (let j = 0; j < 22; j++) { const th = j / 22 * Math.PI * 2; d.copy(aa).multiplyScalar(Math.sin(th)).addScaledVector(back, Math.cos(th)); const r = reach(chestV, pc, d, nrm, T * 0.12, T * 0.1); pr.push(r > 0 ? r + T * 0.03 : T * 0.25); }
+    for (let i = 0; i < pp.count; i++) { const th = Math.atan2(pp.getX(i), pp.getZ(i)), j = ((Math.round(th / (Math.PI * 2) * 22) % 22) + 22) % 22, y = pp.getY(i);
+      d.copy(aa).multiplyScalar(Math.sin(th)).addScaledVector(back, Math.cos(th)); const P = pc.clone().addScaledVector(d, pr[j]).addScaledVector(nrm, y); pp.setXYZ(i, P.x, P.y, P.z); }
+    pg.computeVertexNormals();
+    return { Sari: band(0, 0.86, 10), SariBorder: band(0.86, 1, 2), Pallu: skin(pg, bi('Torso')) };
+  };
+  let sari = null;
   const out = [];
   for (const [name, where] of list) {
     const geos = [];
+    if (where === 'sari') { sari = sari || sariParts(); if (sari[name]) geos.push(sari[name]); }
     if (where === 'neck') { const g = along(new THREE.TorusGeometry(T * 0.2, T * 0.03, 5, 14), up); g.translate(...neck.clone().addScaledVector(up, -H * 0.15).toArray()); geos.push(skin(g, bi('Neck'))); }
     if (where === 'wrists') for (const side of ['L', 'R']) { const f = at('Fist.' + side), l = at('LowerArm.' + side); if (!f || !l || bi('LowerArm.' + side) < 0) continue; const ax = f.clone().sub(l).normalize();
       const g = along(new THREE.TorusGeometry(T * 0.085, T * 0.022, 4, 10), ax); g.translate(...l.clone().lerp(f, 0.82).toArray()); geos.push(skin(g, bi('LowerArm.' + side))); }
@@ -1201,7 +1246,8 @@ function plain(attr, k) {
 function mergeChar(gltf, kind) {
   const groups = new Map();
   gltf.scene.traverse(o => { if (o.isSkinnedMesh) { const a = groups.get(o.skeleton) || []; a.push(o); groups.set(o.skeleton, a); } });
-  for (const meshes of groups.values()) {
+  for (let meshes of groups.values()) {
+    if (kind === 'worker') { for (const m of meshes) if (m.material.name === 'Hat') m.parent.remove(m); meshes = meshes.filter(m => m.material.name !== 'Hat'); } // women in saris, no hard hats
     const geos = [], parts = []; let v = 0;
     for (const m of meshes) {
       const g = m.geometry, n = g.attributes.position.count; parts.push({ name: m.material.name, start: v, count: n, color: m.material.color.clone() }); v += n;
@@ -1497,6 +1543,9 @@ function onCrowdLoaded() {
     const [kind, colors] = looks[i % looks.length];
     const c = actor(loaded[kind], rand(1.55, 1.75), true);
     tint(c, colors); tint(c, { Necklace: pick(BEADS, i), Bangles: pick(BANGLES, i + 1), Gamchha: pick(GAMCHHA, i) }); // their own beads, bangles, cloth
+    // women wear a sari in their own colours: sari and pallu from the shirt colour, border and blouse from the trousers
+    // (or the vest when they match); the trousers under it take the sari colour so nothing shows at the hem
+    if (kind !== 'man') { const edge = colors.Pants !== colors.Shirt ? colors.Pants : colors.Vest || colors.Belt; tint(c, { Sari: colors.Shirt, SariBorder: edge, Pallu: colors.Shirt, Shirt: edge, Vest: edge, Pants: colors.Shirt }); }
     // budget phones get only 6 people: spread round 360 degrees the camera saw one or two and the ring looked empty, so
     // there they gather in an arc on the far side, the side the camera looks at from the start
     const slot = [...Array(nCrowd).keys()].sort((x, y) => Math.abs(x - (nCrowd - 1) / 2) - Math.abs(y - (nCrowd - 1) / 2) || x - y)[i]; // centre first: crowdBudget keeps the lowest indices
@@ -2560,7 +2609,7 @@ function syncRemotes() {
     }
     if (p.id === net.id || ex) continue;
     const a = actor(loaded[p.id % 2 ? 'man' : 'woman'], 1.72, true);
-    tint(a, { Skin: [0x6e4630, 0x7a5038, 0x5e3a22][p.id % 3], Shirt: p.col, Pants: 0x3b3a36, Hair: 0x15100c });
+    tint(a, { Skin: [0x6e4630, 0x7a5038, 0x5e3a22][p.id % 3], Shirt: p.col, Pants: p.id % 2 ? 0x3b3a36 : 0xefe6cf, Hair: 0x15100c, SariBorder: p.col }); // a woman's sari border carries her player colour too
     if (QUALITY > 0) shadows(a); a.play('Idle'); giveHide(a);
     const tag = nameTag(p.name, p.col); a.wrap.add(tag);
     scene.add(a.wrap);

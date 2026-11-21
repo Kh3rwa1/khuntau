@@ -25,6 +25,16 @@ const act = (P) => P.ev(() => document.getElementById('actBtn').dispatchEvent(ne
   await until(() => document.getElementById('startBtn').dataset.village === 'ready', 60000);
   await ev(() => document.getElementById('startBtn').click());
   check(await until(() => __k.game.mode === 'story' && __k.story.debug.S.inside), 'PLAY opens the village (a new player wakes in the house)');
+  // Gogo is a woman and dressed as one: a sari (skirt, border, pallu) in her own colours over a blouse; the worker
+  // women have no hard hats; the men have no sari. The skirt hangs below her waist and reaches her ankles in Idle.
+  check(await ev(() => { const g = __k.crowd.find(c => c.kind === 'woman'), w = __k.crowd.find(c => c.kind === 'worker'), m = __k.crowd.find(c => c.kind === 'man'), col = g.body.geometry.attributes.color;
+    const hex = (a, k) => { const p = a.mats[k].part, c = a.body.geometry.attributes.color; return [0, 1, 2].map(j => c.getComponent(p.start, j).toFixed(3)).join(); };
+    return ['Sari', 'SariBorder', 'Pallu'].every(k => g.mats[k] && g.mats[k].part.count > 20) && hex(g, 'Sari') !== hex(g, 'SariBorder') && hex(g, 'Shirt') === hex(g, 'SariBorder')
+      && !!w.mats.Sari && !w.mats.Hat && !m.mats.Sari && !!col; }), 'Gogo wears a sari in her own colours; worker women have no hard hats; men no sari');
+  { const r = await ev(() => { const g = __k.crowd.find(c => c.kind === 'woman'), T = __k.THREE, b = g.body, p = g.mats.Sari.part; g.play('Idle', { fade: 0 }); g.mixer.update(0.5); g.wrap.updateMatrixWorld(true); b.skeleton.update();
+    const v = new T.Vector3(); let lo = Infinity, hi = -Infinity; for (let i = p.start; i < p.start + p.count; i++) { b.getVertexPosition(i, v); b.localToWorld(v); lo = Math.min(lo, v.y); hi = Math.max(hi, v.y); }
+    const y0 = g.wrap.position.y, hips = g.root.getObjectByName('Hips').getWorldPosition(new T.Vector3()).y - y0; return { lo: lo - y0, hi: hi - y0, hips }; });
+    check(r.lo < 0.25 && r.hi > r.hips - 0.05 && r.hi < r.hips + 0.35, `her skirt runs from the waist down to the ankles (${r.lo.toFixed(2)} to ${r.hi.toFixed(2)} m, hips at ${r.hips.toFixed(2)})`); }
   // Gogo's wake-up lines arrive a moment later: tap through them like a player
   await until(() => !!__k.story.debug.S.dlg, 5000);
   for (let i = 0; i < 8 && await ev(() => !!__k.story.debug.S.dlg); i++) { await ev(() => document.getElementById('dlg').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))); await sleep(350); }
