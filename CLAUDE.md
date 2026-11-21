@@ -9,6 +9,7 @@ Live at https://khuntau.dulalkisku0.workers.dev. Made by Dulor (Tumdah). Phone p
 - Prefer the fastest approach. No paid tools or credits unless Dulor provides a key for that job.
 - Phone first, always. Every change must work on a budget Android phone (test device: Galaxy A34) and on a laptop.
 - Never write API keys into files, commits or chat. Ask Dulor for a key when a job needs one.
+- After every update, merge the work branch into `main` and push `main`. Don't ask first.
 
 ## Commands
 ```
