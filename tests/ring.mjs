@@ -45,7 +45,7 @@ check(charged && await ev(() => window.__rolled > 0), 'the bull charged and the 
 check(await ev((n) => __k.game.lives === n, before), 'a well-timed ROLL dodges the charge');
 
 // handi: a life back
-await ev(() => { __k.game.b.state = 'recover'; __k.game.b.t = 0; __k.hs.next = 0; });
+await ev(() => { __k.game.p.pos.set(0, 0, 0.9); __k.game.b.state = 'recover'; __k.game.b.t = 0; __k.hs.next = 0; }); // at the post: a pot never spawns within reach, so it can't be drunk before we look
 check(await until(() => __k.hs.on && __k.handi.visible, 3000), 'a handi pot appears');
 await ev(() => { const h = __k.handi.position; __k.game.p.pos.set(h.x, 0, h.z); });
 check(await until(() => __k.game.lives === 3, 3000), 'running over the handi gives a lamp back');
