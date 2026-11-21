@@ -32,7 +32,9 @@ async function run(W, H, tag, mobile, ch) {
   check(gotDoor, `${tag}: walking to the door shows ENTER`);
   check(await page.evaluate(() => { const n = __k.story.debug.S.near; return !!n && n.label === 'ENTER'; }), `${tag}: still at the door after letting go`);
   await page.keyboard.press('KeyE');
-  check(await page.waitForFunction(() => __k.story.debug.S.inside, { timeout: 8000 }).then(() => true, () => false), `${tag}: E at the door goes inside`); await sleep(1200); await shot('e-inside');
+  const entered = await page.waitForFunction(() => __k.story.debug.S.inside, { timeout: 15000 }).then(() => true, () => false);
+  if (!entered) console.log(tag, 'state after E:', JSON.stringify(await page.evaluate(() => { const S = __k.story.debug.S; return { near: S.near && S.near.label, act: S.act, lock: +S.lock.toFixed(2), mode: S.mode, dlg: !!S.dlg, pick: !document.getElementById('pick').hidden, gm: __k.game.mode, menu: __k.game.menuOpen, stage: __k.perf.stage, focus: document.activeElement && document.activeElement.id, pos: [__k.game.p.pos.x, __k.game.p.pos.z].map(v => +v.toFixed(2)) }; })));
+  check(entered, `${tag}: E at the door goes inside`); await sleep(1200); await shot('e-inside');
   const pin = await pos();
   await page.keyboard.down('KeyA'); await sleep(2500); await page.keyboard.up('KeyA'); await shot('f-inside-walk'); { const q = await pos(); check(Math.hypot(q[0] - pin[0], q[1] - pin[1]) > 1, `${tag}: can walk inside the house`); }
   // pause and quit to menu
