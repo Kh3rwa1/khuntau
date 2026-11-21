@@ -56,6 +56,10 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 - Animals: brown/white/black bull, red/white cow (`ANIMALS` in index.html). Choice saved in `khuntau-animal`.
 - Performance: characters merged into one vertex-coloured skinned mesh each; static scenery baked; cheap mode
   (Lambert, blob shadows) and staged auto-quality saved in `khuntau-perf`; off-screen crowd culled.
+- One game (since 21 Nov): home PLAY opens the village (`story.start()`); the khunt in the middle offers a normal scored round
+  (RING) at any time, `game.villageRun`, with ticket, board, village credit, XP and Share; game over offers Back to village.
+  The story's 3-pitha finale (chapter 4, START) still uses `game.storyRun`. "Quick round at the khunt" and challenge links
+  (`?beat=`) go straight to the ring; online stays ring-only. Hindi covers village rounds (`L()` in index.html).
 - Story mode (`story.js`), progress in `khuntau-story`, language in `khuntau-lang`:
   1. Wake in the mud house; drink handi (also eat pitha, rest, talk to Gogo). 2. Paint 3 wall motifs.
   3. Cattle shed: choose animal, oil horns, garland. 4. Tamak/tumdak rhythm game; dancers, Majhi and the animal
@@ -107,6 +111,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | First load on a phone | faster + measured (live: fast 3G 9.2 s -> 7.4 s to PLAY, 1456 -> 826 KB before PLAY; slow 4G 5.1 -> 5.0 s, CPU-bound) | PLAY waits only for bull + player models (villagers load after); offline copy (~7 MB) downloads after the game is up instead of during boot; 300 KB title font subset to 200 KB and loaded after PLAY. Local uncompressed fast-3G: 27.9 s -> 20.3 s to PLAY. Live before: 9.2 s fast 3G, 5.1 s slow 4G |
 | Village vs village | built + tested | choose district + village (home line, or asked after a first scoring round); spelling variants merge (NFKC key per district), existing villages suggested; a change counts from the next day; village score = its 10 best players' daily bests (solo and room scores); shown only with 3+ players; `HIDDEN_VILLAGES` in worker.js hides a name (add its key, deploy); Villages tab on the board, rank on the home line, share text names your village and the one right above. `online.mjs` (rules) + `village.mjs` (phone/laptop/landscape) |
 | District list | needs Dulor | Jharkhand's 24 plus WB/Odisha/Bihar/Assam districts with Santal villages, and 'Other district'. Dulor: check the list (`DISTRICTS` in index.html and worker.js) and say which are missing or wrong; is village + district the right unit, or block? |
+| Story and ring were two separate games | merged | one PLAY into the village; khunt rounds scored from the first visit; Back to village; Enter on home = PLAY. `tests/merged.mjs` (new player: village, khunt round, board, back, quest intact; challenge link straight to ring; Hindi round) |
 | Archery was a timing bar with a picture glued on | rebuilt | drag-to-aim: crosshair follows the drag (thumb never covers the target), held-bow sway that grows if you hold too long, release to shoot, arrow lands where you aimed; arrow keys + Space on laptops. `story3.mjs` aims with real pointer drags; `drag-*.jpg` at 1280x720 and 780x390 |
 
 ## Promo videos (`promo/`)

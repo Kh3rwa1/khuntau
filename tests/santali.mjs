@@ -19,8 +19,8 @@ const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
 await page.evaluateOnNewDocument(() => { if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x', 1); localStorage.setItem('khuntau-story', JSON.stringify({ ch: 5, done: 1, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); localStorage.removeItem('khuntau-lang'); } });
 await page.goto('http://127.0.0.1:8793/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(2500);
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(2500);
 const btn = () => page.$eval('#langBtn', e => e.textContent);
 check(await btn() === 'हिन्दी', 'English first; the button offers Hindi');
 const lang = async () => { await page.keyboard.press('Escape'); await sleep(300); await page.evaluate(() => document.getElementById('langBtn').click()); await page.evaluate(() => document.getElementById('resumeBtn').click()); await sleep(400); };

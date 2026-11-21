@@ -10,15 +10,15 @@ await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, 
 await page.evaluateOnNewDocument(() => { if (!localStorage.getItem('khuntau-story')) localStorage.setItem('khuntau-story', JSON.stringify({ ch: 5, done: 1, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); });
 if (HI) await watchLatin(page); // HI=1: the daily round in Hindi, no English may show
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
 const shot = n => page.screenshot({ path: `tests/out/a-${n}.jpg`, type: 'jpeg', quality: 72 });
 const ev = (f, ...a) => page.evaluate(f, ...a);
 const near = async (l) => { await page.evaluate(() => { __k.story.debug.S.near = null; }); return page.waitForFunction((l) => { const n = __k.story.debug.S.near; return n && n.label === l; }, { timeout: 40000 }, l); }; // never trust a prompt from before a teleport
 const act = () => ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
 const tap = () => ev(() => document.getElementById('tapzone').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
 const mode = (m) => page.waitForFunction((m) => __k.story.debug.S.mode === m, { timeout: 60000 }, m);
-console.log('label', await page.$eval('#storyBtn', e => e.textContent));
-await ev(() => document.getElementById('storyBtn').click()); await sleep(2500); console.log('obj', await page.$eval('#objText', e => e.textContent));
+console.log('label', await page.$eval('#playSub', e => e.textContent));
+await ev(() => document.getElementById('startBtn').click()); await sleep(2500); console.log('obj', await page.$eval('#objText', e => e.textContent));
 // archery
 await ev(() => { __k.game.p.pos.set(Math.cos(0.35 + 0.698132 * 1.5) * 18.5, 0, Math.sin(0.35 + 0.698132 * 1.5) * 18.5); }); await near('SHOOT'); await shot('01-arch-near'); await act(); await mode('aim'); await sleep(1500); await shot('02-aim');
 // drag-to-aim with real pointer events: four aimed at the bull, one deliberately wide
@@ -40,7 +40,7 @@ await page.keyboard.press('Escape'); await sleep(400); if (!HI) await ev(() => d
 check(/[\u0900-\u097F]/.test(await page.$eval('#objText', e => e.textContent)), 'Hindi: objective is in Devanagari'); await ev(() => __k.story.debug.say([['x', 'y']])); await ev(() => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; });
 await ev(() => { const h = __k.houses[0]; __k.game.p.pos.set(h.x + Math.sin(h.rot) * (h.d / 2 + 1), 0, h.z + Math.cos(h.rot) * (h.d / 2 + 1)); }); await near('ENTER'); await shot('12-hindi'); check(await page.$eval('#actBtn', e => e.textContent) === 'अंदर', 'Hindi: action button reads अंदर');
 // quit: horns back to normal, menu label
-await page.keyboard.press('Escape'); await sleep(300); await ev(() => document.getElementById('quitBtn').click()); await sleep(800); check(await ev(() => __k.game.mode) === 'menu' && /3\/4/.test(await page.$eval('#storyBtn', e => e.textContent)), 'quit returns to menu showing 3/4 done today');
+await page.keyboard.press('Escape'); await sleep(300); await ev(() => document.getElementById('quitBtn').click()); await sleep(800); check(await ev(() => __k.game.mode) === 'menu' && /3\/4/.test(await page.$eval('#playSub', e => e.textContent)), 'quit returns to menu showing 3/4 done today');
 if (HI) { const l = await latinSeen(page); check(!l.length, 'Hindi: no English on screen' + (l.length ? ':\n    ' + l.join('\n    ') : '')); }
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 5).join(' | ') : '')); }
 await finish(browser);

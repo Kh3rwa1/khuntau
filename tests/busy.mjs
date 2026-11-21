@@ -9,7 +9,7 @@ await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, 
 await page.setRequestInterception(true);
 page.on('request', q => /\/api\/(save|restore)/.test(q.url()) ? q.respond({ status: 429, body: 'slow down' }) : q.continue());
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
 await page.evaluate(() => { __k.meta.code = ''; document.getElementById('keepBtn').click(); });
 const busy = /Try again in a minute/;
 check(await page.waitForFunction((re) => new RegExp(re).test(document.getElementById('keepNote').textContent), { timeout: 5000 }, busy.source).then(() => true, () => false), 'save code refused (429): the keep screen says try again in a minute');

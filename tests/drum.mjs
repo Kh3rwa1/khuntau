@@ -19,8 +19,8 @@ await page.evaluateOnNewDocument(() => {
   AudioBufferSourceNode.prototype.stop = function (when = 0) { if (this.__e) this.__e.len = when - this.__e.when; return sp.call(this, when); };
 });
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(2500);
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(2500);
 await page.evaluate(() => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; });
 // play one chart: delta(i) = seconds after (note time + touch lag) that the finger lands
 async function chart(deltaSrc) {

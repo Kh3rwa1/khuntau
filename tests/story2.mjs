@@ -9,11 +9,11 @@ async function run(W, H, tag, mobile, ch) {
   await page.evaluateOnNewDocument((ch) => { localStorage.setItem('khuntau-story', JSON.stringify({ ch, painted: ch > 1 ? [1, 1, 1] : [1, 0, 0], chosen: ch > 2 ? 1 : 0, oiled: ch > 2 ? 1 : 0, garland: ch > 2 ? 1 : 0 })); }, ch);
   // CI has no GPU: full-quality desktop renders at 1-3 fps there, which no real device does, so CI uses low quality
   await page.goto('http://127.0.0.1:8791/?debug' + (mobile || process.env.CI ? '&q=low' : ''), { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
+  await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
   const shot = n => page.screenshot({ path: `tests/out/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 });
   const pos = () => page.evaluate(() => [__k.game.p.pos.x, __k.game.p.pos.z].map(v => +v.toFixed(1)));
-  console.log(tag, 'label:', await page.$eval('#storyBtn', e => e.textContent));
-  await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(2500); await shot('a-start');
+  console.log(tag, 'label:', await page.$eval('#playSub', e => e.textContent));
+  await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(2500); await shot('a-start');
   const p0 = await pos(); await page.keyboard.down('KeyW'); await sleep(5000); const p1 = await pos(); await shot('b-walk'); 
   await page.keyboard.up('KeyW'); await page.keyboard.down('KeyD'); await sleep(3000); await page.keyboard.up('KeyD'); const p2 = await pos(); await shot('c-turn');
   console.log(tag, 'walk', p0, p1, p2, 'fps', await page.evaluate(() => (__k.perf.fps || 0).toFixed(0)));
@@ -42,7 +42,7 @@ async function run(W, H, tag, mobile, ch) {
   await page.keyboard.press('Escape'); await sleep(500); await shot('g-pause'); await page.evaluate(() => document.getElementById('quitBtn').click()); await sleep(900);
   check(await page.evaluate(() => __k.game.mode) === 'menu' && await page.evaluate(() => !document.getElementById('startScreen').hidden), `${tag}: quit from pause returns to the menu`);
   // normal game still starts, with another animal
-  await page.evaluate(() => document.getElementById('animalBtn').click()); await sleep(600); await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(2500); await shot('h-ring');
+  await page.evaluate(() => document.getElementById('animalBtn').click()); await sleep(600); await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(2500); await shot('h-ring');
   check(await page.evaluate(() => __k.game.mode) === 'play', `${tag}: ring game starts after story`); check(await page.evaluate(() => __k.crowd.every(c => c.wrap.position.distanceTo(c.home) < 0.01)), `${tag}: villagers back home for the ring`);
   { const e = realErrors(logs); check(!e.length, `${tag}: no page errors` + (e.length ? ': ' + e.slice(0, 5).join(' | ') : '')); }
   await page.close();

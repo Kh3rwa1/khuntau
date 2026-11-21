@@ -36,13 +36,13 @@
   <p class="sub">Anonymous counts, one per visit per step (India time). <select id="range"><option value="7">Last 7 days</option><option value="14" selected>Last 14 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></p>
   <div class="funnel" id="funnel"></div>
   <div class="wrap"><table id="tbl"></table></div>
-  <p class="note">Ready = seconds from opening the link until PLAY works. Return = came back on a later day (d1 = the next day). Challenge = opened a "beat my score" link. Counts start on the day this page went live.</p>
+  <p class="note">Ready = seconds from opening the link until PLAY works. Return = came back on a later day (d1 = the next day). Challenge = opened a "beat my score" link. Counts start on the day this page went live. From 21 Nov the home PLAY opens the village; "Rounds started" counts scored ring rounds (from the khunt, the quick link or a challenge link).</p>
 </main>
 <script>
 const COLS = [
   ['open', 'Visits'], ['open.new', 'New'], ['open.return', 'Return'], ['ret.d1', 'Back d1'], ['ret.d7', 'Back d7'],
   ['ready.lt3', 'Ready <3s'], ['ready.3_6', '3-6s'], ['ready.6_10', '6-10s'], ['ready.10_20', '10-20s'], ['ready.gt20', '>20s'],
-  ['play', 'Play'], ['round_end', 'Rounds done'], ['story', 'Story'], ['ch.5', 'Story done'],
+  ['village', 'Into village'], ['play', 'Rounds started'], ['play.khunt', 'at khunt'], ['play.quick', 'quick'], ['play.link', 'from link'], ['round_end', 'Rounds done'], ['story', 'Story'], ['ch.5', 'Story done'],
   ['share.score', 'Shared score'], ['open.challenge', 'Challenge opens'], ['share.room', 'Room invites'], ['open.room', 'Invite opens'],
   ['vil.ask', 'Asked village'], ['vil.set', 'Chose village'], ['vil.tab', 'Village tab'], ['share.vil', 'Village shares'],
   ['room.create', 'Rooms made'], ['room.ask', 'Asked to join'], ['online.play', 'Online rounds'], ['open.app', 'From app'],
@@ -54,8 +54,8 @@ async function load() {
   const dates = Object.keys(d).sort().reverse(), sum = k => dates.reduce((a, day) => a + (d[day][k] || 0), 0);
   const steps = [
     ['Visits', sum('open'), null, ''],
-    ['Pressed PLAY or Story', sum('play') + sum('story'), pct(sum('play') + sum('story'), sum('open')), 'of visits'],
-    ['Finished a round', sum('round_end'), pct(sum('round_end'), sum('play')), 'of PLAY presses'],
+    ['Started a round', sum('play'), pct(sum('play'), sum('open')), 'of visits'],
+    ['Finished a round', sum('round_end'), pct(sum('round_end'), sum('play')), 'of rounds started'],
     ['Shared a score', sum('share.score'), pct(sum('share.score'), sum('round_end')), 'of finished rounds'],
     ['Challenge links opened', sum('open.challenge'), pct(sum('open.challenge'), sum('share.score')), 'per share'],
     ['Came back next day', sum('ret.d1'), pct(sum('ret.d1'), sum('open.new')), 'of new players'],

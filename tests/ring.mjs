@@ -12,11 +12,11 @@ const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-played', '1'); localStorage.setItem('khuntau-name', 'Ring Test'); });
 await page.goto(BASE + '/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
 const ev = (f, ...a) => page.evaluate(f, ...a);
 const until = (f, ms = 15000, ...a) => page.waitForFunction(f, { timeout: ms, polling: 50 }, ...a).then(() => true, () => false);
 const shot = n => page.screenshot({ path: `tests/out/ring-${n}.jpg`, type: 'jpeg', quality: 70 });
-await ev(() => document.getElementById('startBtn').click());
+await ev(() => document.getElementById('quickBtn').click());
 check(await until(() => __k.game.mode === 'play'), 'START puts you in the ring');
 check(await ev(() => __k.game.lives === 3 && document.querySelectorAll('#lamps svg:not(.out)').length === 3), 'three lit lamps at the start');
 await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check

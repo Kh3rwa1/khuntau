@@ -19,11 +19,11 @@ async function run(W, H, t, mobile) {
   await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-played', '1'); localStorage.setItem('khuntau-name', 'Tester');
     navigator.canShare = () => false; navigator.share = (d) => { window.__shared = d; return Promise.resolve(); }; });
   await page.goto(BASE + '/?debug&q=low', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !document.getElementById('startBtn').disabled, { timeout: 90000 });
+  await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
   const shot = n => page.screenshot({ path: `tests/out/vil-${t}-${n}.jpg`, type: 'jpeg', quality: 72 });
   check(/Play for your village/.test(await page.$eval('#villageLine', e => e.textContent)), `${t}: home invites you to play for your village`);
   // a scoring round asks for the village
-  await page.evaluate(() => document.getElementById('startBtn').click()); await page.waitForFunction(() => __k.game.mode === 'play');
+  await page.evaluate(() => document.getElementById('quickBtn').click()); await page.waitForFunction(() => __k.game.mode === 'play');
   await page.evaluate(() => { __k.game.score = 4; __k.game.pitha = 1; __k.gameOver(); });
   check(await page.waitForFunction(() => !document.getElementById('vilAsk').hidden && !document.getElementById('overScreen').hidden, { timeout: 8000 }).then(() => true, () => false), `${t}: after a scoring round you are asked to play for your village`);
   await shot('1-ask');

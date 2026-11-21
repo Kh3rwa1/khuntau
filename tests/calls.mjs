@@ -9,11 +9,11 @@ const page = await browser.newPage(); const logs = []; page.on('pageerror', e =>
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
 await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-story', JSON.stringify({ ch: 3, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); });
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
 const info = () => page.evaluate(() => ({ calls: __k.renderer.info.render.calls, tris: __k.renderer.info.render.triangles }));
-await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(3000); within('ring', await info());
+await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(3000); within('ring', await info());
 await page.keyboard.press('Escape'); await sleep(300); await page.evaluate(() => document.getElementById('quitBtn').click()); await sleep(600);
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(3000); within('yard', await info()); await page.screenshot({ path: 'tests/out/c-yard.jpg', type: 'jpeg', quality: 70 });
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(3000); within('yard', await info()); await page.screenshot({ path: 'tests/out/c-yard.jpg', type: 'jpeg', quality: 70 });
 await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand); d.S.camYaw = Math.atan2(d.W.drumStand.x, d.W.drumStand.z); d.snapCam(); }); await sleep(1500); within('akhra', await info());
 await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(0, 0, 13); d.S.camYaw = 0; d.snapCam(); }); await sleep(1500); within('edge', await info());
 check(!logs.length, 'no page errors ' + logs.join(' | ')); await finish(browser);

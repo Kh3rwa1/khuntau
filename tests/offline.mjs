@@ -19,7 +19,7 @@ const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, 
 const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
 await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
 const URL = 'http://127.0.0.1:8792/?debug&q=low';
-const boot = () => page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 }).then(() => true, () => false);
+const boot = () => page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 }).then(() => true, () => false);
 await page.goto(URL, { waitUntil: 'domcontentloaded' }); await boot();
 // first visit: wait until the service worker has saved everything and controls the page
 await page.evaluate(() => navigator.serviceWorker.ready);
@@ -37,7 +37,7 @@ check(await page.evaluate(async () => { const c = await caches.open((await cache
 await down();
 await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
 check(await boot(), 'offline: game boots from the phone');
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(3000);
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(3000);
 check(await page.evaluate(() => __k.game.mode === 'story' && !!__k.story), 'offline: story mode starts (story.js from the saved copy)');
 check(await page.evaluate(async () => (await __k.setAnimal('redcow')).id === 'redcow'), 'offline: picking the cow loads its model (setAnimal keeps the old animal if the load fails)');
 await page.screenshot({ path: 'tests/out/offline-story.jpg', type: 'jpeg', quality: 70 });
@@ -46,7 +46,7 @@ await page.screenshot({ path: 'tests/out/offline-story.jpg', type: 'jpeg', quali
 fs.appendFileSync(path.join(root, 'story.js'), '\nwindow.__deployStamp = 2;\n');
 await up();
 await page.goto(URL, { waitUntil: 'domcontentloaded' }); await boot();
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(2500);
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(2500);
 check(await page.evaluate(() => window.__deployStamp === 2), 'after a deploy, a returning phone runs the new story.js on its next load');
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 4).join(' | ') : '')); }
 await down(); fs.rmSync(root, { recursive: true, force: true });

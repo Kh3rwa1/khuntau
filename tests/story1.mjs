@@ -8,7 +8,7 @@ page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') lo
 await page.emulate({ viewport: { width: W, height: Hh, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' });
 if (process.env.HI) await watchLatin(page); // HI=1: the whole story in Hindi, and no English may show
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 90000 });
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
 const shot = async n => { await page.screenshot({ path: `tests/out/${tag}-${n}.jpg`, type: 'jpeg', quality: 72 }); };
 const ev = f => page.evaluate(f);
 const st = () => ev(() => { const s = __k.story.debug; return { ch: s.save.ch, mode: s.S.mode, inside: s.S.inside, near: s.S.near && s.S.near.label, dlg: !!s.S.dlg, pos: [__k.game.p.pos.x, __k.game.p.pos.y, __k.game.p.pos.z].map(v => +v.toFixed(1)), gm: __k.game.mode }; });
@@ -16,7 +16,7 @@ const tapDlg = async () => { for (let i = 0; i < 8; i++) { if (!(await ev(() => 
 const act = () => ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
 const goto = (x, y, z) => page.evaluate((x, y, z) => { __k.game.p.pos.set(x, y, z); __k.story.debug.S.near = null; }, x, y, z); // clear the old prompt: it was computed before the teleport
 await shot('00-home');
-await page.tap('#storyBtn'); await sleep(1800); await shot('01-wake'); { const s = await st(); check(s.inside && s.ch === 0 && s.gm === 'story', 'story starts inside the house, chapter 0'); }
+await page.tap('#startBtn'); await sleep(1800); await shot('01-wake'); { const s = await st(); check(s.inside && s.ch === 0 && s.gm === 'story', 'story starts inside the house, chapter 0'); }
 await tapDlg(); await sleep(300);
 const I = await ev(() => { const w = __k.story.debug.W.inside; return { h: [w.handi.x, w.handi.y, w.handi.z], d: [w.door.x, w.door.y, w.door.z] }; });
 await goto(I.h[0] + 0.3, I.h[1], I.h[2] + 0.9); await sleep(500); await shot('02-handi'); console.log('at handi', await st());

@@ -12,8 +12,8 @@ await page.evaluateOnNewDocument(() => { localStorage.removeItem('khuntau-perf')
 await page.goto('http://127.0.0.1:8791/?debug&fps', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.__k && __k.perf, { timeout: 120000, polling: 50 });
 const s0 = await page.evaluate(() => __k.perf.stage); // fresh phone, nothing saved: the starting stage for its class
-check(await page.waitForFunction(() => !document.getElementById('storyBtn').disabled, { timeout: 180000 }).then(() => true, () => false), 'slow phone: game finishes loading');
-await page.evaluate(() => document.getElementById('storyBtn').click()); await sleep(4000);
+check(await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 180000 }).then(() => true, () => false), 'slow phone: game finishes loading');
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(4000);
 await page.evaluate(() => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; });
 await page.waitForFunction((s0) => __k.perf.stage > s0, { timeout: 90000, polling: 1000 }, s0).catch(() => {});
 const s1 = await page.evaluate(() => ({ stage: __k.perf.stage, thin: __k.perf.thin, ratio: __k.renderer.getPixelRatio() }));

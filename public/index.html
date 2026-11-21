@@ -176,6 +176,7 @@ select.vil { font: 700 16px var(--font-ui); color: var(--ink); background: var(-
 .vilform { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 .vilform input { width: min(300px, 100%); text-align: center; }
 .vilhow { font-size: 13px; opacity: .8; max-width: 320px; margin: 0; }
+.playsub { margin: -6px 0 0; font-size: 13px; opacity: .85; min-height: 1em; }
 #codeIn { width: 120px; text-align: center; letter-spacing: .3em; text-transform: uppercase; }
 .btn.small { min-width: 0; font-size: 15px; padding: 10px 18px; }
 .or { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
@@ -323,7 +324,8 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <p class="challenge" id="challenge" hidden></p>
     <div class="bar" id="loadBar"><i></i></div>
     <button class="btn play" id="startBtn" disabled>Loading…</button>
-    <div class="storyrow"><button class="btn ghost small" id="storyBtn" type="button" disabled>Story: Sohrai Day</button></div>
+    <p class="playsub" id="playSub"></p>
+    <div class="storyrow"><button class="linkbtn" id="quickBtn" type="button" disabled>Quick round at the khunt</button></div>
     <p class="bestline" id="bestLine" hidden></p>
     <div class="today" id="today">
       <div class="today-head"><span id="lvlLine">Level 1</span><b id="streakLine"></b></div>
@@ -1045,7 +1047,7 @@ function tint(a, map) {
 function shadows(a) { a.root.traverse(o => { if (o.isMesh) o.castShadow = true; }); }
 
 let bull, player, story = null; const crowd = [];
-function renderStoryBtn() { if (story) $('storyBtn').textContent = story.label(); }
+function renderStoryBtn() { if (story) $('playSub').textContent = story.label(); }
 /* ---------- drum troupe: one dhamsa, two madal ---------- */
 const drummers = []; let drumHeat = 1;
 const leatherMat = Mat({ color: 0xe2cfa6, roughness: 0.85 });
@@ -1201,7 +1203,7 @@ function onCoreLoaded() {
   player.mixer.addEventListener('finished', e => { if (game.p.state === 'free') player.play('Idle'); });
   buildDrummers(nCrowd);
   resetGame();
-  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play';
+  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play'; if (directRing) $('quickBtn').hidden = true;
   { const t = performance.now() / 1000; track('ready.' + (t < 3 ? 'lt3' : t < 6 ? '3_6' : t < 10 ? '6_10' : t < 20 ? '10_20' : 'gt20')); } // seconds from opening the link to PLAY
   $('createBtn').disabled = false; $('joinBtn').disabled = false;
   const q = new URLSearchParams(location.search).get('room');
@@ -1235,11 +1237,13 @@ function onCrowdLoaded() {
     story = m.initStory({ THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       musicLevel: v => { MUSIC_VOL.intro = v; refreshMusicVol(); },
+      villageRing: () => { track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
       track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
       toMenu: () => { game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
     });
-    $('storyBtn').disabled = false; renderStoryBtn();
-  }).catch(err => { console.error(err); $('storyBtn').hidden = true; });
+    $('quickBtn').disabled = false; $('startBtn').dataset.village = 'ready'; renderStoryBtn();
+    if (villageWanted && !$('startScreen').hidden) enterVillage();
+  }).catch(err => { console.error(err); $('playSub').textContent = ''; $('quickBtn').disabled = false; });
 }
 // Models ship as glTF JSON with the binary embedded. The artifact frame blocks fetching data: URLs,
 // so decode the buffer here and hand GLTFLoader an in-memory GLB instead.
@@ -1555,7 +1559,7 @@ $('openBtn').addEventListener('click', () => netSend({ t: 'open', on: !net.open 
 
 let popTimer;
 // the story finale in Hindi: while game.storyRun, the ring's own lines go through the story's translator
-const L = (s) => (game.storyRun && story && story.tr && s != null ? story.tr(s) : s);
+const L = (s) => ((game.storyRun || game.villageRun) && story && story.tr && s != null ? story.tr(s) : s); // story finale and rounds started in the village
 function pop(big, small) {
   const el = $('pop'); $('popBig').textContent = L(big); $('popSmall').textContent = L(small) || '';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -1639,7 +1643,7 @@ function gameOver() {
     $('overRank').hidden = false; $('overRank').textContent = rankOf(pts);
     const nx = nextRank(pts); $('overNext').hidden = false;
     $('overNext').textContent = nx ? `${nx[0] - pts} more to ${nx[1]}` : 'Top rank. Legend of the ring.';
-    $('resultList').hidden = true; $('copyBtn').hidden = true; $('shareScoreBtn').hidden = false; $('menuBtn').hidden = false;
+    $('resultList').hidden = true; $('copyBtn').hidden = true; $('shareScoreBtn').hidden = false; $('menuBtn').hidden = false; $('menuBtn').textContent = game.villageRun ? 'Back to village' : 'Menu';
     $('againBtn').disabled = false; $('againBtn').textContent = 'Play again';
     $('copyNote').innerHTML = '&nbsp;';
     $('overScreen').hidden = false; $('hudScore').hidden = true;
@@ -1690,11 +1694,16 @@ async function scoreCard(pts, rank) {
   return await new Promise(r => c.toBlob(r, 'image/png'));
 }
 $('shareScoreBtn').addEventListener('click', () => { track('share.score'); shareScore(); });
-$('startBtn').addEventListener('click', () => { track('play'); game.storyRun = false; startGame(); });
-$('storyBtn').addEventListener('click', () => { if (!story || game.online) return; track('story'); initAudio(); game.storyRun = false; story.start(); });
+// one game: PLAY opens the village (the khunt is in the middle of it). Challenge links go straight to the ring.
+const directRing = !!challenge;
+let villageWanted = false;
+let villageAt = 0;
+function enterVillage() { if (performance.now() - villageAt < 1500) return; if (!story || game.online) { villageWanted = true; $('startBtn').textContent = 'Opening the village…'; return; } villageWanted = false; villageAt = performance.now(); $('startScreen').hidden = true; track('village'); initAudio(); game.storyRun = game.villageRun = false; story.start(); }
+$('startBtn').addEventListener('click', () => { if (directRing) { track('play'); track('play.link'); game.storyRun = game.villageRun = false; startGame(); } else enterVillage(); });
+$('quickBtn').addEventListener('click', () => { track('play'); track('play.quick'); game.storyRun = game.villageRun = false; startGame(); });
 $('friendsBtn').addEventListener('click', () => { const box = $('onlineBox'); box.hidden = !box.hidden; if (!box.hidden) $('nameIn').focus(); });
 $('creditsBtn').addEventListener('click', () => { $('credits').hidden = !$('credits').hidden; });
-$('menuBtn').addEventListener('click', () => { game.mode = 'menu'; resetGame(); $('overScreen').hidden = true; $('startScreen').hidden = false; renderBestLine(); renderToday(); loadBoard(); applyShirt(); setMusic('intro'); });
+$('menuBtn').addEventListener('click', () => { if (game.villageRun && story && !game.online) { story.back(); return; } game.mode = 'menu'; resetGame(); $('overScreen').hidden = true; $('startScreen').hidden = false; renderBestLine(); renderToday(); loadBoard(); applyShirt(); setMusic('intro'); });
 $('againBtn').addEventListener('click', () => { if (game.online) netSend({ t: 'start' }); else startGame(); });
 $('copyBtn').addEventListener('click', () => {
   if (game.online) { showLobby(); return; }
@@ -1712,7 +1721,7 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (game.mode === 'story' && story) { story.key(e); return; }
   if (game.mode === 'over' && !game.online && !$('overScreen').hidden && (e.code === 'Enter' || e.code === 'Space') && document.activeElement?.id !== 'shareScoreBtn' && document.activeElement?.id !== 'menuBtn') { e.preventDefault(); startGame(); return; }
-  if (game.mode !== 'play') { if (game.mode === 'menu' && (e.code === 'Enter' || e.code === 'Space') && !$('startBtn').disabled && !['BUTTON', 'INPUT'].includes(document.activeElement?.tagName)) startGame(); return; }
+  if (game.mode !== 'play') { if (game.mode === 'menu' && (e.code === 'Enter' || e.code === 'Space') && !$('startBtn').disabled && !$('startScreen').hidden && !['BUTTON', 'INPUT'].includes(document.activeElement?.tagName)) $('startBtn').click(); return; } // Enter on the home screen = PLAY
   if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') { input.roll = true; e.preventDefault(); }
   if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'KeyJ') input.grab = true;
   if (e.code === 'KeyQ' || e.code === 'KeyF' || e.code === 'KeyK') input.tease = true;
@@ -2309,7 +2318,7 @@ function onNet(m) {
 }
 function onNetEvent(m) {
   switch (m.e) {
-    case 'start': { track('online.play'); game.storyRun = false; ringLabels();
+    case 'start': { track('online.play'); game.storyRun = game.villageRun = false; ringLabels();
       resetGame(); game.mode = 'play'; game.online = true; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
       const sp = m.spawn.find(s => s[0] === net.id);
       const inRound = !!sp;
@@ -2603,7 +2612,8 @@ function quitToMenu() {
   game.menuOpen = false; $('pauseScreen').hidden = true;
   if (game.online) { leaveOnline(false); return; }
   tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
-  game.storyRun = false; if (story && story.active()) { story.stop(); story.toMenu(); return; }
+  if (game.villageRun && story && game.mode !== 'story') { gallop(false); story.back(); return; }
+  game.storyRun = game.villageRun = false; if (story && story.active()) { story.stop(); story.toMenu(); return; }
   game.mode = 'menu'; resetGame(); gallop(false); renderStoryBtn();
   ['overScreen', 'hudScore'].forEach(id => $(id).hidden = true);
   $('startScreen').hidden = false; renderBestLine(); setMusic('intro');

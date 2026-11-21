@@ -52,7 +52,7 @@ export function initStory(C) {
   };
   // every other on-screen line, English → Hindi. # stands for a number.
   const HI = {
-    'ENTER': 'अंदर', 'DRINK': 'पियो', 'EAT': 'खाओ', 'REST': 'आराम', 'TALK': 'बात', 'GO OUT': 'बाहर', 'PAINT': 'रंगो', 'CHOOSE': 'चुनो', 'OIL': 'तेल', 'GARLAND': 'माला', 'BEAT': 'बजाओ', 'START': 'शुरू', 'SHOOT': 'तीर', 'FISH': 'मछली', 'SING': 'गाओ',
+    'ENTER': 'अंदर', 'DRINK': 'पियो', 'EAT': 'खाओ', 'REST': 'आराम', 'TALK': 'बात', 'GO OUT': 'बाहर', 'RING': 'खेलो', 'Play a round at the khunt': 'खूँटे पर एक दौर खेलो', 'PAINT': 'रंगो', 'CHOOSE': 'चुनो', 'OIL': 'तेल', 'GARLAND': 'माला', 'BEAT': 'बजाओ', 'START': 'शुरू', 'SHOOT': 'तीर', 'FISH': 'मछली', 'SING': 'गाओ',
     'Go into the house': 'घर के अंदर जाओ', 'Drink the handi': 'हँड़िया पियो', 'Eat a pitha': 'पीठा खाओ', 'Rest on the khatia': 'खटिया पर आराम करो', 'Talk to Gogo': 'गोगो से बात करो', 'Go outside': 'बाहर जाओ', 'Paint the wall': 'दीवार रंगो', 'Talk to the Majhi': 'माझी से बात करो',
     'Choose the animal': 'जानवर चुनो', 'Oil the horns': 'सींगों पर तेल लगाओ', 'Put on the garland': 'माला पहनाओ', 'Beat the tamak': 'तामाक बजाओ', 'Drum freely': 'मन से बजाओ', 'Start the Khuntau': 'खुंटाउ शुरू करो',
     'Shoot at the target': 'निशाने पर तीर चलाओ', 'Fish in the pond': 'तालाब में मछली पकड़ो', 'Sing at this house': 'इस घर पर गाओ',
@@ -400,7 +400,8 @@ export function initStory(C) {
         add(FSTAND, 1.7, 'FISH', 'Fish in the pond', fishStart);
         JALE.forEach((j, i) => { if (!today().jv[i]) add(j.stand, 1.5, 'SING', 'Sing at this house', () => echoStart(i)); });
       }
-      if (save.ch >= 4) { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push({ d: 0.5, label: 'START', text: 'Start the Khuntau', go: startRing }); }
+      { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: startRing } // the story's finale: 3 pitha
+        : { d: 0.5, label: 'RING', text: 'Play a round at the khunt', go: villageRound }); } // any other time: a normal scored round
     }
     list.sort((a, b) => a.d - b.d); return list[0] || null;
   }
@@ -691,6 +692,12 @@ export function initStory(C) {
 
   /* ---------- the ring ---------- */
   function startRing() { fade(() => { stop(true); C.startRing(); }, 250); }
+  function villageRound() { fade(() => { stop(true); C.villageRing(); }, 250); }
+  // after a round started in the village: back on the village ground, next to the khunt
+  function back() {
+    game.villageRun = false; $('hudScore').hidden = true; $('overScreen').hidden = true;
+    fade(() => { start(true); game.p.pos.set(0, 0, 13.5); game.p.yaw = Math.PI; S.camYaw = 0; snapCam(); }, 200);
+  }
   function afterRing(won) {
     game.storyRun = false; $('hudScore').hidden = true; $('overScreen').hidden = true;
     fade(() => {
@@ -925,10 +932,10 @@ export function initStory(C) {
   }
 
   return {
-    start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing, tr,
+    start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing, back, tr,
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
-    label: () => save.done ? `Sohrai village: ${doneToday()}/4 today` : save.ch > 0 ? `Continue story (${save.ch}/5)` : 'Story: Sohrai Day',
+    label: () => save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
     debug: { calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }
