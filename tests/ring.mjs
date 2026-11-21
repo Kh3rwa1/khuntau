@@ -29,17 +29,17 @@ await until(() => __k.game.p.state === 'free', 4000);
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.input.grab = true; }); await sleep(300);
 check(await ev(() => __k.game.pitha === 1), 'no second pitha until the post refills');
 
-// bait and stand still: horned
-await ev(() => { const g = __k.game; g.p.pos.set(3.5, 0, 3.5); g.p.state = 'free'; g.p.invuln = 0; g.b.state = 'watch'; g.b.t = 0; __k.input.tease = true; });
+// bait and stand still: horned (the bull is put on a clear line to the player, so the post can't make it circle first)
+await ev(() => { const g = __k.game; g.p.pos.set(3.5, 0, 3.5); g.b.pos.set(3.2, 0, -0.6); g.p.state = 'free'; g.p.invuln = 0; g.b.state = 'watch'; g.b.t = 0; __k.input.tease = true; });
 check(await until(() => __k.game.lives === 2, 10000), 'HIDE baits a charge; standing still costs a lamp');
 await shot('2-hit');
 await until(() => __k.game.p.state === 'free' && __k.game.p.invuln <= 0, 6000);
 
 // bait and roll at the last moment: no lamp lost (a perfect player, run inside the page every frame)
 const before = await ev(() => __k.game.lives);
-await ev(() => { const g = __k.game; g.p.pos.set(-3.5, 0, 3.5); g.b.state = 'watch'; g.b.t = 0; window.__rolled = 0; __k.input.tease = true;
+await ev(() => { const g = __k.game; g.p.pos.set(-3.5, 0, 3.5); g.b.pos.set(-3.2, 0, -0.6); g.b.state = 'watch'; g.b.t = 0; window.__rolled = 0; __k.input.tease = true;
   (function dodge() { const p = g.p, b = g.b; if (b.state === 'charge' && p.state === 'free' && p.pos.distanceTo(b.pos) < 2.6) { __k.input.roll = true; window.__rolled++; } if (window.__rolled < 4 && g.mode === 'play') requestAnimationFrame(dodge); })(); });
-const charged = await until(() => __k.game.b.state === 'charge', 8000);
+const charged = await until(() => __k.game.b.state === 'charge', 12000);
 await until(() => __k.game.b.state !== 'charge', 6000); await sleep(300);
 check(charged && await ev(() => window.__rolled > 0), 'the bull charged and the player rolled');
 check(await ev((n) => __k.game.lives === n, before), 'a well-timed ROLL dodges the charge');
@@ -54,7 +54,7 @@ await shot('3-handi');
 // last lamps out: game over screen with the score
 for (let i = 0; i < 3; i++) {
   await until(() => __k.game.p.state === 'free' && __k.game.p.invuln <= 0, 6000);
-  await ev(() => { const g = __k.game; g.p.pos.set(3.5, 0, -3.5); g.b.state = 'watch'; g.b.t = 0; __k.input.tease = true; });
+  await ev(() => { const g = __k.game; g.p.pos.set(3.5, 0, -3.5); g.b.pos.set(3.2, 0, 0.6); g.b.state = 'watch'; g.b.t = 0; __k.input.tease = true; });
   await until((n) => __k.game.lives < n, 10000, 3 - i);
 }
 check(await until(() => __k.game.mode === 'over' && !document.getElementById('overScreen').hidden, 8000), 'losing the last lamp ends the run');
