@@ -16,6 +16,7 @@ match. Nothing here should be "fixed" by guessing.
 | 7 | You beat the tamak (big drum) and tumdak at the akhra; dancers, the Majhi and the animal react. | Are tamak and tumdak played on Khuntau day at the akhra, or at the khunt? Do people dance during the bull-post event? |
 | 8 | Ring: the animal is tied to the khunt; you snatch pitha from the post while it charges; a hide is waved to provoke it. | Is pitha tied to the post (or something else: a dried hide, rice cakes, paddy)? Is the hide used to provoke the animal? |
 | 9 | Daily activities: archery contest at a banana-trunk target, fishing at the pond, singing at three houses (they give you pitha). | Do any of these belong to Sohrai in your village? Is house-to-house singing done on this day? What is it called? |
+| 11 | Villagers wear generic things: women bead necklaces and bangles, men a gamchha round the neck; colours vary. | What do men and women wear on Khuntau day in your village? Anything special for the festival (cloth colours, jewellery, flowers, head cloth)? |
 | 10 | Names: Gogo, Majhi, Sohrai, Khuntau, khunt, gohal, akhra, handi, pitha, tamak, tumdak, Johar. | Any spelling your village would write differently? |
 
 When you answer, Claude updates `public/story.js` (text and order), the Hindi lines, and

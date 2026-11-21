@@ -20,6 +20,12 @@ await ev(() => document.getElementById('quickBtn').click());
 check(await until(() => __k.game.mode === 'play'), 'START puts you in the ring');
 check(await ev(() => __k.game.lives === 3 && document.querySelectorAll('#lamps svg:not(.out)').length === 3), 'three lit lamps at the start');
 await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
+// accessories ride their bones: while running, the gamchha's end keeps its distance to the Torso bone while the bone moves
+{ const probe = () => ev(() => { const T = __k.THREE, m = __k.player.body, part = __k.player.mats.Gamchha && __k.player.mats.Gamchha.part; if (!part) return null; m.updateMatrixWorld(true); m.skeleton.update();
+    const v = new T.Vector3(); m.getVertexPosition(part.start + part.count - 1, v); m.localToWorld(v); const b = m.skeleton.bones.find(x => x.name === 'Torso').getWorldPosition(new T.Vector3()); return { d: v.distanceTo(b), b: b.toArray() }; });
+  await ev(() => { __k.player.play('Run'); }); await sleep(250); const a1 = await probe(); await sleep(170); const a2 = await probe();
+  check(!!a1 && Math.abs(a1.d - a2.d) < 0.01 && Math.hypot(a1.b[0] - a2.b[0], a1.b[1] - a2.b[1], a1.b[2] - a2.b[2]) > 0.002, `accessories move with the body (gamchha stays ${a1 && a1.d.toFixed(3)} m from the torso while it moves)`);
+  await ev(() => { __k.player.play('Idle'); }); }
 
 // grab at the post
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; });
@@ -41,6 +47,9 @@ const before = await ev(() => __k.game.lives);
 await ev(() => { const g = __k.game; g.p.pos.set(-3.5, 0, 3.5); g.b.pos.set(-3.2, 0, -0.6); g.b.state = 'watch'; g.b.t = 0; window.__rolled = 0; __k.input.tease = true;
   (function dodge() { const p = g.p, b = g.b; if (b.state === 'charge' && p.state === 'free' && p.pos.distanceTo(b.pos) < 2.6) { __k.input.roll = true; window.__rolled++; } if (window.__rolled < 4 && g.mode === 'play') requestAnimationFrame(dodge); })(); });
 check(await until(() => __k.life && __k.game.b.state === 'windup' && __k.life.active().breath, 12000), 'the bull snorts: breath puffs while he winds up');
+check(await until(() => __k.crowd.some(c => c.curName === 'RecieveHit'), 2000), 'the crowd flinches when he winds up');
+check(await ev(() => { const b = __k.game.b.pos; return __k.crowd.filter(c => !c.busy && c.homeYaw !== undefined).every(c => { const d = c.wrap.rotation.y - c.homeYaw, off = Math.atan2(Math.sin(d), Math.cos(d)); return Math.abs(off) <= 1.06; })
+  && __k.crowd.filter(c => !c.busy && c.homeYaw !== undefined).some(c => { const want = Math.atan2(b.x - c.wrap.position.x, b.z - c.wrap.position.z), d = c.wrap.rotation.y - c.homeYaw, w2 = want - c.homeYaw; return Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) > 0.05 && Math.sign(Math.atan2(Math.sin(d), Math.cos(d))) === Math.sign(Math.atan2(Math.sin(w2), Math.cos(w2))); }); }), 'spectators turn to watch the bull, never more than 60 degrees from their spot');
 const charged = await until(() => __k.game.b.state === 'charge', 12000);
 await until(() => __k.game.b.state !== 'charge', 6000); await sleep(300);
 check(charged && await ev(() => window.__rolled > 0), 'the bull charged and the player rolled');

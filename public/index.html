@@ -976,14 +976,64 @@ const loaded = {}; let loadedCount = 0;
 // Each character arrives as 6 or 7 separate pieces (skin, shirt, hair…), each drawn and animated on its own.
 // Fuse them into one piece coloured per vertex: about 6x fewer draws per character, the biggest saving on weak phones.
 let charMat = Mat({ vertexColors: true, roughness: 0.8 });
-function mergeChar(gltf) {
+// accessories folded into a person's skinned mesh at load: no extra draw calls, each item rides its bone and is
+// coloured per person through tint(). Everyone of a kind wears them (the player too, on the man model).
+const ACC = {
+  woman: [['Necklace', 'neck', 0xd8352a], ['Bangles', 'wrists', 0xf2b134]],
+  worker: [['Necklace', 'neck', 0x2f7ad9], ['Bangles', 'wrists', 0xd8352a]],
+  man: [['Gamchha', 'scarf', 0xc8372d]],
+};
+function accessories(mesh, kind, faceAt) {
+  const sk = mesh.skeleton, list = ACC[kind]; if (!list || !sk) return [];
+  const bi = (n) => sk.bones.findIndex(b => b.name.replace(/\./g, '') === n.replace(/\./g, '')), inv = new THREE.Matrix4(); // three.js drops the dots: 'LowerArm.L' -> 'LowerArmL'
+  const at = (n) => { const i = bi(n); if (i < 0) return null; inv.copy(sk.boneInverses[i]).invert().premultiply(mesh.bindMatrixInverse); return new THREE.Vector3().setFromMatrixPosition(inv); };
+  const neck = at('Neck'), hips = at('Hips'), head = at('Head'); if (!neck || !hips || !head) return [];
+  const up = neck.clone().sub(hips).normalize(), T = neck.distanceTo(hips), H = head.distanceTo(neck);
+
+  const skin = (g, bone) => { // one bone, full weight
+    const n = g.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) { si[i * 4] = bone; sw[i * 4] = 1; }
+    g.deleteAttribute('uv'); g.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+    g.setIndex(new THREE.BufferAttribute(new Uint32Array(g.index.array), 1));
+    return g; };
+  const along = (g, axis) => g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), axis)); // torus axis -> limb axis
+  const out = [];
+  for (const [name, where] of list) {
+    const geos = [];
+    if (where === 'neck') { const g = along(new THREE.TorusGeometry(T * 0.2, T * 0.03, 5, 14), up); g.translate(...neck.clone().addScaledVector(up, -H * 0.15).toArray()); geos.push(skin(g, bi('Neck'))); }
+    if (where === 'wrists') for (const side of ['L', 'R']) { const f = at('Fist.' + side), l = at('LowerArm.' + side); if (!f || !l || bi('LowerArm.' + side) < 0) continue; const ax = f.clone().sub(l).normalize();
+      const g = along(new THREE.TorusGeometry(T * 0.085, T * 0.022, 4, 10), ax); g.translate(...l.clone().lerp(f, 0.82).toArray()); geos.push(skin(g, bi('LowerArm.' + side))); }
+    if (where === 'scarf') { // a gamchha round the neck with both ends hanging down the chest
+      const g = along(new THREE.TorusGeometry(T * 0.2, T * 0.05, 4, 12), up); g.translate(...neck.clone().addScaledVector(up, -H * 0.1).toArray()); geos.push(skin(g, bi('Neck')));
+      const sl = at('Shoulder.L'), sr = at('Shoulder.R'), face = faceAt;
+      if (sl && sr && face) { const right = sr.clone().sub(sl).normalize(), fwd = face.clone().sub(head); fwd.addScaledVector(up, -fwd.dot(up)).normalize(); // the painted face shows which way is front
+        const rot = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, fwd));
+        for (const side of [-1, 1]) { const e = new THREE.BoxGeometry(T * 0.11, T * 0.42, T * 0.035); e.applyQuaternion(rot);
+          e.translate(...neck.clone().addScaledVector(up, -T * 0.32).addScaledVector(right, side * T * 0.14).addScaledVector(fwd, T * 0.42).toArray()); geos.push(skin(e, bi('Torso'))); } } }
+    if (geos.length) out.push({ name, geo: geos.length > 1 ? mergeGeometries(geos, false) : geos[0], color: new THREE.Color(where === 'neck' ? 0xd8352a : 0xf2b134) });
+  }
+  return out;
+}
+// quantized model data -> plain arrays (people with accessories): positions/normals/weights as floats, bone indices 16-bit
+function plain(attr, k) {
+  // read through getComponent: the source may be interleaved or quantized
+  const o = new (k === 'skinIndex' ? Uint16Array : Float32Array)(attr.count * attr.itemSize);
+  for (let i = 0; i < attr.count; i++) for (let j = 0; j < attr.itemSize; j++) o[i * attr.itemSize + j] = attr.getComponent(i, j);
+  return new THREE.BufferAttribute(o, attr.itemSize);
+}
+function mergeChar(gltf, kind) {
   const groups = new Map();
   gltf.scene.traverse(o => { if (o.isSkinnedMesh) { const a = groups.get(o.skeleton) || []; a.push(o); groups.set(o.skeleton, a); } });
   for (const meshes of groups.values()) {
     const geos = [], parts = []; let v = 0;
     for (const m of meshes) {
       const g = m.geometry, n = g.attributes.position.count; parts.push({ name: m.material.name, start: v, count: n, color: m.material.color.clone() }); v += n;
-      const c = new THREE.BufferGeometry(); for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) c.setAttribute(k, g.attributes[k]); c.setIndex(g.index); geos.push(c);
+      const c = new THREE.BufferGeometry(); for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) c.setAttribute(k, ACC[kind] ? plain(g.attributes[k], k) : g.attributes[k]); c.setIndex(ACC[kind] ? new THREE.BufferAttribute(new Uint32Array(g.index.array), 1) : g.index); geos.push(c);
+    }
+    const fm = meshes.find(m => m.material.name === 'Face'), faceAt = fm ? (() => { const p = fm.geometry.attributes.position, c = new THREE.Vector3(); for (let i = 0; i < p.count; i++) c.x += p.getX(i), c.y += p.getY(i), c.z += p.getZ(i); return c.divideScalar(p.count); })() : null;
+    for (const acc of ACC[kind] ? accessories(meshes[0], kind, faceAt) : []) {
+      const n = acc.geo.attributes.position.count, def = ACC[kind].find(x => x[0] === acc.name)[2];
+      parts.push({ name: acc.name, start: v, count: n, color: new THREE.Color(def) }); v += n; geos.push(acc.geo);
     }
     const merged = mergeGeometries(geos, false); if (!merged) continue;
     const col = new Float32Array(v * 3); for (const p of parts) for (let i = p.start; i < p.start + p.count; i++) { col[i * 3] = p.color.r; col[i * 3 + 1] = p.color.g; col[i * 3 + 2] = p.color.b; }
@@ -1023,6 +1073,7 @@ function actor(gltf, height, clone) {
     const src = o.geometry, g = new THREE.BufferGeometry();
     for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) g.setAttribute(k, src.attributes[k]);
     g.setIndex(src.index); g.setAttribute('color', new THREE.BufferAttribute(src.attributes.color.array.slice(), 3));
+    g.userData.parts = parts; // so copies made from this one (the player is built from the original) still know their parts
     o.geometry = g; o.material = charMat; a.body = o;
     for (const p of parts) a.mats[p.name] = { part: p };
   });
@@ -1194,6 +1245,22 @@ async function setAnimal(id, keep = true) {
 }
 $('animalBtn').addEventListener('click', () => { if (!bull || game.online) return; setAnimal(ANIMALS[(ANIMALS.indexOf(animal) + 1) % ANIMALS.length].id); });
 
+// spectators follow the action: they turn (whole body, not the head bone) toward the bull, or you when it is calm
+function crowdWatch(dt) {
+  const b = game.b, focus = (b.state === 'windup' || b.state === 'charge') ? b.pos : game.mode === 'play' ? game.p.pos : b.pos;
+  for (const c of crowd) {
+    if (c.busy || c.goingHome || !c.wrap.visible || c.homeYaw === undefined) continue;
+    const want = Math.atan2(focus.x - c.wrap.position.x, focus.z - c.wrap.position.z), dw = want - c.homeYaw, off = Math.max(-1.05, Math.min(1.05, Math.atan2(Math.sin(dw), Math.cos(dw))));
+    c.wrap.rotation.y = turnTo(c.wrap.rotation.y, c.homeYaw + off, 2.4, dt);
+  }
+}
+// the crowd reacts to what happens: a flinch when he winds up or slams the post, a groan when you are hit
+function crowdReact(kind) {
+  if (game.mode !== 'play') return;
+  const clip = kind === 'groan' ? 'Defeat' : 'RecieveHit', max = [4, 7, 12][QUALITY];
+  crowd.filter(c => !c.busy && !c.goingHome && c.wrap.visible && c.root.visible).slice(0, max).forEach((c, i) =>
+    setTimeout(() => { if (!c.busy && !c.goingHome && game.mode === 'play') c.play(clip, { once: true, fade: 0.12, ts: kind === 'groan' ? 1.3 : 1.6 }); }, 40 + i * 55 + Math.random() * 80));
+}
 // fit one model on arrival (size and floor offset), before anything is built from it
 function fitModel(g) { g.scene.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(g.scene, true); g.userData.fit = { h: box.max.y - box.min.y, minY: box.min.y, scale: g.scene.scale.clone(), y: g.scene.position.y }; }
 const nCrowd = [6, 8, 12][QUALITY];
@@ -1203,7 +1270,7 @@ function onCoreLoaded() {
   if (animal.model !== 'bull') setAnimal(animal.id); $('animalName').textContent = animal.name;
 
   player = actor(loaded.man, 1.72, false);
-  tint(player, { Skin: 0x7a5038, Shirt: 0xf3ede2, Pants: 0x2f6b3a, Belt: 0xc8372d, Hair: 0x15100c });
+  tint(player, { Skin: 0x7a5038, Shirt: 0xf3ede2, Pants: 0x2f6b3a, Belt: 0xc8372d, Hair: 0x15100c, Gamchha: 0xc8372d });
   shadows(player); scene.add(player.wrap); giveHide(player); applyShirt();
 
   applyStage(START_STAGE);
@@ -1219,6 +1286,8 @@ function onCoreLoaded() {
   // the textured title font (200 KB) comes after the game is playable; until then titles use Baloo 2
   try { const ff = new FontFace('Rubik Dirt', 'url(/fonts/rubik-dirt-latin.woff2) format("woff2")', { display: 'swap', unicodeRange: 'U+0000-00FF, U+2000-206F, U+20B9, U+2212' }); document.fonts.add(ff); ff.load().catch(() => {}); } catch (e) {}
 }
+const BEADS = [0xd8352a, 0xf2b134, 0x2f7ad9, 0xf1ead9, 0x2f7a46], BANGLES = [0xf2b134, 0xd8352a, 0x2f7ad9, 0xc9c9c9], GAMCHHA = [0xc8372d, 0xf1ead9, 0x2f7a46, 0x3a6db8, 0xe8b33c];
+const pick = (a, i) => a[i % a.length];
 function onCrowdLoaded() {
   const looks = [
     ['woman', { Skin: 0x704428, Shirt: 0xf1ead9, Pants: 0xb8302a, Belt: 0xb8302a, Hair: 0x120c08 }],
@@ -1229,7 +1298,7 @@ function onCrowdLoaded() {
   for (let i = 0; i < nCrowd; i++) {
     const [kind, colors] = looks[i % looks.length];
     const c = actor(loaded[kind], rand(1.55, 1.75), true);
-    tint(c, colors);
+    tint(c, colors); tint(c, { Necklace: pick(BEADS, i), Bangles: pick(BANGLES, i + 1), Gamchha: pick(GAMCHHA, i) }); // their own beads, bangles, cloth
     const a = i / nCrowd * Math.PI * 2 + 0.2, r = ARENA_R + rand(1.7, 2.6);
     c.wrap.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     c.wrap.rotation.y = Math.atan2(-c.wrap.position.x, -c.wrap.position.z);
@@ -1276,7 +1345,7 @@ async function loadModel(url) {
 let coreDone = false, crowdDone = false;
 function loadSet(keys) {
   return Promise.all(keys.map(k => loadModel(files[k]).then(g => {
-    mergeChar(g); fitModel(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (Math.min(loadedCount, 2) / 2 * 100) + '%';
+    mergeChar(g, k); fitModel(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (Math.min(loadedCount, 2) / 2 * 100) + '%';
   })));
 }
 const loadFail = (err) => { console.error(err); $('startBtn').textContent = 'Could not load. Refresh to retry'; $('loadErr').textContent = String(err && err.message || err).slice(0, 140); };
@@ -1807,7 +1876,7 @@ function updateBull(dt) {
         const wait = provoked ? 0.15 : urgent ? b.dur * 0.35 : b.dur;
         if (playing && b.t > wait) {
           const gentle = game.charges < 2; // first charges of a round are slow and readable
-          setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0)); sfx.snort();
+          setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0)); sfx.snort(); crowdReact('flinch');
           b.provoked = provoked;
         }
       }
@@ -1847,7 +1916,7 @@ function updateBull(dt) {
       const r = b.pos.length();
       if (r < 1.0 || r > ROPE_L || b.dist <= 0) closeCall(b, p);
       if (r < 1.0) { // smacked the post
-        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; postWob = { t: 0, x: b.dir.z, z: -b.dir.x };
+        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; postWob = { t: 0, x: b.dir.z, z: -b.dir.x }; crowdReact('flinch');
         toast('Bonk!', 700);
       } else if (r > ROPE_L) { // rope goes taut
         b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
@@ -1887,7 +1956,7 @@ function closeCall(b, p) {
 }
 function hitPlayer() {
   const p = game.p, b = game.b;
-  game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; buzz([60, 40, 90]);
+  game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; buzz([60, 40, 90]); crowdReact('groan');
   if (!game.online && game.combo >= 2) setTimeout(() => pop('Combo lost', ''), 250);
   game.combo = 0; renderCombo();
   p.vel.copy(b.dir).multiplyScalar(9).setY(0);
@@ -2608,7 +2677,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -2710,6 +2779,7 @@ function frame() {
     const seen = (a) => { _sp.center.copy(a.wrap.position); _sp.center.y += 0.9; return _fr.intersectsSphere(_sp); };
     for (const c of crowd) c.root.visible = (!inStory && (c.busy || c.goingHome)) || seen(c);
     for (const d of drummers) d.root.visible = seen(d);
+    if (!inStory) crowdWatch(dt);
     if (QUALITY === 2 && perf.stage < 3) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(dt); }
     else if (perf.odd) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(perf.cdt); perf.cdt = 0; } // villagers animate at half rate on phones and tablets
     updateDrummers(dt);
