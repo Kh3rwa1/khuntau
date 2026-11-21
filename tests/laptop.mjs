@@ -7,7 +7,10 @@ await page.setViewport({ width: 1280, height: 720 });
 await page.goto('http://127.0.0.1:8791/?debug' + (process.env.CI ? '&q=low' : ''), { waitUntil: 'domcontentloaded' }); // CI has no GPU (see story2.mjs)
 await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
 await page.click('#startBtn'); await sleep(2500);
-await page.keyboard.press('Enter'); await sleep(500); await page.keyboard.press('Enter'); await sleep(800); await page.screenshot({ path: 'tests/out/lap-1.jpg', type: 'jpeg', quality: 70 });
+// press Enter through Gogo's lines until the dialogue is really closed (it opens a moment after arrival)
+await page.waitForFunction(() => !!__k.story.debug.S.dlg, { timeout: 8000 }).catch(() => {});
+for (let i = 0; i < 8 && await page.evaluate(() => !!__k.story.debug.S.dlg); i++) { await page.keyboard.press('Enter'); await sleep(450); }
+await sleep(400); await page.screenshot({ path: 'tests/out/lap-1.jpg', type: 'jpeg', quality: 70 });
 await page.evaluate(() => { const h = __k.story.debug.W.inside.handi; __k.game.p.pos.set(h.x, h.y, h.z + 0.8); }); await sleep(1000);
 { const b = await page.evaluate(() => { const b = document.getElementById('actBtn'), r = b.getBoundingClientRect(); return { d: getComputedStyle(b).display, t: b.textContent, w: r.width, x: r.right, y: r.bottom }; }); check(b.d !== 'none' && b.t === 'DRINK' && b.w >= 60 && b.x <= 1280 && b.y <= 720, `laptop: big DRINK button on screen (${b.t}, ${Math.round(b.w)}px)`); }
 await page.screenshot({ path: 'tests/out/lap-2.jpg', type: 'jpeg', quality: 70 });
