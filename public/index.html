@@ -1013,20 +1013,37 @@ const ACC = {
   woman: [['Necklace', 'neck', 0xd8352a], ['Bangles', 'wrists', 0xf2b134]],
   worker: [['Necklace', 'neck', 0x2f7ad9], ['Bangles', 'wrists', 0xd8352a]],
   man: [['Gamchha', 'scarf', 0xc8372d]],
+  bull: [['Sindur', 'forehead', 0xc8301c]], // vermilion on the forehead, shown once decorated (bulls only: on the cow's head shape it sat like a cap; her horns go red when oiled)
 };
-function accessories(mesh, kind, faceAt) {
+function accessories(mesh, kind, faceAt, allMeshes) {
   const sk = mesh.skeleton, list = ACC[kind]; if (!list || !sk) return [];
   const bi = (n) => sk.bones.findIndex(b => b.name.replace(/\./g, '') === n.replace(/\./g, '')), inv = new THREE.Matrix4(); // three.js drops the dots: 'LowerArm.L' -> 'LowerArmL'
   const at = (n) => { const i = bi(n); if (i < 0) return null; inv.copy(sk.boneInverses[i]).invert().premultiply(mesh.bindMatrixInverse); return new THREE.Vector3().setFromMatrixPosition(inv); };
-  const neck = at('Neck'), hips = at('Hips'), head = at('Head'); if (!neck || !hips || !head) return [];
-  const up = neck.clone().sub(hips).normalize(), T = neck.distanceTo(hips), H = head.distanceTo(neck);
-
   const skin = (g, bone) => { // one bone, full weight
     const n = g.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
     for (let i = 0; i < n; i++) { si[i * 4] = bone; sw[i * 4] = 1; }
     g.deleteAttribute('uv'); g.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
     g.setIndex(new THREE.BufferAttribute(new Uint32Array(g.index.array), 1));
     return g; };
+  if (kind === 'bull' || kind === 'cow') { // a round vermilion mark on the forehead: forward from the muzzle, up away from the front legs
+    const head = at('Head'), legs = at('FrontLowerLeg.L'); if (!head || !legs || !faceAt || bi('Head') < 0) return [];
+    const fw = faceAt.clone().sub(head), S = fw.length(); fw.normalize(); const tor = at('Torso3') || at('Torso'); if (tor && fw.dot(head.clone().sub(tor)) < 0) fw.negate(); // forward = away from the body
+    const upv = head.clone().sub(legs); upv.addScaledVector(fw, -upv.dot(fw)).normalize();
+    const n = fw.clone().multiplyScalar(0.55).addScaledVector(upv, 0.85).normalize();
+    const g = mergeGeometries([new THREE.CircleGeometry(S * 0.12, 10), new THREE.CircleGeometry(S * 0.12, 10).rotateY(Math.PI)], false); // two-sided
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n));
+    const P = head.clone().addScaledVector(fw, S * 0.4).addScaledVector(upv, S * 0.42);
+    // sit on the real surface: push out past every head vertex near this spot (bull and cow heads differ)
+    let out = -Infinity; const hb = bi('Head'), v = new THREE.Vector3(), d = new THREE.Vector3();
+    for (const m of (allMeshes || [mesh])) { const p = m.geometry.attributes.position, si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight;
+      for (let i = 0; i < p.count; i++) { if (si.getX(i) !== hb || sw.getX(i) < 0.4) continue; v.fromBufferAttribute(p, i); d.subVectors(v, P); const along = d.dot(n); if (d.addScaledVector(n, -along).length() < S * 0.14) out = Math.max(out, along); } }
+    if (out > -Infinity) P.addScaledVector(n, out + S * 0.012);
+    g.translate(...P.toArray());
+    return [{ name: 'Sindur', geo: skin(g, bi('Head')) }];
+  }
+  const neck = at('Neck'), hips = at('Hips'), head = at('Head'); if (!neck || !hips || !head) return [];
+  const up = neck.clone().sub(hips).normalize(), T = neck.distanceTo(hips), H = head.distanceTo(neck);
+
   const along = (g, axis) => g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), axis)); // torus axis -> limb axis
   const out = [];
   for (const [name, where] of list) {
@@ -1061,9 +1078,9 @@ function mergeChar(gltf, kind) {
       const g = m.geometry, n = g.attributes.position.count; parts.push({ name: m.material.name, start: v, count: n, color: m.material.color.clone() }); v += n;
       const c = new THREE.BufferGeometry(); for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) c.setAttribute(k, ACC[kind] ? plain(g.attributes[k], k) : g.attributes[k]); c.setIndex(ACC[kind] ? new THREE.BufferAttribute(new Uint32Array(g.index.array), 1) : g.index); geos.push(c);
     }
-    const fm = meshes.find(m => m.material.name === 'Face'), faceAt = fm ? (() => { const p = fm.geometry.attributes.position, c = new THREE.Vector3(); for (let i = 0; i < p.count; i++) c.x += p.getX(i), c.y += p.getY(i), c.z += p.getZ(i); return c.divideScalar(p.count); })() : null;
-    for (const acc of ACC[kind] ? accessories(meshes[0], kind, faceAt) : []) {
-      const n = acc.geo.attributes.position.count, def = ACC[kind].find(x => x[0] === acc.name)[2];
+    const fm = meshes.find(m => m.material.name === 'Face' || m.material.name === 'Muzzle'), faceAt = fm ? (() => { const p = fm.geometry.attributes.position, c = new THREE.Vector3(); for (let i = 0; i < p.count; i++) c.x += p.getX(i), c.y += p.getY(i), c.z += p.getZ(i); return c.divideScalar(p.count); })() : null;
+    for (const acc of ACC[kind] ? accessories(meshes[0], kind, faceAt, meshes) : []) {
+      const n = acc.geo.attributes.position.count, main = parts.find(p => p.name === 'Main'), def = acc.name === 'Sindur' && main ? main.color : ACC[kind].find(x => x[0] === acc.name)[2];
       parts.push({ name: acc.name, start: v, count: n, color: new THREE.Color(def) }); v += n; geos.push(acc.geo);
     }
     const merged = mergeGeometries(geos, false); if (!merged) continue;
@@ -1264,7 +1281,7 @@ let animalBusy = null;
 async function setAnimal(id, keep = true) {
   const next = ANIMALS.find(a => a.id === id) || ANIMALS[0];
   if (!loaded[next.model]) {
-    if (!animalBusy) animalBusy = loadModel('models/' + next.model + '.json').then(g => { mergeChar(g); loaded[next.model] = g; }).finally(() => { animalBusy = null; });
+    if (!animalBusy) animalBusy = loadModel('models/' + next.model + '.json').then(g => { mergeChar(g, next.model); loaded[next.model] = g; }).finally(() => { animalBusy = null; });
     try { await animalBusy; } catch (e) { toast('Could not load that animal', 1500); return animal; }
     if (!loaded[next.model]) return animal;
   }
@@ -1276,6 +1293,27 @@ async function setAnimal(id, keep = true) {
 }
 $('animalBtn').addEventListener('click', () => { if (!bull || game.online) return; setAnimal(ANIMALS[(ANIMALS.indexOf(animal) + 1) % ANIMALS.length].id); });
 
+// the bull, after its animation each frame: tail swish (lazy, agitated in the windup, stiff and up in a charge), a head
+// shake after slamming the post, whites of the eyes reddening with his fury, dust gathering on the hooves and legs as he
+// charges, and the vermilion mark on his forehead once he is decorated. Bones and colours only: no extra draw calls.
+const _dust = new THREE.Color(0x9c8264), _c1 = new THREE.Color(), _c2 = new THREE.Color();
+function bullDetail(dt) {
+  const a = bull; if (!a) return;
+  if (a._tail === undefined) a._tail = [1, 2, 3, 4, 5].map(i => a.root.getObjectByName('Tail' + i)).filter(Boolean);
+  const b = game.b, st = b.state, t = game.t || performance.now() / 1000;
+  const sw = st === 'windup' ? 0.55 : st === 'charge' ? 0.12 : 0.28, sp = st === 'windup' ? 9 : st === 'charge' ? 14 : 2.2, lift = st === 'charge' ? -0.35 : 0;
+  a._tail.forEach((bn, i) => { bn.rotation.z += Math.sin(t * sp - i * 0.7) * sw * (0.35 + i * 0.16); bn.rotation.x += lift * (i < 2 ? 1 : 0.3); });
+  if (st === 'stunned' && a.head && b.t < 0.9) a.head.rotation.y += Math.sin(b.t * 32) * 0.3 * (1 - b.t / 0.9); // shakes off the bonk
+  // colours change only when their level does
+  const fury = game.mode === 'play' ? Math.min(1, difficulty() * 1.15) : 0, dust = game.mode === 'play' ? Math.min(1, (game.charges || 0) / 10) : 0, deco = !!garland.visible;
+  const key = Math.round(fury * 8) + '|' + Math.round(dust * 8) + '|' + deco + '|' + animal.id;
+  if (a._look === key) return; a._look = key;
+  const base = animal.tint, map = { Eye_White: _c1.set(0xf4efe4).lerp(_c2.set(0xff5a44), fury * 0.75).getHex() };
+  if (base.Hooves !== undefined) map.Hooves = _c1.set(base.Hooves).lerp(_dust, dust * 0.8).getHex();
+  if (base.Main_Light !== undefined) map.Main_Light = _c1.set(base.Main_Light).lerp(_dust, dust * 0.3).getHex();
+  map.Sindur = deco ? 0xc8301c : base.Main;
+  tint(a, map);
+}
 // spectators follow the action: they turn (whole body, not the head bone) toward the bull, or you when it is calm
 function crowdWatch(dt) {
   const b = game.b, focus = (b.state === 'windup' || b.state === 'charge') ? b.pos : game.mode === 'play' ? game.p.pos : b.pos;
@@ -2803,7 +2841,7 @@ function frame() {
     updateDecor(dt);
     netFrame(dt);
     updateParty(dt);
-    bull.mixer.update(dt); player.mixer.update(dt);
+    bull.mixer.update(dt); bullDetail(dt); player.mixer.update(dt);
     perf.odd = !perf.odd; perf.cdt = (perf.cdt || 0) + dt;
     // villagers and drummers the camera can't see are neither animated nor drawn
     _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm);

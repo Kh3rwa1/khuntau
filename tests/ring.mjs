@@ -27,6 +27,16 @@ await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
   check(!!a1 && Math.abs(a1.d - a2.d) < 0.01 && Math.hypot(a1.b[0] - a2.b[0], a1.b[1] - a2.b[1], a1.b[2] - a2.b[2]) > 0.002, `accessories move with the body (gamchha stays ${a1 && a1.d.toFixed(3)} m from the torso while it moves)`);
   await ev(() => { __k.player.play('Idle'); }); }
 
+// the bull's own details: vermilion once decorated, eyes redden with fury, dust on the hooves after charges, tail stays sane
+{ const hex = (k) => ev((k) => { const m = __k.bull.mats[k], c = __k.bull.body.geometry.attributes.color; return m && m.part ? [0, 1, 2].map(j => c.getComponent(m.part.start, j)) : null; }, k);
+  const s0 = await hex('Sindur'), e0 = await hex('Eye_White'), h0 = await hex('Hooves');
+  check(!!s0 && s0[0] > 0.4 && s0[1] < 0.1 && s0[0] > s0[1] * 5, 'the decorated bull has a vermilion mark on his forehead');
+  await ev(() => { __k.game.score = 30; __k.game.charges = 9; }); await sleep(400);
+  const e1 = await hex('Eye_White'), h1 = await hex('Hooves');
+  check(e1[1] < e0[1] - 0.15, 'his eyes redden as his fury rises');
+  check(Math.abs(h1[0] - h0[0]) + Math.abs(h1[1] - h0[1]) > 0.1, 'his hooves gather dust after charges');
+  await ev(() => { __k.game.score = 0; __k.game.charges = 0; });
+  await sleep(1500); check(await ev(() => [1, 2, 3, 4, 5].every(i => { const b = __k.bull.root.getObjectByName('Tail' + i); return !b || (Math.abs(b.rotation.x) < 3.2 && Math.abs(b.rotation.z) < 3.2); })), 'the tail swishes without winding up'); }
 // grab at the post
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; });
 check(await until(() => __k.game.pitha === 1 && __k.game.score > 0, 4000), 'GRAB at the post takes a pitha and scores');
