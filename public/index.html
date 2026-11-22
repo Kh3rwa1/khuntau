@@ -929,7 +929,7 @@ const villageProps = [], market = { people: [] }; // market: the backyard pork s
   });
   if (groundGeos.length) { const gm = new THREE.Mesh(mergeGeometries(groundGeos), Mat({ map: groundTex, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 })); gm.receiveShadow = true; scene.add(gm); }
   // a pork stall in the backyard of house 7 (no garden or big tree there): a log chopping block with a cleaver, meat
-  // on sal-leaf plates on a low bamboo table, a bamboo tripod with a hanging balance scale. Meat only, no carcass.
+  // on sal-leaf plates on a low bamboo table, a bamboo tripod with a hanging balance scale, and the singed pig on leaves.
   { const h = houses[7], c = Math.cos(h.rot), sn = Math.sin(h.rot), B = (lx, lb) => { const z = h.d / 2 + lb; return [h.x + lx * c - z * sn, h.z - lx * sn - z * c]; };
     const at = (lx, lb, y, geo, hex, ry = 0, rx = 0, rz = 0) => { const [x, z] = B(lx, lb); return put(geo, hex, x, y, z, h.rot + ry, rx, rz); };
     market.spot = B(0, 2.6); market.rot = h.rot; market.B = B; const LB = 2.6;
@@ -943,6 +943,20 @@ const villageProps = [], market = { people: [] }; // market: the backyard pork s
       at(lx, lb, 0.535, new THREE.CylinderGeometry(0.14, 0.14, 0.01, 10), 0x4f7d35); // sal-leaf plate
       for (let m = 0; m < 3; m++) at(lx + rand(-0.06, 0.06), lb + rand(-0.06, 0.06), 0.57 + m * 0.025, new THREE.BoxGeometry(rand(0.08, 0.12), 0.05, rand(0.07, 0.1)), m % 2 ? 0xe2c6ad : 0xb0564a, rand(0, 3)); } // meat with fat
     at(-1.0, LB - 0.55, 0.16, new THREE.CylinderGeometry(0.2, 0.16, 0.32, 10), 0x7a7470); // a bucket of water
+    // the pig: killed, singed dark over straw and laid on its side on banana leaves beside the block, where the butcher
+    // cuts from it (the household's own pig, as Dulor described)
+    { const lx0 = 0.95, lb0 = LB + 0.75, yaw = 0.35, lie = new THREE.Matrix4().makeRotationX(Math.PI / 2).premultiply(new THREE.Matrix4().makeTranslation(0, 0.27, 0));
+      const part = (g, hex) => at(lx0, lb0, 0, g.applyMatrix4(lie), hex, yaw);
+      for (let k = 0; k < 3; k++) at(lx0 + (k - 1) * 0.42, lb0 + rand(-0.05, 0.05), 0.012 + k * 0.002, new THREE.BoxGeometry(0.62, 0.006, 0.42), [0x4f7d35, 0x5c8a3c, 0x46702f][k], yaw + rand(-0.2, 0.2)); // banana leaves
+      part(new THREE.SphereGeometry(1, 16, 10).scale(0.55, 0.27, 0.3), 0x3f2c22);                                       // body (singed skin)
+      part(new THREE.SphereGeometry(1, 14, 8).scale(0.5, 0.2, 0.25).translate(0.02, -0.08, 0), 0x8a5a48);              // paler scraped belly
+      part(new THREE.SphereGeometry(1, 12, 8).scale(0.2, 0.18, 0.17).translate(0.6, 0.02, 0), 0x3f2c22);               // head
+      part(new THREE.CylinderGeometry(0.075, 0.09, 0.12, 10).rotateZ(Math.PI / 2).translate(0.82, -0.02, 0), 0x9c6a58); // snout
+      part(new THREE.CylinderGeometry(0.06, 0.06, 0.01, 10).rotateZ(Math.PI / 2).translate(0.885, -0.02, 0), 0x5a3a30);
+      for (const z of [-0.1, 0.1]) part(new THREE.ConeGeometry(0.06, 0.13, 5).rotateZ(-0.5).translate(0.55, 0.2, z), 0x33241c); // ears
+      for (const [x, z] of [[0.3, -0.13], [0.3, 0.13], [-0.32, -0.13], [-0.32, 0.13]]) { part(new THREE.CylinderGeometry(0.055, 0.045, 0.3, 7).translate(x, -0.33, z), 0x3f2c22); part(new THREE.CylinderGeometry(0.047, 0.05, 0.06, 7).translate(x, -0.5, z), 0x1e1612); }
+      part(new THREE.CylinderGeometry(0.015, 0.01, 0.16, 4).rotateZ(1.2).translate(-0.58, 0.08, 0), 0x33241c);         // tail
+      market.pig = true; const [px, pz] = B(lx0, lb0); villageProps.push({ x: px, z: pz, r: 0.6, top: 0.6 }); }
     { const [ax, az] = B(-1.5, LB + 0.4), A = new THREE.Vector3(ax, 1.9, az); // tripod: three legs from the ground up to one top point
       for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + 0.3, [fx, fz] = B(-1.5 + Math.cos(a) * 0.6, LB + 0.4 + Math.sin(a) * 0.6), F = new THREE.Vector3(fx, 0, fz), L = F.distanceTo(A);
         const g = new THREE.CylinderGeometry(0.028, 0.035, L, 5).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), A.clone().sub(F).normalize())).translate((F.x + A.x) / 2, (F.y + A.y) / 2, (F.z + A.z) / 2);
@@ -1342,6 +1356,7 @@ Object.assign(sfx, {
   splash() { const t = AT(); if (t < 0) return; noise(t, 0.45, 0.32, 'highpass', 900, 0.7, SB()); noise(t + 0.03, 0.3, 0.14, 'bandpass', 2600, 1, SB()); tone(t, 'sine', 700, 200, 0.12, 0.15, SB()); },
   clink(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 2350, 2300, 0.5, 0.07 * v, SB()); tone(t, 'sine', 3720, 3680, 0.32, 0.04 * v, SB()); },
   crackle(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 5; i++) noise(t + rand(0, 0.4), rand(0.008, 0.02), 0.07 * v, 'highpass', 3500, 1, SB()); },
+  clapHand(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 3; i++) noise(t + i * 0.008, 0.018, 0.16 * v * (1 - i * 0.25), 'bandpass', 1300 + i * 300, 1.2, SB()); }, /* a palm clap: three quick bright noise bursts */
   chop(v = 1) { const t = AT(); if (t < 0) return; noise(t, 0.025, 0.22 * v, 'bandpass', 2300, 2.5, SB()); tone(t, 'triangle', 640, 420, 0.05, 0.08 * v, SB()); noise(t + 0.01, 0.05, 0.08 * v, 'bandpass', 900, 3, SB()); }, /* a sharp woody thock: no low boom, it read as a drum */
   chatter(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0, n = 2 + (Math.random() * 3 | 0); i < n; i++) noise(t + i * rand(0.07, 0.12), rand(0.04, 0.08), 0.045 * v, 'bandpass', rand(2200, 3800), 2, SB()); }, /* low whispering, not a voice tone (it sounded like singing) */
   slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
@@ -1608,6 +1623,23 @@ function blobDraw() { let n = 0;
     if (!vis || !b.parent) continue; b.updateWorldMatrix(true, false); blobIM.setMatrixAt(n++, b.matrixWorld); }
   blobIM.count = n; blobIM.instanceMatrix.needsUpdate = true; }
 function setShadows(on) { on = on && !CHEAP; sun.castShadow = on; for (const b of blobs) b.visible = !on; }
+// Pose a character on top of its animation clip: list of [bone, axis, radians], applied after mixer.update each frame
+// (relative to the clip's pose, so the legs keep walking while the arms clap or chop). The stock clips have no clap,
+// no chop and no dance; a sword slash and a stoop-to-the-floor pick-up read as weird at a meat stall. Axes measured on
+// these models: Abdomen/Torso +x bends forward; UpperArmR +z / UpperArmL -z swing the arm forward and in, LowerArm the
+// same for the elbow.
+const _pax = new THREE.Vector3(), _pq = new THREE.Quaternion();
+function pose(a, list, w = 1) { const bones = a.bones || (a.bones = {});
+  for (const [bn, ax, ang] of list) { const b = bones[bn] !== undefined ? bones[bn] : (bones[bn] = a.root.getObjectByName(bn) || null); if (!b || !ang) continue;
+    _pax.set(ax === 'x' ? 1 : 0, ax === 'y' ? 1 : 0, ax === 'z' ? 1 : 0); b.quaternion.multiply(_pq.setFromAxisAngle(_pax, ang * w)); } }
+// apply a pose once per frame from each bone's own base: a clip that has no track for a bone (or a frame where the
+// mixer did not run) leaves our last pose in place, and multiplying again would stack it up frame after frame
+function poseFrame(a, list) { const bones = a.bones || (a.bones = {});
+  for (const [bn] of list) { const b = bones[bn] !== undefined ? bones[bn] : (bones[bn] = a.root.getObjectByName(bn) || null); if (!b) continue; const u = b.userData;
+    if (!u.baseQ) { u.baseQ = b.quaternion.clone(); u.poseQ = new THREE.Quaternion(); }
+    else if (!b.quaternion.equals(u.poseQ)) u.baseQ.copy(b.quaternion); /* the mixer wrote a fresh pose: that is the new base */
+    b.quaternion.copy(u.baseQ); }
+  pose(a, list); for (const [bn] of list) { const b = bones[bn]; if (b) b.userData.poseQ.copy(b.quaternion); } }
 function actor(gltf, height, clone) {
   const root = clone ? SkeletonUtils.clone(gltf.scene) : gltf.scene;
   if (clone) { const extra = []; root.traverse(o => { if (o.name === 'hideHolder') extra.push(o); }); extra.forEach(o => o.parent.remove(o)); } // props belong to their owner, not every copy
@@ -1910,7 +1942,7 @@ function onCrowdLoaded() {
       const [x, z] = B(lx, lb); a.wrap.position.set(x, 0, z); a.role = role; scene.add(a.wrap); market.people.push(a); villageProps.push({ x, z, r: 0.35, top: 1.8 }); }
     const [bx, bz] = B(0, LB), [sx2, sz2] = B(-1.5, LB + 0.4), [tx, tz] = B(1.2, LB);
     market.table = [tx, tz]; for (const a of market.people) { a.home = a.wrap.position.clone(); a.st = 'stand'; a.tm = rand(0.5, 3); a.goal = null; }
-    for (const a of market.people) { if (a.role === 'butcher') { faceTo(a, bx, bz); a.play('Idle'); a.chops = 0; a.tm = 1; } else if (a.role === 'weigher') { faceTo(a, sx2, sz2); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } else { faceTo(a, tx + rand(-0.4, 0.4), tz); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } } }
+    for (const a of market.people) { if (a.role === 'butcher') { faceTo(a, bx, bz); a.play('Idle'); a.chops = 0; a.tm = 1; a.ph = -1; } else if (a.role === 'weigher') { faceTo(a, sx2, sz2); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } else { faceTo(a, tx + rand(-0.4, 0.4), tz); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } } }
   // a woman carrying a clay water pot on her head between the hand pump and house 3's door, pausing at each end
   { const gA = (i) => 0.35 + (2 * Math.PI / 9) * i, pump = [Math.cos(gA(2.5)) * 21.4, Math.sin(gA(2.5)) * 21.4], h = houses[3], door = [h.x + Math.sin(h.rot) * (h.d / 2 + 1.0), h.z + Math.cos(h.rot) * (h.d / 2 + 1.0)];
     const mid = [Math.cos(gA(2.7)) * 19.6, Math.sin(gA(2.7)) * 19.6], a = actor(loaded.woman, 1.62, true);
@@ -1921,7 +1953,7 @@ function onCrowdLoaded() {
   setTimeout(registerSW, 1500);
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
-    story = m.initStory({ props: villageProps, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+    story = m.initStory({ props: villageProps, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: () => { track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
@@ -2833,23 +2865,43 @@ const ringFov = () => camera.aspect < 1 ? 62 : 50;
 // pauses; buyers stand and shift their weight, glance at each other, wander a step, whisper, and one at a time step up
 // to the table, take their meat and step back
 function marketPeople(dt, v) {
-  const T = market.table, buying = market.people.some(a => a.st === 'toTable' || a.st === 'take' || a.st === 'back');
+  const T = market.table, buying = market.people.some(a => a.st === 'toTable' || a.st === 'take' || a.st === 'back'), ss2 = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   for (const a of market.people) { a.tm -= dt; const p = a.wrap.position;
-    if (a.role === 'butcher') { if (a.tm > 0) continue;
-      if (a.chops > 0) { a.chops--; a.play('SwordSlash', { once: true, fade: 0.12, ts: rand(0.6, 0.72) }); a.tm = rand(1.2, 1.7); if (v > 0) setTimeout(() => sfx.chop(v), 420); } /* slow, heavy chops into the meat (it was too fast: like beating a drum) */
-      else { a.play('Idle', { fade: 0.3 }); a.chops = 2 + (Math.random() * 3 | 0); a.tm = rand(2.2, 4.5); } continue; }
-    if (a.role === 'weigher') { if (a.tm < 0) { a.tm = rand(4, 8); if (Math.random() < 0.5) a.play('PickUp', { once: true, fade: 0.2, ts: 0.8 }); else a.play('Idle', { fade: 0.3 }); } continue; }
-    const walkTo = (x, z, sp) => { const dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz); if (d < 0.08) return true; const st = Math.min(d, sp * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 6, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.2, ts: 0.7 }); return false; };
-    const face = (x, z) => { a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(x - p.x, z - p.z), 3, dt); };
-    if (a.st === 'stand') { face(a.look ? a.look[0] : T[0], a.look ? a.look[1] : T[1]); if (a.curName !== 'Idle') a.play('Idle', { fade: 0.3 });
+    if (a.role === 'butcher') {
+      // a real chop: the cleaver rises slowly, comes down hard into the meat (the thock lands on impact), rests there, and
+      // the left hand keeps the meat steady. Bursts of 2-4 chops with a pause between them.
+      if (a.ph < 0 && a.tm <= 0) { a.chops = 2 + (Math.random() * 3 | 0); a.ph = 0; }
+      let ua = 1.1, la = 0.25, bend = 0.12;
+      if (a.ph >= 0) { const ph0 = a.ph; a.ph += dt / 1.45; const ph = a.ph;
+        if (ph < 0.62) { const k = ss2(0, 0.62, ph); ua = 1.1 + 1.45 * k; la = 0.25 + 0.4 * k; bend = 0.12 - 0.06 * k; }
+        else if (ph < 0.71) { const k = (ph - 0.62) / 0.09; ua = 2.55 - 1.45 * k * k; la = 0.65 - 0.4 * k; bend = 0.06 + 0.24 * k; }
+        else { const k = ss2(0.71, 1, ph); bend = 0.3 - 0.18 * k; }
+        if (ph0 < 0.7 && ph >= 0.7) { if (v > 0) sfx.chop(v); a.hits = (a.hits || 0) + 1; }
+        if (ph >= 1) { if (--a.chops > 0) a.ph = 0; else { a.ph = -1; a.tm = rand(2.5, 5); } } }
+      if (a.curName !== 'Idle') a.play('Idle', { fade: 0.3 });
+      poseFrame(a, [['Abdomen', 'x', bend], ['UpperArmR', 'z', ua], ['LowerArmR', 'z', la], ['UpperArmL', 'z', -1.0], ['LowerArmL', 'z', -0.35]]); continue; }
+    if (a.role === 'weigher') {
+      // holds the scale's beam up with her right hand; now and then her left hand adds a piece to the pan
+      if (a.tm < 0) { a.tm = rand(4, 8); a.add = 1.4; } a.add = Math.max(0, (a.add || 0) - dt); const k = Math.sin(Math.min(1, (1.4 - a.add) / 1.4) * Math.PI) * (a.add > 0 ? 1 : 0);
+      if (a.curName !== 'Idle') a.play('Idle', { fade: 0.3 });
+      poseFrame(a, [['UpperArmR', 'z', 1.85], ['LowerArmR', 'z', 0.45], ['UpperArmL', 'z', -0.15 - 1.0 * k], ['LowerArmL', 'z', -0.4 * k]]); continue; }
+    // buyers: stand and wait (most of the time), glance at each other, now and then take a real step or two, and one at a
+    // time go up, reach for their meat and carry it back at the chest. Walk speed matches the stride (no sliding feet).
+    const walkTo = (x, z, sp) => { const dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz); if (d < 0.08) return true; const st = Math.min(d, sp * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 4, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.25, ts: sp / 1.24 }); return false; };
+    const face = (x, z, r = 2) => { a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(x - p.x, z - p.z), r, dt); };
+    a.carry = Math.max(0, (a.carry || 0) - dt);
+    if (a.st === 'stand') { face(a.look ? a.look[0] : T[0], a.look ? a.look[1] : T[1], 1.5); if (a.curName !== 'Idle') a.play('Idle', { fade: 0.4 });
       if (a.tm < 0) { const r = Math.random();
-        if (r < 0.22 && !buying) { a.st = 'toTable'; a.goal = [T[0] + (p.x - T[0]) * 0.35, T[1] + (p.z - T[1]) * 0.35]; }
-        else if (r < 0.68) { a.st = 'shuffle'; a.goal = [a.home.x + rand(-0.6, 0.6), a.home.z + rand(-0.6, 0.6)]; }
-        else { const o = market.people[(Math.random() * market.people.length) | 0]; a.look = o !== a && Math.random() < 0.6 ? [o.wrap.position.x, o.wrap.position.z] : null; a.tm = rand(2.5, 6); if (v > 0 && Math.random() < 0.5) sfx.chatter(v * 0.8); } } }
-    else if (a.st === 'shuffle') { if (walkTo(a.goal[0], a.goal[1], 0.5)) { a.st = 'stand'; a.tm = rand(3, 7); } }
-    else if (a.st === 'toTable') { if (walkTo(a.goal[0], a.goal[1], 0.7)) { a.st = 'take'; a.tm = 1.6; face(T[0], T[1]); a.play('PickUp', { once: true, fade: 0.15, ts: 0.9 }); } }
-    else if (a.st === 'take') { face(T[0], T[1]); if (a.tm < 0) a.st = 'back'; }
-    else if (a.st === 'back') { if (walkTo(a.home.x, a.home.z, 0.6)) { a.st = 'stand'; a.look = null; a.tm = rand(4, 9); } } }
+        if (r < 0.2 && !buying && !a.carry) { a.st = 'toTable'; a.goal = [T[0] + (p.x - T[0]) * 0.38, T[1] + (p.z - T[1]) * 0.38]; }
+        else if (r < 0.42) { const ang = rand(0, 6.28), dd = rand(0.55, 0.9); a.st = 'shuffle'; a.goal = [a.home.x + Math.cos(ang) * dd * 0.6, a.home.z + Math.sin(ang) * dd * 0.6]; }
+        else { const o = market.people[(Math.random() * market.people.length) | 0]; a.look = o !== a && Math.random() < 0.6 ? [o.wrap.position.x, o.wrap.position.z] : null; a.tm = rand(3, 7); if (v > 0 && Math.random() < 0.5) sfx.chatter(v * 0.8); } } }
+    else if (a.st === 'shuffle') { if (walkTo(a.goal[0], a.goal[1], 0.85)) { a.st = 'stand'; a.tm = rand(4, 9); } }
+    else if (a.st === 'toTable') { if (walkTo(a.goal[0], a.goal[1], 0.95)) { a.st = 'take'; a.tm = 1.6; } }
+    else if (a.st === 'take') { face(T[0], T[1], 4); if (a.curName !== 'Idle') a.play('Idle', { fade: 0.3 }); if (a.tm < 0) { a.st = 'back'; a.carry = 9; } }
+    else if (a.st === 'back') { if (walkTo(a.home.x, a.home.z, 0.9)) { a.st = 'stand'; a.look = null; a.tm = rand(5, 10); } }
+    // arms: reaching across the table, or holding the leaf parcel at the chest
+    const reach = a.st === 'take' ? Math.sin(clamp((1.6 - a.tm) / 1.6, 0, 1) * Math.PI) : 0, hold = Math.min(1, a.carry / 1.5) * (1 - reach);
+    poseFrame(a, [['Abdomen', 'x', 0.25 * reach], ['UpperArmR', 'z', 1.15 * reach + 0.55 * hold], ['LowerArmR', 'z', 0.2 * reach + 1.35 * hold], ['UpperArmL', 'z', -0.5 * hold], ['LowerArmL', 'z', -1.2 * hold]]); }
   if (v > 0 && Math.random() < dt * 1.2 && gate('chatter', 0.6)) sfx.chatter(v * 0.7);
 }
 function audioFrame() {
@@ -3375,7 +3427,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3485,7 +3537,7 @@ function frame() {
       const vis = seen(a) && Math.hypot(game.p.pos.x - p.x, game.p.pos.z - p.z) < 34; a.root.visible = vis; W.pot.visible = vis;
       if (vis) a.mixer.update(dt); if (W.head) { a.root.updateMatrixWorld(true); W.head.getWorldPosition(W.pot.position); W.pot.position.y += 0.33 - 1.62 * (loaded.woman.userData.headDrop || 0); W.pot.rotation.y = a.wrap.rotation.y; } } /* the pot follows her head even off screen, so it never pops */
     if (market.people.length) { let any = false; const close = Math.hypot(game.p.pos.x - market.spot[0], game.p.pos.z - market.spot[1]) < 18; if (market.scale) market.scale.visible = close; /* behind a house: from further away the house hides them anyway, so do not draw them */
-      for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; if (perf.odd) a.mixer.update(perf.cdt); } }
+      for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; a.mixer.update(dt); } } /* every frame: their arm poses go on top of the clip each frame */
       if (market.scale) market.scale.rotation.z = Math.sin(game.t * 0.9) * 0.1 * (0.6 + 0.4 * Math.sin(game.t * 0.23)); /* weighing: the beam dips and settles */
       const sp = { x: market.spot[0], z: market.spot[1] }, v = sfx.near(sp, 12);
       marketPeople(dt, v); }

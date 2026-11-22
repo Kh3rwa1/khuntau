@@ -1063,9 +1063,18 @@ export function initStory(C) {
     if (!S.inside) pondUpdate(dt, tn);
     if (W.sarpa) { const td = today(), k = save.ch >= 1 ? td.jv.indexOf(0) : -1, j = k >= 0 ? JALE[k] : null; /* the Sarpa enej line at the next stop */
       const show = !!j && !S.inside && Math.hypot(game.p.pos.x - j.stand.x, game.p.pos.z - j.stand.z) < 24, hot = S.mode === 'echo' && echo.house === k;
-      W.sarpa.forEach((a, i) => { a.wrap.visible = show; if (!show) return; const toRing = V(-j.stand.x, 0, -j.stand.z).normalize(), tan = V(toRing.z, 0, -toRing.x), sw = Math.sin(tn * (hot ? 3.2 : 1.8) + i * 0.6);
-        a.wrap.position.copy(j.stand).addScaledVector(toRing, 2.0).addScaledVector(tan, (i - 1) * 0.75 + sw * (hot ? 0.18 : 0.1)); a.wrap.position.y = Math.max(0, Math.sin(tn * (hot ? 6.4 : 3.6) + i)) * (hot ? 0.06 : 0.03);
-        a.wrap.rotation.set(0, Math.atan2(j.stand.x - a.wrap.position.x, j.stand.z - a.wrap.position.z) + sw * 0.25, Math.cos(tn * 1.8 + i) * 0.06); a.mixer.update(dt * (hot ? 1.5 : 1)); }); }
+      // the Sarpa enej as Dulor described it: the women walk bent forward, clapping all the time, toward the village road
+      // and back again, back and forth, facing the house. Legs from the walk clip (run backwards while they step back),
+      // the bend and the claps posed on top; each clap is heard.
+      const per = hot ? 5.2 : 7.0, w = (tn % per) / per * Math.PI * 2, along = 1.3 - 1.2 * Math.cos(w), vel = 1.2 * Math.sin(w) * Math.PI * 2 / per; /* metres from the stand toward the road, and its speed */
+      const cp = hot ? 0.42 : 0.55, cph = (tn % cp) / cp, clap = Math.pow(Math.max(0, Math.cos(cph * Math.PI * 2)), 6); /* hands meet once per beat */
+      if (show && cph < (W.sarpaPh ?? 1)) { const v = C.sfx.near ? C.sfx.near(j.stand, 14) : 0; if (v > 0 && C.sfx.clapHand) C.sfx.clapHand(v * 0.8); } W.sarpaPh = cph;
+      W.sarpa.forEach((a, i) => { a.wrap.visible = show; if (!show) return; const toRing = V(-j.stand.x, 0, -j.stand.z).normalize(), tan = V(toRing.z, 0, -toRing.x);
+        a.wrap.position.copy(j.stand).addScaledVector(toRing, 1.4 + along).addScaledVector(tan, (i - 1) * 0.8); a.wrap.position.y = 0;
+        a.wrap.rotation.set(0, Math.atan2(-toRing.x, -toRing.z), 0); /* facing the house; walking backward toward the road, forward back */
+        if (a.curName !== 'Walk') a.play('Walk', { fade: 0.2 }); if (a.actions.Walk) a.actions.Walk.timeScale = -vel / 1.24; /* stride matches the speed; negative = stepping back */
+        a.mixer.update(dt);
+        C.pose(a, [['Abdomen', 'x', 0.38], ['Torso', 'x', 0.16], ['UpperArmR', 'z', 0.7 + 0.25 * clap], ['LowerArmR', 'z', 0.25 + 0.4 * clap], ['UpperArmL', 'z', -0.7 - 0.25 * clap], ['LowerArmL', 'z', -0.25 - 0.4 * clap]]); }); }
     if (!S.inside && S.mode !== 'drum') { const sf = C.sfx, p2 = game.p.pos;
       if (Math.random() < dt * 0.22) sf.chirp(rand(0.4, 1)); /* birdsong in the trees */
       { const v = sf.near(POND, 11); if (v > 0 && Math.random() < dt * 0.18) sf.quack(v); }

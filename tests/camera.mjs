@@ -61,11 +61,16 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
       __k.game.p.pos.set(M.spot[0] + 3, 0, M.spot[1] + 3); b.tm = 0; b.chops = Math.max(1, b.chops); /* start a burst now */
       /* poll until a chop and a pause have both been seen and a buyer has moved: game time crawls on a software-GL runner */
       const movedNow = () => { let m = 0; buyers.forEach((a, i) => { m = Math.max(m, a.wrap.position.distanceTo(p0[i])); }); return m; };
-      for (let i = 0; i < 600 && (!(seen.has('SwordSlash') && seen.has('Idle')) || movedNow() <= 0.15 || i < 90); i++) { seen.add(b.curName); await new Promise(r => setTimeout(r, 100)); }
+      let fy0 = 9, fy1 = -9, odd = false; const fv = new __k.THREE.Vector3();
+      for (let i = 0; i < 600 && (!(seen.has('chop') && seen.has('rest')) || movedNow() <= 0.15 || i < 90); i++) { seen.add(b.ph >= 0 ? 'chop' : 'rest'); b.root.getObjectByName('FistR').getWorldPosition(fv); fy0 = Math.min(fy0, fv.y); fy1 = Math.max(fy1, fv.y);
+        if (M.people.some(a => a.curName === 'SwordSlash' || a.curName === 'PickUp')) odd = true; await new Promise(r => setTimeout(r, 100)); }
       buyers.forEach((a, i) => { moved = Math.max(moved, a.wrap.position.distanceTo(p0[i])); });
       const dancersNear = (__k.story.debug.W.sarpa || []).some(a => a.wrap.visible && Math.hypot(a.wrap.position.x - M.spot[0], a.wrap.position.z - M.spot[1]) < 9);
-      return { chop: seen.has('SwordSlash'), pause: seen.has('Idle'), moved, dancersNear }; });
+      return { chop: seen.has('chop'), pause: seen.has('rest'), moved, dancersNear, fy0, fy1, odd, pig: !!M.pig, hits: b.hits || 0 }; });
     check(r.chop && r.pause, 'the butcher chops in bursts with pauses (not a steady drum beat)');
+    check(r.fy1 > 1.15 && r.fy0 < 0.85 && r.hits > 0, `the cleaver rises over his head and comes down into the meat (fist ${r.fy0.toFixed(2)} to ${r.fy1.toFixed(2)} m, ${r.hits} chops landed)`);
+    check(!r.odd, 'nobody at the stall swings a sword or stoops to the floor (stock clips replaced by posed arms)');
+    check(r.pig, 'the singed pig lies on banana leaves beside the block');
     check(r.moved > 0.15, `buyers wait like people: shifting, wandering a step, stepping up to the table (moved ${r.moved.toFixed(2)} m)`);
     check(!r.dancersNear, 'nobody dances at the meat sale (the Sarpa enej stop moved off house 7)'); }
   /* game time crawls on a software-GL runner (1-3 fps, dt capped): poll with a long timeout instead of one sample after a fixed sleep */
@@ -75,6 +80,20 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   check(tips, `the balance scale tips as things are weighed (beam ${(await page.evaluate(() => window.__zr[0])).toFixed(3)} to ${(await page.evaluate(() => window.__zr[1])).toFixed(3)})`);
   const heard = await until(() => window.__sfxLog.includes('chop') && window.__sfxLog.includes('chatter'));
   check(heard, `near the stall you hear the cleaver and people talking (${await page.evaluate(() => [...new Set(window.__sfxLog)].join(' '))})`); }
+// the Sarpa enej: the women walk bent forward, clapping all the time, toward the road and back, again and again
+{ const r = await page.evaluate(async () => { const hs = __k.houses[2], f = hs.d / 2 + 1.1, T = __k.THREE, d = __k.story.debug; const st = new T.Vector3(hs.x + Math.sin(hs.rot) * f, 0, hs.z + Math.cos(hs.rot) * f);
+    __k.game.p.pos.copy(st).add(new T.Vector3(Math.sin(hs.rot) * 1.2, 0, Math.cos(hs.rot) * 1.2)); d.snapCam(); window.__sfxLog.length = 0;
+    const toRing = new T.Vector3(-st.x, 0, -st.z).normalize(), a = () => (d.W.sarpa || [])[0]; let lo = 99, hi = -99, hmin = 9, hmax = 0, bend = 0, vis = false;
+    const L = new T.Vector3(), R = new T.Vector3(), H = new T.Vector3(), P = new T.Vector3();
+    for (let i = 0; i < 400 && (i < 60 || hi - lo < 1.5 || hmax - hmin < 0.08); i++) { const w = a(); if (w && w.wrap.visible) { vis = true; w.root.updateMatrixWorld(true);
+        const along = w.wrap.position.clone().sub(st).dot(toRing); lo = Math.min(lo, along); hi = Math.max(hi, along);
+        w.root.getObjectByName('FistL').getWorldPosition(L); w.root.getObjectByName('FistR').getWorldPosition(R); const gap = L.distanceTo(R); hmin = Math.min(hmin, gap); hmax = Math.max(hmax, gap);
+        w.root.getObjectByName('Head').getWorldPosition(H); w.root.getObjectByName('Hips').getWorldPosition(P); const fwd = new T.Vector3(Math.sin(w.wrap.rotation.y), 0, Math.cos(w.wrap.rotation.y)); bend = Math.max(bend, H.clone().sub(P).dot(fwd)); }
+      await new Promise(r => setTimeout(r, 100)); }
+    return { vis, travel: hi - lo, hmin, hmax, bend, claps: window.__sfxLog.filter(n => n === 'clapHand').length }; });
+  check(r.vis && r.travel > 1.5, `the Sarpa enej line walks toward the road and back (${r.travel.toFixed(1)} m back and forth)`);
+  check(r.bend > 0.12, `the women dance bent forward (head ${r.bend.toFixed(2)} m ahead of the hips)`);
+  check(r.hmax - r.hmin > 0.08 && r.claps > 2, `they clap all the time (hands ${r.hmin.toFixed(2)}-${r.hmax.toFixed(2)} m apart, ${r.claps} claps heard)`); }
 // the water carrier walks her route between the pump and house 3, the pot riding on her head
 { const pos = () => page.evaluate(() => { const W = __k.market.carrier, p = W.a.wrap.position, h = W.head.getWorldPosition(new __k.THREE.Vector3()); return { x: p.x, z: p.z, pot: W.pot.position.distanceTo(h) }; });
   await page.evaluate(() => { const W = __k.market.carrier; W.wait = 0; __k.game.p.pos.set(W.a.wrap.position.x + 4, 0, W.a.wrap.position.z + 4); __k.story.debug.snapCam(); });
