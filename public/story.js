@@ -332,13 +332,13 @@ export function initStory(C) {
       put(new THREE.BoxGeometry(0.82, 0.04, 1.75), 0xc9b07a, cot, 0.4, yawIn);
       for (const sx of [-1, 1]) { put(new THREE.BoxGeometry(0.06, 0.07, 1.85), 0x5e4630, cot.clone().addScaledVector(W.aR, sx * 0.44), 0.4, yawIn); put(new THREE.BoxGeometry(0.94, 0.07, 0.06), 0x5e4630, cot.clone().addScaledVector(W.aIn, sx * 0.9), 0.4, yawIn);
         for (const sz of [-1, 1]) put(new THREE.CylinderGeometry(0.04, 0.035, 0.4, 5), 0x5e4630, cot.clone().addScaledVector(W.aR, sx * 0.44).addScaledVector(W.aIn, sz * 0.9), 0.2); }
-      const tree = AC.clone().addScaledVector(W.aR, 4.9).addScaledVector(W.aIn, -1.4);
-      put(new THREE.CylinderGeometry(0.3, 0.5, 4.6, 8), 0x4a3f33, tree, 2.3);
-      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); put(new THREE.SphereGeometry(rand(1.4, 2.1), 7, 5), [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 4.9 + rand(-0.3, 1.1)); }
+      const tree = AC.clone().addScaledVector(W.aR, 3.9).addScaledVector(W.aIn, -1.2); // 2.8 m off the path to the next house (it overhung it)
+      put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
+      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); put(new THREE.SphereGeometry(rand(1.4, 2.1), 7, 5), [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)); }
       for (const o of props) scene.add(o);
       scene.updateMatrixWorld(true); C.bakeStatic(props, Mat({ vertexColors: true, flatShading: true, roughness: 0.95 }));
       // what you can bump into
-      if (C.props) C.props.push({ x: bench.x + W.aIn.x * 0.6, z: bench.z + W.aIn.z * 0.6, r: 0.4 }, { x: bench.x - W.aIn.x * 0.6, z: bench.z - W.aIn.z * 0.6, r: 0.4 }, { x: cot.x, z: cot.z, r: 0.9 }, { x: tree.x, z: tree.z, r: 0.55 });
+      if (C.props) C.props.push({ x: bench.x + W.aIn.x * 0.6, z: bench.z + W.aIn.z * 0.6, r: 0.4 }, { x: bench.x - W.aIn.x * 0.6, z: bench.z - W.aIn.z * 0.6, r: 0.4 }, { x: cot.x, z: cot.z, r: 0.9 }, { x: tree.x, z: tree.z, r: 0.55, top: 9, cr: 2.4, cy: 4.2 });
       W.akhraProps = { bench, cot, tree };
     }
     W.tamak = C.dhamsaMesh(); W.tamak.scale.setScalar(1.35); W.tamak.position.copy(AKHRA); scene.add(W.tamak);
@@ -1109,11 +1109,23 @@ export function initStory(C) {
     }
     const drumming = S.mode === 'drum';
     const back = (portrait ? 7.4 : 6.2) * (drumming ? 0.9 : 1), up = (portrait ? 4.6 : 3.3) + (drumming ? 0.6 : 0);
-    let k = 1; // pull the camera in when a house would swallow it
-    for (; k > 0.3; k -= 0.14) { camPos.set(p.x + Math.sin(S.camYaw) * back * k, up, p.z + Math.cos(S.camYaw) * back * k); if (!inHouse(camPos, 0.5)) break; }
-    camPos.y = up * (0.55 + 0.45 * k) + (k < 0.99 ? 0.6 : 0);
+    // pull the camera in until nothing stands between it and you: a house (walls and roof), a straw stack, a tree trunk
+    // or canopy. Checking only the camera's own spot let it land beyond a house with the whole house in the way.
+    // if even close in it is blocked (walking out of a door, the camera trails straight into the house), swing round to
+    // the nearest clear side, keeping the side it swung to last time so it does not wobble
+    const sw = S.camSide || 1; let found = false;
+    for (const off of [0, 0.45 * sw, -0.45 * sw, 0.9 * sw, -0.9 * sw, 1.4 * sw, -1.4 * sw, 2 * sw, -2 * sw]) {
+      for (let k = 1; k > 0.29; k -= 0.1) { const yw = S.camYaw + off, cy = up * (0.55 + 0.45 * k) + (k < 0.99 ? 0.6 : 0); camPos.set(p.x + Math.sin(yw) * back * k, cy, p.z + Math.cos(yw) * back * k);
+        if (sightClear(p, camPos)) { found = true; if (off) { S.camYaw += off; S.camSide = Math.sign(off); } break; } }
+      if (found) break; }
     t3.set(p.x - Math.sin(S.camYaw) * (drumming ? 3 : 1.2), 1.25, p.z - Math.cos(S.camYaw) * (drumming ? 3 : 1.2));
   }
+  function sightClear(p, c) { // samples along the line from your head to the camera
+    for (let i = 2; i <= 8; i++) { const t = i / 8; camQ.set(p.x + (c.x - p.x) * t, 1.4 + (c.y - 1.4) * t, p.z + (c.z - p.z) * t);
+      if (camQ.y < 4.9 && inHouse(camQ, 0.35 + (camQ.y > 2.5 ? 0.45 : 0))) return false;
+      for (const o of C.props || []) { const d = Math.hypot(camQ.x - o.x, camQ.z - o.z); if ((d < o.r + 0.3 && camQ.y < (o.top ?? 2.2)) || (o.cr && camQ.y > o.cy && d < o.cr)) return false; } }
+    return true; }
+  const camQ = V();
   function inHouse(q, m) { for (const h of C.houses) { const c = Math.cos(h.rot), s = Math.sin(h.rot), dx = q.x - h.x, dz = q.z - h.z; if (Math.abs(dx * c - dz * s) < h.w / 2 + m && Math.abs(dx * s + dz * c) < h.d / 2 + m) return true; } return false; }
   function snapCam() { camTarget(camera.aspect < 1); camera.position.copy(camPos); camLook.copy(t3); camera.lookAt(camLook); }
   function cam(dt, portrait) {

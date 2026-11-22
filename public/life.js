@@ -101,7 +101,7 @@ export function initLife(C) {
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 1.3, 9), straw); body.position.set(x, 0.65, z);
       const top = new THREE.Mesh(new THREE.ConeGeometry(0.95, 1.1, 9), straw); top.position.set(x, 1.85, z);
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 5), straw); pole.position.set(x, 2.6, z);
-      [body, top, pole].forEach(m => { scene.add(m); list.push(m); }); });
+      [body, top, pole].forEach(m => { scene.add(m); list.push(m); }); if (C.props) C.props.push({ x, z, r: 0.85, top: 2.9 }); }); // solid, and the camera keeps out of it
     if (list.length) bakeStatic(list); }
 
   /* ---------- front yards: clay pots by the door, a rope cot, firewood (baked: one draw per material) ---------- */
