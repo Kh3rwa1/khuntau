@@ -1966,6 +1966,15 @@ function onCrowdLoaded() {
     const pot = new THREE.Mesh(mergeGeometries([vc(new THREE.SphereGeometry(0.17, 9, 7).scale(1, 0.9, 1), 0x9a4c2a), vc(new THREE.CylinderGeometry(0.07, 0.09, 0.08, 9).translate(0, 0.17, 0), 0x8a4222), vc(new THREE.TorusGeometry(0.1, 0.03, 4, 10).rotateX(Math.PI / 2).translate(0, -0.15, 0), 0xc9b07a)]), houseVC);
     scene.add(a.wrap); scene.add(pot); a.wrap.position.set(pump[0], 0, pump[1]); a.play('Idle');
     market.carrier = { a, pot, route: [pump, mid, door], i: 0, dir: 1, wait: 2, head: a.root.getObjectByName('Head') }; }
+  // a village couple: a roadside romeo and his girl, hidden behind the big tree at the edge of the paddy (gap 0.5, the one
+  // tree with a field behind it). Standing close, talking low; when you walk up they jump apart and pretend: he studies the
+  // paddy and scratches his head, she turns away behind her pallu and giggles. They drift back when you have gone.
+  { const ang = 0.35 + (2 * Math.PI / 9) * 0.5 + 0.075, r = 30.0, cx = Math.cos(ang) * r, cz = Math.sin(ang) * r, tan = [-Math.sin(ang), Math.cos(ang)];
+    const boy = actor(loaded.man, 1.72, true), girl = actor(loaded.woman, 1.58, true);
+    tint(boy, { Skin: 0x6a4026, Shirt: 0x2f6f8a, Pants: 0x2a2622, Hair: 0x120c08, Gamchha: 0xe8c547 });
+    tint(girl, { Skin: 0x704428, Hair: 0x120c08, Sari: 0xc0397a, SariBorder: 0xe8c547, Pallu: 0xc0397a, Shirt: 0xe8c547, Pants: 0xc0397a, Necklace: 0xf2b134, Bangles: 0x2f7a46 });
+    for (const a of [boy, girl]) { scene.add(a.wrap); a.play('Idle'); a.actions.Idle.time = rand(0, 2); }
+    market.couple = { boy, girl, x: cx, z: cz, tan, out: [Math.cos(ang), Math.sin(ang)], k: 0, away: 9, seenBy: false }; }
   setTimeout(registerSW, 1500);
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
@@ -3580,6 +3589,16 @@ function frame() {
         else { const st = Math.min(d, 1.05 * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 6, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.25, ts: 0.85 }); } }
       const vis = seen(a) && Math.hypot(game.p.pos.x - p.x, game.p.pos.z - p.z) < 34; a.root.visible = vis; W.pot.visible = vis;
       if (vis) a.mixer.update(dt); if (W.head) { a.root.updateMatrixWorld(true); W.head.getWorldPosition(W.pot.position); W.pot.position.y += 0.33 - 1.62 * (loaded.woman.userData.headDrop || 0); W.pot.rotation.y = a.wrap.rotation.y; } } /* the pot follows her head even off screen, so it never pops */
+    if (market.couple) { const Cc = market.couple, pp = game.p.pos, dist = Math.hypot(pp.x - Cc.x, pp.z - Cc.z), inStory = game.mode === 'story', near = inStory && dist < 6.5;
+      Cc.away = near ? 0 : Cc.away + dt; const want = near || Cc.away < 4 ? 1 : 0; Cc.k += clamp(want - Cc.k, -dt * 0.6, dt * 3.2); const k = Cc.k, e = k * k * (3 - 2 * k);
+      if (near && !Cc.seenBy) { Cc.seenBy = true; sfx.laugh(sfx.near({ x: Cc.x, z: Cc.z }, 9)); if (!Cc.told) { Cc.told = true; setTimeout(() => { if (game.mode === 'story') hint(L('They jump apart and study the paddy very hard.'), 2600); }, 500); } } if (!near && Cc.k < 0.05) Cc.seenBy = false;
+      if (inStory && dist < 9 && !near && Cc.k < 0.1 && Math.random() < dt * 0.5 && gate('chatter', 1.5)) sfx.chatter(sfx.near({ x: Cc.x, z: Cc.z }, 9) * 0.6); /* low talk while they think nobody is about */
+      [[Cc.boy, 1], [Cc.girl, -1]].forEach(([a, sd]) => { const off = 0.3 + 0.75 * e, p = a.wrap.position; p.set(Cc.x + Cc.tan[0] * sd * off + Cc.out[0] * 0.25 * e * (sd > 0 ? 1 : -0.6), 0, Cc.z + Cc.tan[1] * sd * off + Cc.out[1] * 0.25 * e * (sd > 0 ? 1 : -0.6));
+        const toOther = Math.atan2(-Cc.tan[0] * sd, -Cc.tan[1] * sd), awayYaw = sd > 0 ? Math.atan2(Cc.out[0], Cc.out[1]) : Math.atan2(-Cc.out[0] + Cc.tan[0] * -0.6, -Cc.out[1] + Cc.tan[1] * -0.6); /* he: the field; she: half turned to the village */
+        let dy = awayYaw - toOther; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); a.wrap.rotation.y = toOther + dy * e;
+        const vis = inStory && dist < 12 && seen(a); a.root.visible = vis; if (!vis) return; a.mixer.update(dt);
+        if (sd > 0) poseFrame(a, [['UpperArmR', 'z', 0.55 * (1 - e) + 2.35 * e], ['LowerArmR', 'z', 0.5 * (1 - e) + 1.5 * e], ['Neck', 'x', 0.12 * (1 - e) - 0.1 * e]]); /* his hand out to hers; caught, it goes to the back of his head */
+        else poseFrame(a, [['UpperArmL', 'z', -0.5 * (1 - e) - 1.5 * e], ['LowerArmL', 'z', -0.45 * (1 - e) - 1.7 * e], ['Neck', 'x', 0.28], ['Abdomen', 'x', 0.06 * e]]); }); } /* her eyes down; caught, the pallu hand comes up over her face */
     if (market.people.length) { let any = false; const close = Math.hypot(game.p.pos.x - market.spot[0], game.p.pos.z - market.spot[1]) < 18; if (market.scale) market.scale.visible = close; /* behind a house: from further away the house hides them anyway, so do not draw them */
       for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; a.mixer.update(dt); } } /* every frame: their arm poses go on top of the clip each frame */
       if (market.scale) market.scale.rotation.z = Math.sin(game.t * 0.9) * 0.1 * (0.6 + 0.4 * Math.sin(game.t * 0.23)); /* weighing: the beam dips and settles */

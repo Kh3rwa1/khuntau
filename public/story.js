@@ -45,6 +45,16 @@ export function initStory(C) {
     F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday();
     setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!')); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
       else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow')); } }, d === 3 ? 6500 : 2600); }
+  // A free world: nothing is locked. But do a thing on the wrong day and the Majhi or a village elder tells you off first
+  // (once a day per thing), then lets you get on with it. Only the right day's part moves the festival on.
+  const scolded = {};
+  function rebuke(day, what, go) { const d = festDay(); if (!GATED || F.fin || d === day || scolded[what] === dateKey()) return go();
+    scolded[what] = dateKey(); F.reb = (F.reb || 0) + 1; persist(); if (C.track) C.track('rebuke'); const hi = LANG === 'hi', elder = F.reb % 2 === 0, tail = TAILS[(F.reb >> 1) % TAILS.length];
+    if (C.sfx.chatter) { C.sfx.chatter(1.4); setTimeout(() => C.sfx.chatter(1.2), 500); }
+    const line = hi ? `होय! आज ${FEST[d - 1][0]} है। ${tr(what)} का दिन ${FEST[day - 1][0]} है, दिन ${day}। ${tail[1]}` : `Hoy! Today is ${FEST[d - 1][0]}. ${what.charAt(0).toUpperCase() + what.slice(1)} belongs to ${FEST[day - 1][0]}, day ${day}. ${tail[0]}`;
+    say([[hi ? (elder ? 'बुज़ुर्ग' : 'माझी') : (elder ? 'Elder' : 'Majhi'), line], [hi ? (elder ? 'बुज़ुर्ग' : 'माझी') : (elder ? 'Elder' : 'Majhi'), hi ? 'जा, कर ले। पर याद रखना।' : 'Go on then. But remember it.']], go); }
+  const TAILS = [['Do not mix up the days of Sohrai, boy!', 'सोहराय के दिन मत गड़बड़ाओ, लड़के!'], ['Did nobody teach you our ways? The whole village is watching.', 'किसी ने हमारी रीत नहीं सिखाई? पूरा गाँव देख रहा है।'],
+    ['In my day we knew which day was which. Shame!', 'हमारे ज़माने में हमें हर दिन का पता था। शर्म करो!'], ['The ancestors see everything, child. Keep the order.', 'पुरखे सब देखते हैं, बच्चे। क्रम का मान रखो।']];
   function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist(); setTimeout(() => { if (S.on && !S.dlg) banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1])); else F.seen = 0; }, 1800); }
 
   /* ---------- words (one table, ready to translate) ---------- */
@@ -104,6 +114,8 @@ export function initStory(C) {
     'Day # (Dakay Din) opens tomorrow': 'दिन # (दाकाय दिन) कल खुलेगा', 'Day # (Khuntau) opens tomorrow': 'दिन # (खुंटाउ) कल खुलेगा', 'Day # (Jale) opens tomorrow': 'दिन # (जाले) कल खुलेगा', 'Day # (Hako Katkom) opens tomorrow': 'दिन # (हाको काटकोम) कल खुलेगा',
     'Day # done. Day # (Dakay Din) opens tomorrow': 'दिन # पूरा। दिन # (दाकाय दिन) कल खुलेगा', 'Day # done. Day # (Khuntau) opens tomorrow': 'दिन # पूरा। दिन # (खुंटाउ) कल खुलेगा', 'Day # done. Day # (Jale) opens tomorrow': 'दिन # पूरा। दिन # (जाले) कल खुलेगा', 'Day # done. Day # (Hako Katkom) opens tomorrow': 'दिन # पूरा। दिन # (हाको काटकोम) कल खुलेगा',
     'Day #, Jale: Sarpa enej on the village road (#/#)': 'दिन #, जाले: गाँव की सड़क पर सरपा एनेज (#/#)', 'Day #, Hako Katkom: catch fish at the pond': 'दिन #, हाको काटकोम: तालाब में मछली पकड़ो', 'Day #, Dakay Din: draw the alpana before your door': 'दिन #, दाकाय दिन: अपने दरवाज़े के आगे अल्पना बनाओ',
+    'the garland': 'माला', 'oiling the horns': 'सींगों पर तेल', 'the Khuntau drumming': 'खुंटाउ का तामाक', 'the Khuntau': 'खुंटाउ', 'the alpana': 'अल्पना', 'painting the wall': 'दीवार रँगने', 'the fishing': 'मछली पकड़ने', 'the Sarpa enej': 'सरपा एनेज',
+    'They jump apart and study the paddy very hard.': 'दोनों झट से अलग हो गए और बड़े ध्यान से धान देखने लगे।',
     'Draw the alpana': 'अल्पना बनाओ', 'DRAW': 'बनाओ', 'Alpana drawn': 'अल्पना बन गई', 'White rice paste before the door': 'दरवाज़े के आगे सफ़ेद चावल का लेप',
     'Sohrai complete!': 'सोहराय पूरा!', 'You lived all five days. Johar!': 'तुमने पाँचों दिन जिए। जोहार!', 'Sohrai complete': 'सोहराय पूरा',
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
@@ -585,21 +597,21 @@ export function initStory(C) {
       add(I.door, 1.1, 'GO OUT', 'Go outside', () => leaveHouse());
     } else {
       add(DOOR_OUT, 1.5, 'ENTER', 'Go into the house', enterHouse);
-      if (save.ch >= 1) W.spots.forEach((s, i) => { if (!save.painted[i]) add(s.stand, 1.3, 'PAINT', 'Paint the wall', () => paint(i)); });
+      if (save.ch >= 1) W.spots.forEach((s, i) => { if (!save.painted[i]) add(s.stand, 1.3, 'PAINT', 'Paint the wall', () => rebuke(1, 'painting the wall', () => paint(i))); });
       add(majhi.wrap.position, 1.5, 'TALK', 'Talk to the Majhi', talkMajhi);
-      if (GATED && !F.fin && festDay() === 2 && !festWaiting() && !save.alpana) add(STEP_OUT, 1.6, 'DRAW', 'Draw the alpana', drawAlpana);
+      if (GATED && !F.fin && save.ch >= 1 && !save.alpana) add(STEP_OUT, 1.6, 'DRAW', 'Draw the alpana', () => rebuke(2, 'the alpana', drawAlpana));
       if (!atRing() && save.ch >= 2) {
         if (!save.chosen) add(W.gStand, 2.4, 'CHOOSE', 'Choose the animal', openPicker);
-        else if (!save.oiled) add(W.gStand, 2.4, 'OIL', 'Oil the horns', oilHorns);
-        else if (!save.garland && allowed(3)) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', putGarland);
+        else if (!save.oiled) add(W.gStand, 2.4, 'OIL', 'Oil the horns', () => rebuke(1, 'oiling the horns', oilHorns));
+        else if (!save.garland) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', () => rebuke(3, 'the garland', putGarland));
       }
-      if (save.ch >= 3) { const chart = (save.ch === 3 && allowed(3)) || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => drumStart(!chart)); }
+      if (save.ch >= 3) { const chart = save.ch === 3 || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => (save.ch === 3 ? rebuke(3, 'the Khuntau drumming', () => drumStart(!chart)) : drumStart(!chart))); }
       if (save.ch >= 1) {
         add(ARCH, 1.7, 'SHOOT', 'Shoot at the target', archStart);
-        add(FSTAND, 1.7, 'FISH', 'Fish in the pond', fishStart);
-        JALE.forEach((j, i) => { if (!today().jv[i]) add(j.stand, 1.5, 'SING', 'Join the Sarpa enej', () => echoStart(i)); });
+        add(FSTAND, 1.7, 'FISH', 'Fish in the pond', () => rebuke(5, 'the fishing', fishStart));
+        JALE.forEach((j, i) => { if (!today().jv[i]) add(j.stand, 1.5, 'SING', 'Join the Sarpa enej', () => rebuke(4, 'the Sarpa enej', () => echoStart(i))); });
       }
-      { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 && allowed(3) ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: startRing } // the story's finale: 3 pitha
+      { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: () => rebuke(3, 'the Khuntau', startRing) } // the story's finale: 3 pitha
         : { d: 0.5, label: 'RING', text: 'Play a round at the khunt', go: villageRound }); } // any other time: a normal scored round
     }
     list.sort((a, b) => a.d - b.d); return list[0] || null;
@@ -1305,6 +1317,6 @@ export function initStory(C) {
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
-    debug: { fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    debug: { rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }

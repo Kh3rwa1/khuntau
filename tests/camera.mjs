@@ -94,6 +94,17 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   check(r.vis && r.travel > 1.5, `the Sarpa enej line walks toward the road and back (${r.travel.toFixed(1)} m back and forth)`);
   check(r.bend > 0.12, `the women dance bent forward (head ${r.bend.toFixed(2)} m ahead of the hips)`);
   check(r.hmax - r.hmin > 0.08 && r.claps > 2, `they clap all the time (hands ${r.hmin.toFixed(2)}-${r.hmax.toFixed(2)} m apart, ${r.claps} claps heard)`); }
+// the village couple behind the tree at the paddy's edge: close together until you come, then apart and pretending
+{ const gap = () => page.evaluate(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position); });
+  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x * 0.5, 0, c.z * 0.5); __k.story.debug.snapCam(); c.away = 9; c.k = 0; }); await sleep(600);
+  const g0 = await gap(), where = await page.evaluate(() => { const c = __k.market.couple; return { r: Math.hypot(c.x, c.z), field: __k.paddyFields.plots.some(p => { const a = Math.atan2(c.z, c.x); return p.gold && a > p.a0 && a < p.a1 && p.r0 < 45; }) }; });
+  check(g0 < 0.75 && where.r > 28 && where.r < 30.5, `a couple stands close together at the village edge (${g0.toFixed(2)} m apart, ${where.r.toFixed(1)} m out)`);
+  await page.evaluate(() => { window.__sfxLog.length = 0; const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 3, 0, c.z - c.out[1] * 3); __k.story.debug.snapCam(); });
+  const apart = await page.waitForFunction(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position) > 1.7; }, { timeout: 30000, polling: 100 }).then(() => true, () => false);
+  check(apart && await page.evaluate(() => window.__sfxLog.includes('laugh')), `when you walk up they jump apart with a giggle (${(await gap()).toFixed(2)} m)`);
+  await page.screenshot({ path: 'tests/out/cam-couple.jpg', type: 'jpeg', quality: 70 });
+  await page.evaluate(() => { __k.game.p.pos.set(0, 0, 13); __k.story.debug.snapCam(); });
+  check(await page.waitForFunction(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position) < 0.75; }, { timeout: 60000, polling: 200 }).then(() => true, () => false), 'and drift back together once you have gone'); }
 // the water carrier walks her route between the pump and house 3, the pot riding on her head
 { const pos = () => page.evaluate(() => { const W = __k.market.carrier, p = W.a.wrap.position, h = W.head.getWorldPosition(new __k.THREE.Vector3()); return { x: p.x, z: p.z, pot: W.pot.position.distanceTo(h) }; });
   await page.evaluate(() => { const W = __k.market.carrier; W.wait = 0; __k.game.p.pos.set(W.a.wrap.position.x + 4, 0, W.a.wrap.position.z + 4); __k.story.debug.snapCam(); });
