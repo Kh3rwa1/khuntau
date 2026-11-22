@@ -37,7 +37,7 @@ export function dragShoot(page, tu = 0, tv = 0, tol = 0.08) {
     const a = __k.story.debug.arch, z = document.getElementById('tapzone'), x0 = innerWidth * 0.5, y0 = innerHeight * 0.75;
     const fire = (type, x, y) => z.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'touch', clientX: x, clientY: y, isPrimary: true }));
     const start = performance.now();
-    (function ready() { if (a.fly || a.wait > 0) return requestAnimationFrame(ready);
+    (function ready() { if (a.fly || a.wait > 0 || a.cine) return requestAnimationFrame(ready); // wait out the arrow's camera shot too
       fire('pointerdown', x0, y0); const ppm = a.ppm; fire('pointermove', x0 + (tu - a.u) * ppm, y0 - (tv - a.v) * ppm);
       (function hold() { const e = Math.hypot(a.u + a.su - tu, a.v + a.sv - tv);
         if (e < tol || performance.now() - start > 6000) { const n = a.n; fire('pointerup', x0, y0); (function shot() { a.n > n ? done(e) : requestAnimationFrame(shot); })(); } else requestAnimationFrame(hold); })();

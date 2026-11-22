@@ -372,8 +372,8 @@ export function initStory(C) {
     // a mound of earth, old arrow holes in the trunk, the painted face (radii match the hit zone), cut sheath stubs
     { const parts = [], tint = (g, hex, shade) => { vcol(g, hex); if (shade) { const c = g.attributes.color, q = g.attributes.position; for (let i = 0; i < c.count; i++) { const k = shade(q.getX(i), q.getY(i), q.getZ(i)); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); } } parts.push(g); return g; };
       tint(new THREE.CylinderGeometry(0.3, 0.36, 2.6, 16, 6).translate(0, 1.3, 0), 0xb7c48a, (x, y, z) => 0.82 + 0.18 * Math.sin(Math.atan2(z, x) * 7) + (y < 0.3 ? -0.15 : 0));
-      tint(new THREE.CircleGeometry(0.66, 28).translate(0, FACE_Y, 0.305), 0x2b2620);
-      [[0.62, 0xf6eedd], [0.47, 0xc0281e], [0.3, 0xf6eedd], [0.13, 0xc0281e]].forEach(([r, c], i) => tint(new THREE.CircleGeometry(r, 28).translate(0, FACE_Y, 0.31 + i * 0.006), c));
+      tint(new THREE.CircleGeometry(0.66, 28).translate(0, FACE_Y, 0.37), 0x2b2620); // in front of the tapering trunk: it poked through the paint
+      [[0.62, 0xf6eedd], [0.47, 0xc0281e], [0.3, 0xf6eedd], [0.13, 0xc0281e]].forEach(([r, c], i) => tint(new THREE.CircleGeometry(r, 28).translate(0, FACE_Y, 0.375 + i * 0.006), c));
       for (const y of [0.32, 2.3]) for (let k = 0; k < 2; k++) tint(new THREE.TorusGeometry(0.33 - (y > 1 ? 0.04 : 0), 0.025, 4, 16).rotateX(Math.PI / 2).translate(0, y + k * 0.06, 0), 0xc9b07a);
       for (let k = 0; k < 14; k++) { const a = rand(0, Math.PI * 2), y = rand(0.5, 2.1); if (Math.abs(y - FACE_Y) < 0.75 && Math.sin(a) > 0.1) continue; tint(new THREE.CircleGeometry(0.022, 6).rotateY(Math.PI / 2 - a).translate(Math.cos(a) * 0.335, y, Math.sin(a) * 0.335), 0x3a3324); } // old holes, off the painted face (it looks along +z)
       tint(new THREE.CylinderGeometry(0.42, 0.75, 0.2, 14).translate(0, 0.1, 0), 0x6e5a40, (x, y, z) => 0.9 + 0.1 * Math.sin(Math.atan2(z, x) * 5));
@@ -746,7 +746,7 @@ export function initStory(C) {
   $('tapQuit').addEventListener('click', () => { if (S.mode === 'aim' || S.mode === 'fish') tapStop(); });
   function tapOpen(mode, text) { S.mode = mode; S.tap = false; $('tapzone').hidden = false; reticle.hidden = mode !== 'aim'; tapHint(text); $('tapScore').textContent = ''; game.p.vel.set(0, 0, 0); C.player().play('Idle', { fade: 0.15 }); }
   function tapHint(text) { $('tapHint').textContent = tr(text); }
-  function tapStop() { reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; if (W.rod) W.rod.visible = false; if (W.line) W.line.visible = false; if (W.bow) W.bow.visible = false; if (W.nocked) W.nocked.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
+  function tapStop() { if (cine.shot) cinemaEnd(); reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; if (W.rod) W.rod.visible = false; if (W.line) W.line.visible = false; if (W.bow) W.bow.visible = false; if (W.nocked) W.nocked.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
 
   const arch = { n: 0, hits: 0, t: 0, fly: null, wait: 0, over: false };
   function archStart() {
@@ -773,7 +773,7 @@ export function initStory(C) {
     const sw = innerWidth / 2, sh = innerHeight / 2, rx = (archPt.x + 1) * sw, ry = (1 - archPt.y) * sh;
     arch.ppm = Math.abs((archPt2.x - archPt.x) * sw); arch.scr = [rx, ry];
     reticle.style.transform = `translate3d(${rx.toFixed(1)}px,${ry.toFixed(1)}px,0)`;
-    const r0 = Math.hypot(u0, v0); reticle.style.borderColor = r0 < FACE_R ? '#9dff9a' : '#fff6e0'; reticle.style.opacity = arch.fly || arch.wait > 0 || arch.over ? 0.35 : 1;
+    const r0 = Math.hypot(u0, v0); reticle.style.borderColor = r0 < FACE_R ? '#9dff9a' : '#fff6e0'; reticle.style.opacity = cine.shot ? 0 : arch.fly || arch.wait > 0 || arch.over ? 0.35 : 1;
     if (arch.fly) {
       const f = arch.fly; f.k = Math.min(1, f.k + dt / 0.42); f.a.position.lerpVectors(f.from, f.to, f.k); f.a.position.y += Math.sin(f.k * Math.PI) * 0.5;
       if (f.k >= 1) { arch.fly = null; arch.wait = 0.55;
@@ -782,7 +782,7 @@ export function initStory(C) {
         if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); }
         else archNock(); }
     } else if (arch.wait > 0) { arch.wait -= dt; arch.rel = null; }
-    else if (S.tap && !arch.over) {
+    else if (S.tap && !arch.over && !cine.shot) {
       const rel = arch.rel; arch.rel = null; const u = rel ? rel.u : u0, v = rel ? rel.v : v0, r = Math.hypot(u, v);
       const hit = r < FACE_R, a = W.arrows[arch.n++], pl = C.player();
       { const ac = pl.actions.Shoot_OneHanded; if (ac && pl.curName === 'Shoot_OneHanded') { ac.paused = false; ac.timeScale = 1.7; } else pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); } C.sfx.whoosh(); arch.draw = 0;
@@ -790,6 +790,13 @@ export function initStory(C) {
       // the arrow goes where the crosshair was: stuck in the face, or past the target and gone
       const to = hit ? TARGET.clone().addScaledVector(W.aSide, u).setY(FACE_Y + v).addScaledVector(W.aDir, -(0.32 + 0.4)) : TARGET.clone().addScaledVector(W.aSide, u * 1.4).addScaledVector(W.aDir, rand(1.2, 2.6)).setY(0.22); // a miss sticks in the ground
       a.visible = true; a.position.copy(from); a.lookAt(to); arch.fly = { a, from, to, k: 0, hit, bull: r < BULL_R };
+      { const fl = arch.fly, dir = to.clone().sub(from).normalize(), side = V(dir.z, 0, -dir.x), bull = fl.bull, last = arch.n >= 5;
+        cinema({ dur: hit ? (bull || last ? 2.3 : 1.8) : 1.3, at(t, P, L) {
+          const flying = arch.fly === fl && fl.k < 0.55;
+          if (flying) { P.copy(a.position).addScaledVector(dir, -1.25).addScaledVector(side, 0.22).y += 0.3; L.copy(a.position).addScaledVector(dir, 3); return { snap: 1e-7, zoom: 0.8 }; } // riding behind the arrow
+          if (hit && !this.slowed) { this.slowed = true; game.slow = bull || last ? 1.0 : 0.6; } // the last stretch in slow motion
+          P.copy(to).addScaledVector(W.aSide, hit ? 1.7 : 1.8).addScaledVector(W.aDir, hit ? -1.9 : -2.2).y = hit ? to.y + 0.35 : 0.9; L.copy(to).addScaledVector(W.aSide, hit ? 0.25 : 0); // the impact from the side, the whole face in frame
+          return { snap: 0.002, zoom: hit ? (bull ? 0.62 : 0.72) : 0.75 }; } }); }
     }
     W.target.rotation.z *= Math.pow(0.02, dt); S.tap = false;
   }
@@ -983,7 +990,7 @@ export function initStory(C) {
       if (hand) hand.getWorldPosition(W.bow.position); else W.bow.position.copy(game.p.pos).setY(1.1);
       W.bow.position.addScaledVector(W.aSide, 0.38).y += 0.1; // a long bow, held a little toward the camera: behind the body it was invisible
       const x = V().crossVectors(UP, W.aDir).normalize(); W.bow.quaternion.setFromRotationMatrix(archB.makeBasis(x, UP, W.aDir)).multiply(archQ.setFromAxisAngle(V(0, 0, 1), W.bowCant ?? -0.28)); // canted, top out toward the camera
-      const aiming = S.mode === 'aim' && !arch.fly && !arch.over && arch.wait <= 0; arch.draw = (arch.draw || 0) + ((aiming && arch.drag ? 1 : 0) - (arch.draw || 0)) * Math.min(1, dt * (arch.drag ? 5 : 18));
+      const aiming = S.mode === 'aim' && !arch.fly && !arch.over && arch.wait <= 0 && !cine.shot; arch.draw = (arch.draw || 0) + ((aiming && arch.drag ? 1 : 0) - (arch.draw || 0)) * Math.min(1, dt * (arch.drag ? 5 : 18));
       const nz = -0.1 - arch.draw * 0.42, sp = W.bowString.geometry.attributes.position; sp.setZ(1, nz); sp.needsUpdate = true;
       if (aiming && C.player().curName !== 'Shoot_OneHanded') archHold();
       W.nocked.visible = aiming; if (aiming) { W.nocked.position.copy(W.bow.position).addScaledVector(W.aDir, nz + 0.42); W.nocked.quaternion.copy(W.bow.quaternion); } }
@@ -1127,6 +1134,23 @@ export function initStory(C) {
     return true; }
   const camQ = V();
   function inHouse(q, m) { for (const h of C.houses) { const c = Math.cos(h.rot), s = Math.sin(h.rot), dx = q.x - h.x, dz = q.z - h.z; if (Math.abs(dx * c - dz * s) < h.w / 2 + m && Math.abs(dx * s + dz * c) < h.d / 2 + m) return true; } return false; }
+  /* --- cinema: short camera shots for the moments your hands are free (an arrow in flight, a fish landing). Black bars,
+     a change of lens, slow motion; a tap skips; never while you have to act; off with reduced motion. --- */
+  const cine = { shot: null, t0: 0, fov: 0 };
+  const cineBars = [0, 1].map(i => { const d = document.createElement('div'); d.style.cssText = `position:fixed;left:0;right:0;${i ? 'bottom' : 'top'}:0;height:0;background:#000;z-index:4;pointer-events:none;transition:height .3s ease`; document.body.appendChild(d); return d; });
+  function cinema(shot) { if (C.reduceMotion) return false; cine.shot = shot; cine.t0 = now(); cine.last = 0; arch.cine = true; cineBars.forEach(b => b.style.height = '7vh'); $('tapHint').style.visibility = 'hidden'; return true; }
+  function cinemaEnd() { const s2 = cine.shot; cine.shot = null; arch.cine = false; cineBars.forEach(b => b.style.height = '0'); $('tapHint').style.visibility = ''; if (game.slow > 0 && s2 && s2.slowed) game.slow = 0; if (s2 && s2.end) s2.end(); }
+  document.addEventListener('pointerdown', () => { if (cine.shot && now() - cine.t0 > 0.2) cinemaEnd(); }, true); // a tap skips
+  const baseFov = () => camera.aspect < 1 ? 62 : 50;
+  function cineCam(dt) { // drives the camera while a shot runs; returns false when none
+    const sh = cine.shot; if (!sh) { if (cine.fov) { cine.fov = 0; camera.fov = baseFov(); camera.updateProjectionMatrix(); } return false; }
+    const t = now() - cine.t0; if (t > sh.dur) { cinemaEnd(); return false; }
+    const tn = now(), rdt = Math.min(0.05, tn - (cine.last || tn)); cine.last = tn; // real time: slow motion must not slow the camera
+    const r = sh.at(t, camPos, t3) || {}; const k = 1 - Math.pow(r.snap ?? 0.0005, Math.max(rdt, 1 / 120));
+    camera.position.lerp(camPos, k); camLook.lerp(t3, k); camera.lookAt(camLook);
+    const fov = baseFov() * (r.zoom ?? 1); cine.fov = cine.fov ? cine.fov + (fov - cine.fov) * Math.min(1, rdt * 6) : camera.fov; camera.fov = cine.fov; camera.updateProjectionMatrix();
+    return true;
+  }
   function snapCam() { camTarget(camera.aspect < 1); camera.position.copy(camPos); camLook.copy(t3); camera.lookAt(camLook); }
   function cam(dt, portrait) {
     const p = game.p, moving = p.vel.lengthSq() > 1;
@@ -1134,6 +1158,7 @@ export function initStory(C) {
       const want = p.yaw + Math.PI; let d = want - S.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
       S.camYaw += clamp(d, -1.2, 1.2) * dt * (Math.abs(d) > 2.4 ? 0.9 : 1.5);
     }
+    if (cineCam(dt)) return;
     camTarget(portrait);
     camera.position.lerp(camPos, 1 - Math.pow(0.002, dt)); camLook.lerp(t3, 1 - Math.pow(0.001, dt)); camera.lookAt(camLook);
     if (S.tipsy > 0 && !C.reduceMotion) camera.rotateZ(Math.sin(now() * 2.1) * 0.035 * Math.min(1, S.tipsy / 2));

@@ -24,7 +24,9 @@ await ev(() => { __k.game.p.pos.set(Math.cos(0.35 + 0.698132 * 1.5) * 18.5, 0, M
 // drag-to-aim with real pointer events: four aimed at the bull, one deliberately wide
 const aims = [[0, 0], [0.1, -0.1], [1.25, 0.2], [0, 0], [0, 0.05]];
 check(await ev(() => { const W = __k.story.debug.W, b = W.bow.position, p = __k.game.p.pos; return W.bow.visible && W.nocked.visible && b.y > 0.9 && Math.hypot(b.x - p.x, b.z - p.z) < 1.2 && __k.player.curName === 'Shoot_OneHanded'; }), 'archery: a bow in hand, held up with an arrow on the string');
+await ev(() => { window.__cineSeen = 0; (function f() { const d = __k.story.debug; if (d.arch.cine && __k.camera.fov < 62 * 0.9) window.__cineSeen = 1; if (d.S.mode === 'aim') requestAnimationFrame(f); })(); });
 for (let n = 0; n < 5; n++) { const err = await dragShoot(page, aims[n][0], aims[n][1]); if (n === 0) { await sleep(150); await shot('03-arrow'); } check(err < 0.12, `arrow ${n + 1}: crosshair dragged onto its mark (${err.toFixed(2)} m)`); await page.waitForFunction(() => !__k.story.debug.arch.fly, { timeout: 10000 }); await sleep(100); }
+check(await ev(() => window.__cineSeen === 1), 'archery: the camera rides the arrow and zooms on the impact');
 check(await ev(() => { const W = __k.story.debug.W, a = W.arrows.slice(0, 5); return a.every(x => x.visible) && a.filter(x => x.position.y < 0.5).length === 1; }), 'every arrow stays where it went: four in the target, the miss stuck in the ground');
 check(await ev(() => __k.story.debug.arch.hits) === 4, `aimed arrows hit, the wide one misses (${await ev(() => __k.story.debug.arch.hits)}/5)`);
 await mode('walk'); check(await ev(() => !__k.story.debug.W.bow.visible && !__k.story.debug.W.nocked.visible), 'the bow is put away after the contest'); check(await ev(() => __k.story.debug.arch.hits) >= 3 && await ev(() => __k.story.debug.save.td.arch) === 1, 'archery: 3+ hits counts for the day'); await shot('04-arch-done');

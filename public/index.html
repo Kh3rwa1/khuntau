@@ -2167,7 +2167,7 @@ function updateBull(dt) {
       const r = b.pos.length();
       if (r < 1.0 || r > ROPE_L || b.dist <= 0) closeCall(b, p);
       if (r < 1.0) { // smacked the post
-        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; postWob = { t: 0, x: b.dir.z, z: -b.dir.x }; crowdReact('flinch');
+        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; cineR.kick = 1; postWob = { t: 0, x: b.dir.z, z: -b.dir.x }; crowdReact('flinch');
         toast('Bonk!', 700);
       } else if (r > ROPE_L) { // rope goes taut
         b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
@@ -2202,12 +2202,16 @@ function updateBull(dt) {
 function closeCall(b, p) {
   if (game.mode !== 'play' || game.online || b.hitDone || p.state === 'dead' || (b.minD ?? 99) > 1.9) return;
   progress('dodge');
-  if (b.provoked) { award(2, 'Daring dodge!'); game.slow = 0.3; } else award(1, 'Close call!');
+  if (b.provoked) { award(2, 'Daring dodge!'); game.slow = 0.3;
+    // from your side of his charge line, so you are in front and he thunders past behind you
+    const mid = p.pos.clone().lerp(b.pos, 0.4), side = new THREE.Vector3(b.dir.z, 0, -b.dir.x), sg = Math.sign(side.dot(tmpV.copy(p.pos).sub(b.pos))) || 1;
+    if (ringShot({ dur: 1.0, at(t, P, L) { P.copy(p.pos).addScaledVector(side, sg * 5.2).addScaledVector(b.dir, -1.2).setY(1.6 + t * 0.3); L.copy(mid).setY(0.9); return { zoom: 0.9, snap: 0.0004 }; } })) game.slow = 0.6; }
+  else award(1, 'Close call!');
   crowdCheer(0.45, 1.15, 0, 'clap'); buzz(20);
 }
 function hitPlayer() {
   const p = game.p, b = game.b;
-  game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; buzz([60, 40, 90]); crowdReact('groan');
+  game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; cineR.kick = 1.4; buzz([60, 40, 90]); crowdReact('groan');
   if (!game.online && game.combo >= 2) setTimeout(() => pop('Combo lost', ''), 250);
   game.combo = 0; renderCombo();
   p.vel.copy(b.dir).multiplyScalar(9).setY(0);
@@ -2216,7 +2220,9 @@ function hitPlayer() {
   toast(game.lives <= 0 ? 'Horned!' : 'Ouch!', 900);
   for (let i = 0; i < 8; i++) emit(dustPool, tmpV2.copy(p.pos).setY(0.4), { life: 0.9, vel: new THREE.Vector3(rand(-2, 2), rand(0.5, 2), rand(-2, 2)), size: 0.5, grow: 1.4 });
   if (game.online) { netSend({ t: 'hit' }); if (game.lives <= 0) hint('You are out. Watch, or go back to the lobby.', 3000); return; }
-  if (game.lives <= 0) gameOver();
+  if (game.lives <= 0) { const pp = p.pos.clone(), bp = b.pos.clone(), sd = new THREE.Vector3(b.dir.z, 0, -b.dir.x), sgn = Math.sign(sd.dot(tmpV.copy(camera.position).sub(pp))) || 1, a0 = Math.atan2(sd.x * sgn, sd.z * sgn); // off to the side of his charge: he thunders across the frame, not into the lens
+    if (ringShot({ dur: 2.4, skip: true, at(t, P, L) { const q = game.p.pos; P.set(q.x + Math.sin(a0) * 2.4, 3.3 + t * 1.6, q.z + Math.cos(a0) * 2.4); L.copy(q).setY(0.35); /* follows you: the hit throws you along his charge */ return { zoom: 0.8, snap: 0.0015 }; } })) game.slow = 1.1; /* a crane rising over you as you fall: nothing can block it */
+    gameOver(); }
 }
 
 function updatePlayer(dt) {
@@ -2276,6 +2282,8 @@ function updatePlayer(dt) {
       game.combo++; game.pitha++; renderCombo(); sfx.grab(); if (life) life.fx('petals', game.p.pos); buzz(40); progress('pitha'); progress('combo', Math.min(game.combo, 5), true);
       const gold = pitha.userData.gold, pts = Math.min(game.combo, 5) + (gold ? 3 : 0);
       if (gold) { setGold(false); crowdCheer(0.9); buzz([30, 30, 60]); game.slow = 0.25; }
+      { const pp = game.p.pos.clone(), fw = new THREE.Vector3(Math.sin(game.p.yaw), 0, Math.cos(game.p.yaw)), rt = new THREE.Vector3(fw.z, 0, -fw.x), sg = Math.sign(rt.dot(tmpV.copy(camera.position).sub(pp))) || 1;
+        if (ringShot({ dur: gold ? 1.5 : 1.05, at(t, P, L) { P.copy(pp).addScaledVector(fw, 2.1).addScaledVector(rt, sg * 2.6).setY(1.85 + t * 0.2); L.copy(pp).setY(1.35).lerp(tmpV.set(0, 2.1, 0), 0.4); /* three-quarter front, wide and a little high: you, the post and the pitha */ return { zoom: gold ? 0.78 : 0.88, snap: 0.0004 }; } })) game.slow = Math.max(game.slow, gold ? 0.9 : 0.55); }
       award(pts, gold ? `Golden pitha! +${pts}` : game.combo >= 2 ? `×${pts} combo · ${['Hoy!', 'Johar!', 'Got it!', 'Snatched!'][game.pitha % 4]}` : ['Snatched!', 'Hoy!', 'Got it!', 'Johar!'][game.pitha % 4]);
       const wp = pitha.getWorldPosition(new THREE.Vector3());
       for (let i = 0; i < 14; i++) emit(sparkPool, wp, { life: 0.9, vel: new THREE.Vector3(rand(-2, 2), rand(1, 3.5), rand(-2, 2)), size: 0.35, grow: -0.2, grav: 4, color: i % 2 ? 0xffc66b : 0xfff1c9 });
@@ -2450,9 +2458,24 @@ function updateParty(dt) {
 
 /* ---------- camera ---------- */
 const camLook = new THREE.Vector3();
+/* ---------- ring cinema: short shots for the big moments (a snatch, a daring dodge, the last lamp). Solo only (online
+   rounds are in sync and never slow down), off with reduced motion, black bars, slow motion, a change of lens. In the
+   ring they are short and taps go to your buttons; only the game-over shot can be skipped with a tap. ---------- */
+const cineR = { shot: null, t0: 0, fov: 0, kick: 0 };
+const ringBars = [0, 1].map(i => { const d = document.createElement('div'); d.style.cssText = `position:fixed;left:0;right:0;${i ? 'bottom' : 'top'}:0;height:0;background:#000;z-index:4;pointer-events:none;transition:height .3s ease`; document.body.appendChild(d); return d; });
+function ringShot(shot) { if (reduceMotion || game.online || game.mode === 'story') return false; cineR.shot = shot; cineR.t0 = performance.now() / 1000; cineR.last = 0; ringBars.forEach(b => b.style.height = '7vh'); return true; }
+function ringShotEnd() { cineR.shot = null; ringBars.forEach(b => b.style.height = '0'); }
+document.addEventListener('pointerdown', () => { if (cineR.shot && cineR.shot.skip && performance.now() / 1000 - cineR.t0 > 0.3) ringShotEnd(); }, true);
+const ringFov = () => camera.aspect < 1 ? 62 : 50;
 function updateCamera(dt) {
   const portrait = camera.aspect < 1;
-  if (game.mode === 'story' && story) { story.cam(dt, portrait); return; }
+  if (game.mode === 'story' && story) { if (cineR.shot) ringShotEnd(); story.cam(dt, portrait); return; }
+  if (cineR.shot) { const sh = cineR.shot, t = performance.now() / 1000 - cineR.t0;
+    if (t > sh.dur || game.mode === 'menu' || game.mode === 'lobby') ringShotEnd();
+    else { const nowR = performance.now() / 1000, rdt = Math.min(0.05, nowR - (cineR.last || nowR)); cineR.last = nowR; // real time: slow motion must not slow the camera
+      const r = sh.at(t, tmpV2, tmpV3) || {}, k = 1 - Math.pow(r.snap ?? 0.0006, Math.max(rdt, 1 / 120)); camera.position.lerp(tmpV2, k); camLook.lerp(tmpV3, k); camera.lookAt(camLook);
+      const f = ringFov() * (r.zoom ?? 1); cineR.fov = cineR.fov ? cineR.fov + (f - cineR.fov) * Math.min(1, rdt * 6) : camera.fov; camera.fov = cineR.fov; camera.updateProjectionMatrix(); return; } }
+  { const f = ringFov() * (1 - cineR.kick * 0.1); if (cineR.fov || cineR.kick > 0 || camera.fov !== f) { cineR.fov = 0; camera.fov = camera.fov + (f - camera.fov) * Math.min(1, dt * 8); if (Math.abs(camera.fov - f) < 0.05) camera.fov = f; camera.updateProjectionMatrix(); } cineR.kick = Math.max(0, cineR.kick - dt * 3); } // a lens punch on impacts
   if (game.mode === 'menu' || game.mode === 'lobby') {
     const a = game.t * 0.12;
     camera.position.set(Math.sin(a) * 13, 5.5, Math.cos(a) * 13);
@@ -2937,7 +2960,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, villageProps, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3025,7 +3048,7 @@ function frame() {
     else {
       updatePlayer(dt); updateBull(dt); updatePitha(dt); updateHandi(dt);
       if (game.storyRun && game.mode === 'play' && game.pitha >= 3 && !game.storyWon) { // story finale: three pitha wins the day
-        game.storyWon = true; game.slow = 0.5; crowdCheer(1); toast('3 pitha! The village roars', 1700);
+        game.storyWon = true; game.slow = 0.5; crowdCheer(1); ringShot({ dur: 1.9, at(t, P, L) { const a = Math.atan2(camera.position.x, camera.position.z) + t * 0.5; P.set(Math.sin(a) * 8.5, 2.6 + t * 0.6, Math.cos(a) * 8.5); L.set(0, 1.4, 0); return { zoom: 0.85, snap: 0.003 }; } }); toast('3 pitha! The village roars', 1700);
         setTimeout(() => { if (game.storyRun && game.mode === 'play') { game.mode = 'over'; gallop(false); story.afterRing(true); } }, 2000);
       }
     }

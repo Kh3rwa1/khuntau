@@ -56,6 +56,8 @@ await ev(() => { __k.hs.next = 999; }); // keep the handi for its own check
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; });
 check(await until(() => __k.game.pitha === 1 && __k.game.score > 0, 4000), 'GRAB at the post takes a pitha and scores');
 check(await until(() => __k.life && __k.life.active().petals, 2000), 'marigold petals rain on a snatch');
+check(await until(() => __k.cine.shot && __k.camera.fov < 62 * 0.95 && __k.game.slow > 0, 1500), 'a snatch gets a cinematic shot: black bars, a tighter lens, slow motion');
+await until(() => !__k.cine.shot, 4000);
 await shot('1-grab');
 await until(() => __k.game.p.state === 'free', 4000);
 await ev(() => { __k.game.p.pos.set(0, 0, 1.0); __k.input.grab = true; }); await sleep(300);

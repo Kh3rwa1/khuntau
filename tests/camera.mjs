@@ -48,5 +48,13 @@ if (stacks.length) { const s = stacks[0];
 // 3. the akhra tree no longer hangs over the path to the next house
 check(await page.evaluate(() => { const t = __k.story.debug.W.akhraProps.tree; return __k.houses.every(h => { const dx = Math.sin(h.rot), dz = Math.cos(h.rot), door = [h.x + dx * (h.d / 2 + 0.8), h.z + dz * (h.d / 2 + 0.8)], L = Math.hypot(...door), ux = door[0] / L, uz = door[1] / L;
   const along = t.x * ux + t.z * uz; if (along < 13 || along > L) return true; return Math.abs(t.x * uz - t.z * ux) > 2.6; }); }), 'the akhra tree stands clear of every path to a door');
+// reduced motion: no cinematic shots at all
+{ const pg2 = await browser.newPage(); await pg2.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
+  await pg2.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); await pg2.evaluateOnNewDocument(() => localStorage.setItem('khuntau-played', '1'));
+  await pg2.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' }); await pg2.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
+  await pg2.evaluate(() => document.getElementById('quickBtn').click()); await pg2.waitForFunction(() => __k.game.mode === 'play');
+  await pg2.evaluate(() => { __k.hs.next = 999; __k.game.p.pos.set(0.4, 0, 1.0); __k.game.p.state = 'free'; __k.input.grab = true; window.__shot = 0; (function f() { if (__k.cine.shot) window.__shot = 1; if (__k.game.mode === 'play') requestAnimationFrame(f); })(); });
+  await pg2.waitForFunction(() => __k.game.pitha === 1, { timeout: 5000 }).catch(() => {}); await sleep(800);
+  check(await pg2.evaluate(() => __k.game.pitha === 1 && window.__shot === 0), 'with reduced motion on, a snatch plays no cinematic shot'); await pg2.close(); }
 { const e = realErrors(logs); check(!e.length, 'no page errors' + (e.length ? ': ' + e.slice(0, 3).join(' | ') : '')); }
 await finish(browser);
