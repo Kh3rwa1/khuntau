@@ -1197,8 +1197,8 @@ Object.assign(sfx, {
   splash() { const t = AT(); if (t < 0) return; noise(t, 0.45, 0.32, 'highpass', 900, 0.7, SB()); noise(t + 0.03, 0.3, 0.14, 'bandpass', 2600, 1, SB()); tone(t, 'sine', 700, 200, 0.12, 0.15, SB()); },
   clink(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 2350, 2300, 0.5, 0.07 * v, SB()); tone(t, 'sine', 3720, 3680, 0.32, 0.04 * v, SB()); },
   crackle(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 5; i++) noise(t + rand(0, 0.4), rand(0.008, 0.02), 0.07 * v, 'highpass', 3500, 1, SB()); },
-  chop(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 60, 0.12, 0.25 * v, SB()); noise(t, 0.04, 0.16 * v, 'bandpass', 1300, 1.5, SB()); }, // cleaver into the block
-  chatter(v = 1) { const t = AT(); if (t < 0) return; const f = rand(150, 280); voiced(t, 'sawtooth', f, f * rand(0.85, 1.15), rand(0.12, 0.22), 0.035 * v, rand(700, 1100), 2, 0, 6, 0.02); }, // a murmur of voices
+  chop(v = 1) { const t = AT(); if (t < 0) return; noise(t, 0.025, 0.22 * v, 'bandpass', 2300, 2.5, SB()); tone(t, 'triangle', 640, 420, 0.05, 0.08 * v, SB()); noise(t + 0.01, 0.05, 0.08 * v, 'bandpass', 900, 3, SB()); }, /* a sharp woody thock: no low boom, it read as a drum */
+  chatter(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0, n = 2 + (Math.random() * 3 | 0); i < n; i++) noise(t + i * rand(0.07, 0.12), rand(0.04, 0.08), 0.045 * v, 'bandpass', rand(2200, 3800), 2, SB()); }, /* low whispering, not a voice tone (it sounded like singing) */
   slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
   near(pos, R) { const p = game.p.pos, d = Math.hypot(pos.x - p.x, pos.z - p.z); return d >= R ? 0 : 1 - d / R; }, // loudness by distance from you
   gate,
@@ -1694,7 +1694,8 @@ function onCrowdLoaded() {
       if (kind !== 'man') { const edge = colors.Pants !== colors.Shirt ? colors.Pants : colors.Vest; tint(a, { Sari: colors.Shirt, SariBorder: edge, Pallu: colors.Shirt, Shirt: edge, Vest: edge, Pants: colors.Shirt }); }
       const [x, z] = B(lx, lb); a.wrap.position.set(x, 0, z); a.role = role; scene.add(a.wrap); market.people.push(a); villageProps.push({ x, z, r: 0.35, top: 1.8 }); }
     const [bx, bz] = B(0, LB), [sx2, sz2] = B(-1.5, LB + 0.4), [tx, tz] = B(1.2, LB);
-    for (const a of market.people) { if (a.role === 'butcher') { faceTo(a, bx, bz); a.play('SwordSlash', { ts: 0.75 }); } else if (a.role === 'weigher') { faceTo(a, sx2, sz2); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } else { faceTo(a, tx + rand(-0.4, 0.4), tz); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } } }
+    market.table = [tx, tz]; for (const a of market.people) { a.home = a.wrap.position.clone(); a.st = 'stand'; a.tm = rand(0.5, 3); a.goal = null; }
+    for (const a of market.people) { if (a.role === 'butcher') { faceTo(a, bx, bz); a.play('Idle'); a.chops = 0; a.tm = 1; } else if (a.role === 'weigher') { faceTo(a, sx2, sz2); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } else { faceTo(a, tx + rand(-0.4, 0.4), tz); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } } }
   // a woman carrying a clay water pot on her head between the hand pump and house 3's door, pausing at each end
   { const gA = (i) => 0.35 + (2 * Math.PI / 9) * i, pump = [Math.cos(gA(2.5)) * 21.4, Math.sin(gA(2.5)) * 21.4], h = houses[3], door = [h.x + Math.sin(h.rot) * (h.d / 2 + 1.0), h.z + Math.cos(h.rot) * (h.d / 2 + 1.0)];
     const mid = [Math.cos(gA(2.7)) * 19.6, Math.sin(gA(2.7)) * 19.6], a = actor(loaded.woman, 1.62, true);
@@ -2612,6 +2613,29 @@ document.addEventListener('pointerdown', () => { if (cineR.shot && cineR.shot.sk
 const ringFov = () => camera.aspect < 1 ? 62 : 50;
 // sound that follows the moment: slow motion muffles everything (and starts with a whoomp), a soft wind bed (quieter
 // indoors and in the ring), the garland bell clinking as he charges
+// the pork stall's people behave like people waiting for meat, not like a dance: the butcher chops in uneven bursts with
+// pauses; buyers stand and shift their weight, glance at each other, wander a step, whisper, and one at a time step up
+// to the table, take their meat and step back
+function marketPeople(dt, v) {
+  const T = market.table, buying = market.people.some(a => a.st === 'toTable' || a.st === 'take' || a.st === 'back');
+  for (const a of market.people) { a.tm -= dt; const p = a.wrap.position;
+    if (a.role === 'butcher') { if (a.tm > 0) continue;
+      if (a.chops > 0) { a.chops--; a.play('SwordSlash', { once: true, fade: 0.08, ts: rand(1.0, 1.3) }); a.tm = rand(0.55, 0.85); if (v > 0) setTimeout(() => sfx.chop(v), 230); }
+      else { a.play('Idle', { fade: 0.25 }); a.chops = 2 + (Math.random() * 4 | 0); a.tm = rand(1.6, 3.8); } continue; }
+    if (a.role === 'weigher') { if (a.tm < 0) { a.tm = rand(4, 8); if (Math.random() < 0.5) a.play('PickUp', { once: true, fade: 0.2, ts: 0.8 }); else a.play('Idle', { fade: 0.3 }); } continue; }
+    const walkTo = (x, z, sp) => { const dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz); if (d < 0.08) return true; const st = Math.min(d, sp * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 6, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.2, ts: 0.7 }); return false; };
+    const face = (x, z) => { a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(x - p.x, z - p.z), 3, dt); };
+    if (a.st === 'stand') { face(a.look ? a.look[0] : T[0], a.look ? a.look[1] : T[1]); if (a.curName !== 'Idle') a.play('Idle', { fade: 0.3 });
+      if (a.tm < 0) { const r = Math.random();
+        if (r < 0.22 && !buying) { a.st = 'toTable'; a.goal = [T[0] + (p.x - T[0]) * 0.35, T[1] + (p.z - T[1]) * 0.35]; }
+        else if (r < 0.68) { a.st = 'shuffle'; a.goal = [a.home.x + rand(-0.6, 0.6), a.home.z + rand(-0.6, 0.6)]; }
+        else { const o = market.people[(Math.random() * market.people.length) | 0]; a.look = o !== a && Math.random() < 0.6 ? [o.wrap.position.x, o.wrap.position.z] : null; a.tm = rand(2.5, 6); if (v > 0 && Math.random() < 0.5) sfx.chatter(v * 0.8); } } }
+    else if (a.st === 'shuffle') { if (walkTo(a.goal[0], a.goal[1], 0.5)) { a.st = 'stand'; a.tm = rand(3, 7); } }
+    else if (a.st === 'toTable') { if (walkTo(a.goal[0], a.goal[1], 0.7)) { a.st = 'take'; a.tm = 1.6; face(T[0], T[1]); a.play('PickUp', { once: true, fade: 0.15, ts: 0.9 }); } }
+    else if (a.st === 'take') { face(T[0], T[1]); if (a.tm < 0) a.st = 'back'; }
+    else if (a.st === 'back') { if (walkTo(a.home.x, a.home.z, 0.6)) { a.st = 'stand'; a.look = null; a.tm = rand(4, 9); } } }
+  if (v > 0 && Math.random() < dt * 1.2 && gate('chatter', 0.6)) sfx.chatter(v * 0.7);
+}
 function audioFrame() {
   if (!audio.ctx) return; const c = audio.ctx, slow = game.slow > 0 && !game.online;
   if (audio.lp) audio.lp.frequency.setTargetAtTime(slow ? 650 : 18000, c.currentTime, slow ? 0.05 : 0.25);
@@ -3226,8 +3250,7 @@ function frame() {
       for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; if (perf.odd) a.mixer.update(perf.cdt); } }
       if (market.scale) market.scale.rotation.z = Math.sin(game.t * 0.9) * 0.1 * (0.6 + 0.4 * Math.sin(game.t * 0.23)); /* weighing: the beam dips and settles */
       const sp = { x: market.spot[0], z: market.spot[1] }, v = sfx.near(sp, 12);
-      if (v > 0) { const bt = market.people[0], ac = bt.actions.SwordSlash, ph = ac ? (ac.time / ac.getClip().duration) % 1 : 0; if (ac && market.lastPh !== undefined && market.lastPh < 0.45 && ph >= 0.45) sfx.chop(v); market.lastPh = ph;
-        if (Math.random() < 0.016 * 60 * (1 / 60) * 3 && gate('chatter', 0.35)) sfx.chatter(v); } }
+      marketPeople(dt, v); }
     if (!inStory) crowdWatch(dt);
     if (QUALITY === 2 && perf.stage < 3) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(dt); }
     else if (perf.odd) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(perf.cdt); perf.cdt = 0; } // villagers animate at half rate on phones and tablets

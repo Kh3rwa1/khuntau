@@ -120,7 +120,7 @@ export function initStory(C) {
   const FACE_Y = 1.45;
   const gap = (i) => 0.35 + (2 * Math.PI / 9) * i;
   const ARCH = polar(gap(1.5), 18.5), TARGET = polar(gap(1.5), 25.5), POND = polar(gap(4.5), 24.6), FSTAND = polar(gap(4.5), 20.7);
-  const JALE = [2, 5, 7].map(i => { const h = C.houses[i], f = h.d / 2 + 1.1; return { stand: V(h.x + Math.sin(h.rot) * f, 0, h.z + Math.cos(h.rot) * f), yaw: h.rot + Math.PI }; });
+  const JALE = [2, 5, 8].map(i => { const h = C.houses[i], f = h.d / 2 + 1.1; return { stand: V(h.x + Math.sin(h.rot) * f, 0, h.z + Math.cos(h.rot) * f), yaw: h.rot + Math.PI }; });
   const RING_SPOT = V(0, 0, -3.5);
   const VILLAGE_R = 30.5;
 
