@@ -27,6 +27,9 @@ const near = (P, l) => P.until((l) => { const n = __k.story.debug.S.near; return
   check(await P.ev(() => !!__k.audio.ctx && !!__k.audio.lp), 'the sound graph is up (with the slow-motion filter)');
   await clear(P); await P.ev(() => { __k.game.p.pos.set(0, 0, 15); }); await P.page.keyboard.down('KeyW'); const stepped = await heard(P, 'step', 25000); await P.page.keyboard.up('KeyW'); /* hold W until a step lands: steps come per metre walked in game time */
   check(stepped, 'walking makes footsteps');
+  { const m = await P.ev(() => ({ bed: __k.MUSIC_VOL.game, village: __k.BED.village, ring: __k.BED.ring, micro: __k.audio.microBus.gain.value, intro: __k.MUSIC_VOL.intro }));
+    check(m.bed === m.village && m.village <= 0.08 && m.ring <= 0.12 && m.intro <= 0.5 && m.micro >= 2, `the music is a quiet bed (village ${m.village}, ring ${m.ring}, home ${m.intro}) and the everyday sounds are lifted over it (x${m.micro.toFixed(1)})`); }
+  await clear(P); await P.ev(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand); }); check(await heard(P, 'chatter', 30000), 'people at the akhra talk among themselves');
   // into the house
   await P.ev(() => { const d = __k.story.debug, D = d.W.doorOut || null; });
   await P.ev(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.inside.door); d.S.inside = true; d.W.room.visible = true; d.S.near = null; });
@@ -68,6 +71,7 @@ const near = (P, l) => P.until((l) => { const n = __k.story.debug.S.near; return
   await clear(P); await P.ev(() => { __k.hs.next = 999; __k.game.p.pos.set(4, 0, 4); __k.game.p.state = 'free'; __k.input.roll = true; }); check(await heard(P, 'roll'), 'a roll thuds and swishes');
   await sleep(700); await clear(P); await P.ev(() => { __k.game.p.state = 'free'; __k.game.p.teaseCd = 0; __k.input.tease = true; }); check(await heard(P, 'flap'), 'waving the hide flaps');
   await sleep(800); await clear(P); await P.page.keyboard.down('KeyW'); { const ran = await heard(P, 'step', 25000); await P.page.keyboard.up('KeyW'); check(ran, 'running in the ring makes footsteps'); }
+  await clear(P); check(await heard(P, 'chatter', 30000) && await P.ev(() => __k.MUSIC_VOL.game === __k.BED.ring), 'the ring crowd talks, over a quiet music bed');
   await P.until(() => __k.game.p.state === 'free', 6000); await P.ev(() => { __k.game.slow = 0; }); await sleep(400); await clear(P); /* no slow motion left over from an earlier near miss */ await P.ev(() => { const g = __k.game; window.__lp = 99999; g.b.state = 'recover'; g.b.t = 0; g.b.pos.set(0, 0, -5); g.pithaReady = true; g.p.invuln = 0; g.p.pos.set(0.4, 0, 1.0); g.p.state = 'free'; __k.input.grab = true; /* the hide provoked him earlier: calm the scene first */ (function f() { if (__k.audio.lp) window.__lp = Math.min(window.__lp, __k.audio.lp.frequency.value); if (__k.game.mode === 'play') requestAnimationFrame(f); })(); });
   check(await heard(P, 'slowmo', 15000), 'slow motion starts with a whoomp');
   await sleep(600); check(await P.ev(() => window.__lp < 2500), `and muffles everything while it lasts (low-pass down to ${await P.ev(() => Math.round(window.__lp))} Hz)`);

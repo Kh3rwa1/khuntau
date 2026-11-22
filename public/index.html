@@ -1210,6 +1210,7 @@ function initAudio() {
   const comp = ctx.createDynamicsCompressor(); audio.lp = ctx.createBiquadFilter(); audio.lp.type = 'lowpass'; audio.lp.frequency.value = 18000; // slow motion muffles everything
   audio.master.connect(audio.lp); audio.lp.connect(comp); comp.connect(ctx.destination);
   audio.sfxBus = ctx.createGain(); audio.sfxBus.connect(audio.master);
+  audio.microBus = ctx.createGain(); audio.microBus.gain.value = 2.2; audio.microBus.connect(audio.sfxBus); /* the small everyday sounds, lifted well above the music bed (the compressor after the master catches peaks) */
   audio.drumBus = ctx.createGain(); audio.drumBus.connect(audio.master);
   setTimeout(startWind, 0);
   for (const el of [music.intro, music.game]) { // music through the graph so volume works on iPhone too
@@ -1235,7 +1236,9 @@ function noise(t, dur, vol, ftype, freq, q = 1, out = audio.master) {
 /* recorded music (yours) and sound effects (Openverse / Freesound) */
 const music = { intro: new Audio('audio/intro.mp3'), game: new Audio('audio/khuntau.mp3'), cur: null };
 for (const el of [music.intro, music.game]) { el.loop = true; el.preload = 'auto'; el.playsInline = true; }
-const MUSIC_VOL = { intro: 0.8, game: 0.5 };
+// The music is a quiet bed, not the star: Dulor wants the game's own sounds (claps, people talking, steps, animals,
+// the cleaver) to carry it. BED: how loud the Khuntau track plays in the village and in the ring.
+const BED = { village: 0.05, ring: 0.09 }, MUSIC_VOL = { intro: 0.4, game: BED.ring };
 // while the mic is live, music is off so friends hear each other (and the mic doesn't pick the music up); sound effects stay
 const voiceLive = () => { try { return voice.on && !voice.muted; } catch (e) { return false; } };
 const musicVol = k => voiceLive() ? 0 : MUSIC_VOL[k];
@@ -1319,7 +1322,7 @@ const sfx = {
 };
 /* micro sounds, all synthesized (no downloads, nothing to draw): steps, a snore, gulps and munching, a brush, a door,
    animals, the bow, water, fire, a bell, wind, and a whoomp when time slows. Each is short, quiet and rate-limited. */
-const SB = () => audio.sfxBus, AT = () => (audio.ctx && !audio.muted ? audio.ctx.currentTime : -1), lastSfx = {};
+const SB = () => audio.microBus || audio.sfxBus, AT = () => (audio.ctx && !audio.muted ? audio.ctx.currentTime : -1), lastSfx = {};
 const gate = (k, gap) => { const n = performance.now(); if (n - (lastSfx[k] || 0) < gap * 1000) return false; lastSfx[k] = n; return true; };
 function voiced(t, type, f0, f1, dur, vol, ff, q = 1, vib = 0, vibHz = 6, attack = 0.02) { // an oscillator through a band-pass, with optional vibrato
   const c = audio.ctx, o = c.createOscillator(), bp = c.createBiquadFilter(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
@@ -1358,7 +1361,12 @@ Object.assign(sfx, {
   crackle(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 5; i++) noise(t + rand(0, 0.4), rand(0.008, 0.02), 0.07 * v, 'highpass', 3500, 1, SB()); },
   clapHand(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 3; i++) noise(t + i * 0.008, 0.018, 0.16 * v * (1 - i * 0.25), 'bandpass', 1300 + i * 300, 1.2, SB()); }, /* a palm clap: three quick bright noise bursts */
   chop(v = 1) { const t = AT(); if (t < 0) return; noise(t, 0.025, 0.22 * v, 'bandpass', 2300, 2.5, SB()); tone(t, 'triangle', 640, 420, 0.05, 0.08 * v, SB()); noise(t + 0.01, 0.05, 0.08 * v, 'bandpass', 900, 3, SB()); }, /* a sharp woody thock: no low boom, it read as a drum */
-  chatter(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0, n = 2 + (Math.random() * 3 | 0); i < n; i++) noise(t + i * rand(0.07, 0.12), rand(0.04, 0.08), 0.045 * v, 'bandpass', rand(2200, 3800), 2, SB()); }, /* low whispering, not a voice tone (it sounded like singing) */
+  chatter(v = 1) { const t = AT(); if (t < 0) return; /* people talking: a few short spoken syllables, each with its own pitch fall and mouth shape (two formants), from one of a few voices, with a breath of consonant noise. Not sung: no held notes. */
+    const f0 = [112, 128, 176, 205, 228][(Math.random() * 5) | 0], n = 3 + (Math.random() * 4 | 0); let at = t;
+    for (let i = 0; i < n; i++) { const d = rand(0.07, 0.15), a = f0 * rand(0.92, 1.22), F1 = rand(420, 820), F2 = rand(1100, 2100);
+      voiced(at, 'sawtooth', a, a * rand(0.82, 0.96), d, 0.05 * v, F1, 4, 0, 6, 0.015); voiced(at, 'sawtooth', a, a * rand(0.82, 0.96), d, 0.022 * v, F2, 6, 0, 6, 0.015);
+      if (Math.random() < 0.5) noise(at, 0.03, 0.02 * v, 'bandpass', rand(2500, 4200), 2, SB()); at += d + rand(0.02, 0.09) + (Math.random() < 0.2 ? rand(0.1, 0.25) : 0); } },
+  laugh(v = 1) { const t = AT(); if (t < 0) return; const f = rand(190, 280); for (let i = 0; i < 4; i++) voiced(t + i * 0.13, 'sawtooth', f * (1 - i * 0.05), f * 0.8, 0.09, 0.045 * v * (1 - i * 0.15), 900, 3, 0, 6, 0.01); }, /* a short laugh in a crowd */
   slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
   near(pos, R) { const p = game.p.pos, d = Math.hypot(pos.x - p.x, pos.z - p.z); return d >= R ? 0 : 1 - d / R; }, // loudness by distance from you
   gate,
@@ -1955,7 +1963,7 @@ function onCrowdLoaded() {
   import('./story.js').then(m => {
     story = m.initStory({ props: villageProps, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
-      musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
+      BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: () => { track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
       track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
       toMenu: () => { game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
@@ -2335,7 +2343,7 @@ function startGame() {
   view.yaw = 0; /* each round starts looking at the post; your tilt and zoom are kept */
   game.menuOpen = false; $('pauseScreen').hidden = true;
   ringLabels();
-  initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; MUSIC_VOL.game = 0.5; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
+  initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; MUSIC_VOL.game = BED.ring; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hudScore').hidden = false;
   $('bestChip').hidden = best === 0 || innerWidth < 560; $('best').textContent = best; renderRival();
   let played = false; try { played = !!localStorage.getItem('khuntau-played'); localStorage.setItem('khuntau-played', '1'); } catch (e) {}
@@ -2910,6 +2918,8 @@ function audioFrame() {
   if (slow && !audio.wasSlow && gate('slowmo', 1)) sfx.slowmo(); audio.wasSlow = slow;
   if (audio.wind) { const inside = game.mode === 'story' && story && story.debug && story.debug.S.inside; audio.wind.gain.setTargetAtTime(game.mode === 'story' ? (inside ? 0.008 : 0.045) : 0.018, c.currentTime, 0.6); audio.windF.frequency.setTargetAtTime(380 + Math.sin(game.t * 0.3) * 120, c.currentTime, 0.6); }
   if (garland.visible && game.b.state === 'charge' && game.mode !== 'story' && gate('clink', 0.26)) sfx.clink(0.8);
+  // the ring's crowd talks among itself between the big moments (louder as the bull winds up), with a laugh now and then
+  if (game.mode === 'play' && crowd.length && Math.random() < (game.b.state === 'windup' ? 0.05 : 0.02) && gate('chatter', 0.7)) { sfx.chatter(0.7); if (Math.random() < 0.12) sfx.laugh(0.7); }
 }
 // ring camera control: drag the free right side of the screen (not the stick, not a button) to look around, pinch or
 // mouse-wheel to zoom. The village has its own (story.js), with the same feel.
@@ -3153,7 +3163,7 @@ function onNet(m) {
 function onNetEvent(m) {
   switch (m.e) {
     case 'start': { track('online.play'); game.storyRun = game.villageRun = false; ringLabels();
-      resetGame(); game.mode = 'play'; game.online = true; MUSIC_VOL.game = 0.5; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
+      resetGame(); game.mode = 'play'; game.online = true; MUSIC_VOL.game = BED.ring; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
       const sp = m.spawn.find(s => s[0] === net.id);
       const inRound = !!sp;
       if (sp) { game.p.pos.set(sp[1], 0, sp[2]); game.p.yaw = Math.atan2(-sp[1], -sp[2]); }
@@ -3427,7 +3437,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, MUSIC_VOL };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

@@ -676,7 +676,7 @@ export function initStory(C) {
     drum.end = drum.t0 + CHART[CHART.length - 1][1] * BEAT + 0.7; drum.laneH = $('laneT').clientHeight;
   }
   function drumStop() {
-    S.mode = 'walk'; $('pads').hidden = true; showSticks(false); C.musicLevel(0.3); S.lookT = -9;
+    S.mode = 'walk'; $('pads').hidden = true; showSticks(false); C.musicLevel(C.BED.village); S.lookT = -9;
     $('laneT').textContent = ''; $('laneU').textContent = ''; drum.notes = [];
   }
   function judge(lane, text) { const el = $(lane === 'T' ? 'judgeT' : 'judgeU'); el.textContent = tr(text); el.classList.add('show'); void el.offsetWidth; setTimeout(() => el.classList.remove('show'), 60); }
@@ -870,7 +870,7 @@ export function initStory(C) {
     S.mode = 'echo'; C.musicLevel(0.05); $('pads').hidden = false; $('padDone').hidden = true; $('laneT').textContent = ''; $('laneU').textContent = ''; $('beatCount').textContent = '';
     hint('Listen…', 1600); C.player().play('Idle', { fade: 0.15 });
   }
-  function echoStop() { S.mode = 'walk'; $('pads').hidden = true; C.musicLevel(0.3); S.lookT = -9; }
+  function echoStop() { S.mode = 'walk'; $('pads').hidden = true; C.musicLevel(C.BED.village); S.lookT = -9; }
   function echoUpdate(dt) {
     if (echo.ph !== 'show') return; echo.t -= dt; if (echo.t > 0) return;
     if (echo.k < echo.seq.length) { drumSound(echo.seq[echo.k++], true); echo.t = 0.52; }
@@ -916,7 +916,7 @@ export function initStory(C) {
     const pl = C.player(); pl.wrap.visible = true; if (pl.hide) pl.hide.visible = false; pl.play('Idle');
     C.pitha.visible = save.ch >= 4; C.handi.visible = false;
     castCrowd(); placeAnimal(); applyPaint(true);
-    C.setMusic('game'); C.musicLevel(0.3); /* the Khuntau BGM */
+    C.setMusic('game'); C.musicLevel(C.BED.village); /* the Khuntau BGM */
     if (fromRing) return;
     setTimeout(() => { if (S.on && !S.dlg) hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.'), 4500); }, 600);
     S.hintAfterDlg = true;
@@ -932,7 +932,7 @@ export function initStory(C) {
     for (const id of ['hudStory', 'pads', 'pick', 'dlg', 'prompt']) $(id).hidden = true;
     if (W.room) W.room.visible = false; S.inside = false; if (W.marker) W.marker.visible = false;
     const pl = C.player(); if (pl.hide) pl.hide.visible = true; showSticks(false); pl.wrap.rotation.z = 0;
-    releaseCrowd(); C.rope.visible = true; C.garland.visible = true; C.pitha.visible = true; C.musicLevel(0.8);
+    releaseCrowd(); C.rope.visible = true; C.garland.visible = true; C.pitha.visible = true; C.musicLevel(C.BED.ring);
     dance.energy = 0; camera.rotation.z = 0; S.label = '';
     if (!keepUi) { game.b.pos.copy(RING_SPOT); game.b.yaw = 0; }
   }
@@ -1078,6 +1078,7 @@ export function initStory(C) {
     if (!S.inside && S.mode !== 'drum') { const sf = C.sfx, p2 = game.p.pos;
       if (Math.random() < dt * 0.22) sf.chirp(rand(0.4, 1)); /* birdsong in the trees */
       { const v = sf.near(POND, 11); if (v > 0 && Math.random() < dt * 0.18) sf.quack(v); }
+      { const v = sf.near(AKHRA, 13); if (v > 0 && Math.random() < dt * 0.5 && sf.gate('chatter', 0.8)) { sf.chatter(v * 0.8); if (Math.random() < 0.1) sf.laugh(v * 0.7); } } /* the dancers and elders at the akhra talk among themselves */
       for (const o of C.props || []) if (o.top === 0.6) { const v = sf.near(o, 4); if (v > 0 && sf.gate('crackle', 0.45)) { sf.crackle(v); break; } } }
     if (W.arrowIM) archDecor(dt);
     { const td = today(); W.jale.forEach((sp, i) => { sp.visible = !S.inside && save.ch >= 1 && !td.jv[i]; if (sp.visible) sp.scale.setScalar(1 + Math.sin(tn * 3 + i) * 0.15); }); }
