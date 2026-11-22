@@ -43,7 +43,7 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   // the shadow box follows the camera into the village (it used to sit on the ring, leaving the houses unshadowed)
   const far = await page.evaluate(async () => { const h = __k.houses[4], d = __k.story.debug; __k.game.p.pos.set(h.x * 0.8, 0, h.z * 0.8); d.snapCam(); await new Promise(r => setTimeout(r, 1500));
     const t = __k.sun.target.position; return { d: Math.hypot(t.x - __k.game.p.pos.x, t.z - __k.game.p.pos.z), fromRing: Math.hypot(t.x, t.z) }; });
-  check(far.d < 18 && far.fromRing > 10, `the shadows follow you into the village (shadow centre ${far.d.toFixed(1)} m from you, ${far.fromRing.toFixed(1)} m from the ring)`);
+  check(far.d < 18 && far.fromRing > 5, /* the old fixed box sat at 0; how far out it lands depends on which way the camera faces */ `the shadows follow you into the village (shadow centre ${far.d.toFixed(1)} m from you, ${far.fromRing.toFixed(1)} m from the ring)`);
   await page.screenshot({ path: 'tests/out/look-village.jpg', type: 'jpeg', quality: 70 });
   check(await page.evaluate(() => { let ok = false; __k.scene.traverse(o => { if (o.isMesh && o.material && o.material.vertexColors && o.geometry.attributes.position.count > 40000 && !o.material.flatShading && o.castShadow) ok = true; }); return ok; }), 'trees are smooth-shaded and cast shadows on mid phones');
   check(await page.evaluate(() => __k.charMat.userData.fx.rim === true), 'people and animals have the warm rim light');
