@@ -28,7 +28,14 @@ check(await ev(() => __k.story.debug.arch.hits) === 4, `aimed arrows hit, the wi
 await mode('walk'); check(await ev(() => __k.story.debug.arch.hits) >= 3 && await ev(() => __k.story.debug.save.td.arch) === 1, 'archery: 3+ hits counts for the day'); await shot('04-arch-done');
 // fishing
 await ev(() => { const a = 0.35 + 0.698132 * 4.5; __k.game.p.pos.set(Math.cos(a) * 20.7, 0, Math.sin(a) * 20.7); }); await near('FISH'); await act(); await mode('fish'); await sleep(1500); await shot('05-fish');
-for (let n = 0; n < 3; n++) { await page.waitForFunction(() => __k.story.debug.fish.st === 'idle', { timeout: 60000 }); await tap(); await page.waitForFunction(() => __k.story.debug.fish.st === 'bite', { timeout: 60000, polling: 'raf' }); if (n === 0) await shot('06-bite'); await tap(); await sleep(300); if (n === 0) await shot('07-catch'); }
+check(await ev(() => { const W = __k.story.debug.W, p = __k.game.p.pos, tip = W.rodTip.getWorldPosition(new __k.THREE.Vector3()), fw = [Math.sin(__k.game.p.yaw), Math.cos(__k.game.p.yaw)];
+  return W.rod.visible && tip.y > 1.6 && (tip.x - p.x) * fw[0] + (tip.z - p.z) * fw[1] > 0.3; }), 'fishing: a bamboo rod in hand, raised out over the water');
+{ const d0 = await ev(() => { const m = new __k.THREE.Matrix4(); __k.story.debug.W.ducks.getMatrixAt(0, m); return [m.elements[12], m.elements[14]]; }); await sleep(600);
+  const d1 = await ev(() => { const m = new __k.THREE.Matrix4(); __k.story.debug.W.ducks.getMatrixAt(0, m); return [m.elements[12], m.elements[14]]; });
+  check(Math.hypot(d1[0] - d0[0], d1[1] - d0[1]) > 0.02, 'ducks paddle round the pond'); }
+for (let n = 0; n < 3; n++) { await page.waitForFunction(() => __k.story.debug.fish.st === 'idle', { timeout: 60000 }); await tap(); await page.waitForFunction(() => __k.story.debug.fish.st === 'bite', { timeout: 60000, polling: 'raf' }); if (n === 0) { await shot('06-bite');
+    check(await ev(() => { const W = __k.story.debug.W, f = W.float.position, l = W.line.geometry.attributes.position, tip = W.rodTip.getWorldPosition(new __k.THREE.Vector3());
+      return W.line.visible && Math.hypot(l.getX(9) - f.x, l.getZ(9) - f.z) < 0.05 && Math.hypot(l.getX(0) - tip.x, l.getZ(0) - tip.z) < 0.05 && W.ripples.some(q => q.t < 1.6); }), 'fishing: the line runs from the rod tip to the float, and the water ripples'); } await tap(); await sleep(300); if (n === 0) await shot('07-catch'); }
 await mode('walk'); check(await ev(() => __k.story.debug.fish.got) >= 3 && await ev(() => __k.story.debug.save.td.fish) === 1, 'fishing: 3 fish counts for the day');
 // three houses
 for (let h = 0; h < 3; h++) { const j = await ev((h) => { const hs = __k.houses[[2, 5, 7][h]], f = hs.d / 2 + 1.1; const p = [hs.x + Math.sin(hs.rot) * f, hs.z + Math.cos(hs.rot) * f]; __k.game.p.pos.set(p[0], 0, p[1]); return p; }, h);

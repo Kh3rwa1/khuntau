@@ -363,10 +363,48 @@ export function initStory(C) {
     W.arrows = []; for (let i = 0; i < 5; i++) { const a = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.85, 6).rotateX(Math.PI / 2), wood, 0, 0, 0, a); mesh(new THREE.ConeGeometry(0.055, 0.14, 6).rotateX(Math.PI / 2), dark, 0, 0, 0.48, a); for (const r of [0, Math.PI / 2]) mesh(new THREE.PlaneGeometry(0.2, 0.24), gold, 0, 0, -0.34, a).rotation.set(0, Math.PI / 2, r); a.visible = false; scene.add(a); W.arrows.push(a); }
 
     /* --- the pond --- */
-    mesh(new THREE.CircleGeometry(3.9, 28).rotateX(-Math.PI / 2), Mat({ color: 0x5a4632, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2 }), POND.x, 0.015, POND.z, scene);
-    W.water = mesh(new THREE.CircleGeometry(3.2, 28).rotateX(-Math.PI / 2), Mat({ color: 0x3f86a8, roughness: 0.25, transparent: true, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -4 }), POND.x, 0.03, POND.z, scene);
-    for (let i = 0; i < 7; i++) { const a = i * 0.9 + 0.3, r = mesh(new THREE.ConeGeometry(0.05, rand(0.9, 1.5), 4), leaf, POND.x + Math.cos(a) * 3.3, 0.5, POND.z + Math.sin(a) * 3.3, scene); r.rotation.z = rand(-0.15, 0.15); }
     W.fIn = t1.copy(FSTAND).sub(POND).setY(0).normalize().clone();
+    { const PR = 3.2, BR = 3.9, fa = Math.atan2(W.fIn.z, W.fIn.x); // fa: the side you fish from (the camera is behind you there)
+      const away = (a, w) => Math.abs(Math.atan2(Math.sin(a - fa), Math.cos(a - fa))) > w; // keep tall things off the camera side
+      // bank: dark wet mud at the waterline drying out to earth, flecked with grit
+      const bankTex = C.canvasTex(256, 256, (c, w) => { const m = w / (2 * BR), cx = w / 2;
+        const g = c.createRadialGradient(cx, cx, PR * m * 0.96, cx, cx, BR * m); g.addColorStop(0, '#34281c'); g.addColorStop(0.3, '#55422f'); g.addColorStop(0.75, 'rgba(112,94,66,.7)'); g.addColorStop(1, 'rgba(112,94,66,0)');
+        c.fillStyle = g; c.fillRect(0, 0, w, w); for (let i = 0; i < 900; i++) { c.fillStyle = i % 2 ? 'rgba(40,30,20,.35)' : 'rgba(170,150,115,.3)'; c.fillRect(rand(0, w), rand(0, w), 1.5, 1.5); } });
+      mesh(new THREE.CircleGeometry(BR, 32).rotateX(-Math.PI / 2), Mat({ map: bankTex, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }), POND.x, 0.015, POND.z, scene);
+      // water: deep in the middle, shallow and green at the edge, with a sky sheen; a second layer of wavelets drifts over it
+      const waterTex = C.canvasTex(256, 256, (c, w) => { const cx = w / 2, g = c.createRadialGradient(cx, cx, 0, cx, cx, cx);
+        g.addColorStop(0, '#24607d'); g.addColorStop(0.6, '#2f7b92'); g.addColorStop(0.9, '#4f8f84'); g.addColorStop(1, '#5e8f6c'); c.fillStyle = g; c.fillRect(0, 0, w, w);
+        const s = c.createLinearGradient(0, 0, w, w); s.addColorStop(0, 'rgba(255,255,255,0)'); s.addColorStop(0.45, 'rgba(220,240,255,.16)'); s.addColorStop(0.6, 'rgba(255,255,255,0)'); c.fillStyle = s; c.fillRect(0, 0, w, w); });
+      // small depth offsets for bank < water < wavelets: a big one buried the lily pads at low camera angles
+      W.water = mesh(new THREE.CircleGeometry(PR, 32).rotateX(-Math.PI / 2), Mat({ map: waterTex, roughness: 0.2, transparent: true, opacity: 0.94, polygonOffset: true, polygonOffsetFactor: -2 }), POND.x, 0.03, POND.z, scene);
+      const waveTex = C.canvasTex(128, 128, (c, w) => { c.lineWidth = 1.4; for (let i = 0; i < 46; i++) { const x = rand(0, w), y = rand(0, w), l = rand(8, 22); c.strokeStyle = `rgba(235,248,255,${rand(0.15, 0.4).toFixed(2)})`; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + l / 2, y - 2.5, x + l, y); c.stroke(); } });
+      waveTex.wrapS = waveTex.wrapT = THREE.RepeatWrapping; waveTex.repeat.set(3, 3);
+      W.waves = mesh(new THREE.CircleGeometry(PR * 0.97, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: waveTex, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -3 }), POND.x, 0.034, POND.z, scene);
+      // ripple rings (one draw, hidden when still): faded by dimming their colour, as they add light
+      const RN = 14; W.rip = new THREE.InstancedMesh(new THREE.RingGeometry(0.86, 1, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), RN);
+      W.rip.frustumCulled = false; W.rip.visible = false; W.rip.renderOrder = 2; W.ripples = []; for (let i = 0; i < RN; i++) { W.ripples.push({ t: 9, x: 0, z: 0, s: 1 }); W.rip.setMatrixAt(i, new THREE.Matrix4().makeScale(0, 0, 0)); W.rip.setColorAt(i, new THREE.Color(0)); } scene.add(W.rip);
+      // ducks paddling round the pond (one instanced draw; the second is a brown one)
+      { const parts = [], add2 = (g, hex) => parts.push(vcol(g, hex));
+        add2(new THREE.SphereGeometry(0.17, 8, 6).scale(0.85, 0.6, 1.25), 0xf2efe6); add2(new THREE.SphereGeometry(0.085, 8, 6).translate(0, 0.17, 0.17), 0xf2efe6);
+        add2(new THREE.ConeGeometry(0.035, 0.09, 5).rotateX(Math.PI / 2).translate(0, 0.16, 0.28), 0xe08a2a); add2(new THREE.ConeGeometry(0.07, 0.14, 4).rotateX(-Math.PI / 2 - 0.5).translate(0, 0.07, -0.22), 0xe6e2d6);
+        for (const sx of [-1, 1]) add2(new THREE.SphereGeometry(0.018, 5, 4).translate(sx * 0.06, 0.2, 0.22), 0x15120e);
+        const dg = C.mergeGeometries ? C.mergeGeometries(parts) : null;
+        if (dg) { W.ducks = new THREE.InstancedMesh(dg, Mat({ vertexColors: true, roughness: 0.7 }), 3); W.ducks.frustumCulled = false; W.duckS = [[2.15, 0.16, 0], [1.75, -0.12, 2.1], [2.45, 0.1, 4.2]];
+          [0xffffff, 0xa98a62, 0xffffff].forEach((c, i) => W.ducks.setColorAt(i, new THREE.Color(c))); scene.add(W.ducks); } }
+      // the rest is one vertex-coloured draw: reeds and cattails, lily pads with lotus, stones, a washing stone and a pot
+      const parts = [], put = (g, hex, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(vcol(g, hex)); o.position.set(POND.x + x, y, POND.z + z); o.rotation.set(rx, ry, rz); parts.push(o); scene.add(o); return o; };
+      for (let k = 0; k < 13; k++) { const a = k / 13 * 6.28 + rand(-0.15, 0.15); if (!away(a, 0.95)) continue; const r = rand(3.05, 3.5), cx = Math.cos(a) * r, cz = Math.sin(a) * r;
+        for (let b = 0; b < 8; b++) { const h = rand(0.6, 1.3); put(new THREE.ConeGeometry(0.022, h, 3), [0x4f7d35, 0x5f8a3a, 0x3e6b2c][b % 3], cx + rand(-0.2, 0.2), h / 2, cz + rand(-0.2, 0.2), rand(-0.22, 0.22), 0, rand(-0.22, 0.22)); }
+        if (k % 2) { const x = cx + rand(-0.1, 0.1), z = cz + rand(-0.1, 0.1); put(new THREE.CylinderGeometry(0.008, 0.008, 1.1, 3), 0x6f7a3a, x, 0.55, z); put(new THREE.CylinderGeometry(0.03, 0.03, 0.16, 6), 0x5a3a22, x, 1.12, z); } }
+      for (let k = 0; k < 16; k++) { const a = rand(0, 6.28); if (!away(a, 0.55)) continue; const r = rand(1.5, 2.8), x = Math.cos(a) * r, z = Math.sin(a) * r, s = rand(0.24, 0.4);
+        put(new THREE.CylinderGeometry(s, s, 0.012, 12, 1, false, 0.35, 6.28 - 0.7), k % 3 ? 0x6aa84a : 0x58953c, x, 0.075, z, 0, rand(0, 6.28)); // clear of the water's depth offset
+        if (k % 4 === 0) { for (let q = 0; q < 12; q++) { const inner = q >= 6, pa = q / 6 * Math.PI * 2 + (inner ? 0.5 : 0), pr = inner ? 0.05 : 0.09; put(new THREE.SphereGeometry(inner ? 0.05 : 0.07, 6, 4).scale(0.45, 0.3, 1).translate(0, 0, pr), inner ? 0xf6c2d4 : 0xe98fb0, x, 0.12 + (inner ? 0.04 : 0), z, inner ? -0.9 : -0.55, pa, 0); } // a lotus: two rings of petals
+          put(new THREE.SphereGeometry(0.035, 6, 4), 0xe8c547, x, 0.15, z); } }
+      for (let k = 0; k < 10; k++) { const a = rand(0, 6.28), r = rand(3.25, 3.75), s = rand(0.1, 0.22); put(new THREE.SphereGeometry(s, 6, 4).scale(1.3, 0.55, 1), [0x8a8478, 0x6f6a60, 0x9a9488][k % 3], Math.cos(a) * r, s * 0.25, Math.sin(a) * r, 0, rand(0, 3)); }
+      { const a = fa + 1.75, x = Math.cos(a) * 3.15, z = Math.sin(a) * 3.15; put(new THREE.BoxGeometry(0.95, 0.12, 0.55), 0x7d776c, x, 0.07, z, 0, -a, 0.16);
+        put(new THREE.SphereGeometry(0.2, 9, 7).scale(1, 0.95, 1), 0x9a4c2a, x + Math.cos(a) * 0.75, 0.2, z + Math.sin(a) * 0.75); put(new THREE.CylinderGeometry(0.075, 0.1, 0.08, 9), 0x8a4222, x + Math.cos(a) * 0.75, 0.4, z + Math.sin(a) * 0.75); }
+      scene.updateMatrixWorld(true); C.bakeStatic(parts, Mat({ vertexColors: true, flatShading: true, roughness: 0.9 }));
+    }
     W.float = new THREE.Group(); mesh(new THREE.SphereGeometry(0.09, 8, 6), red, 0, 0.05, 0, W.float); mesh(new THREE.SphereGeometry(0.07, 8, 6), paste, 0, 0.13, 0, W.float); W.float.visible = false; scene.add(W.float);
     W.floatHome = POND.clone().addScaledVector(W.fIn, 1.3).setY(0.03);
     W.fishM = new THREE.Group(); { const fm = Mat({ color: 0xc9d3d8, roughness: 0.35 }); const b = mesh(new THREE.SphereGeometry(0.2, 10, 8), fm, 0, 0, 0, W.fishM); b.scale.set(0.45, 0.6, 1.3); const tl = mesh(new THREE.ConeGeometry(0.13, 0.22, 4).rotateX(-Math.PI / 2), fm, 0, 0, -0.33, W.fishM); tl.scale.x = 0.3; } W.fishM.visible = false; scene.add(W.fishM);
@@ -672,7 +710,7 @@ export function initStory(C) {
   $('tapQuit').addEventListener('click', () => { if (S.mode === 'aim' || S.mode === 'fish') tapStop(); });
   function tapOpen(mode, text) { S.mode = mode; S.tap = false; $('tapzone').hidden = false; reticle.hidden = mode !== 'aim'; tapHint(text); $('tapScore').textContent = ''; game.p.vel.set(0, 0, 0); C.player().play('Idle', { fade: 0.15 }); }
   function tapHint(text) { $('tapHint').textContent = tr(text); }
-  function tapStop() { reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
+  function tapStop() { reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; if (W.rod) W.rod.visible = false; if (W.line) W.line.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
 
   const arch = { n: 0, hits: 0, t: 0, fly: null, wait: 0, over: false };
   function archStart() {
@@ -719,8 +757,21 @@ export function initStory(C) {
   }
 
   const fish = { st: 'idle', n: 0, got: 0, t: 0, bite: 0, jump: 0 };
+  // a bamboo rod held in the right hand, aimed out over the water each frame (fixed to the fist it pointed at the
+  // ground), and a line from its tip to the float. You used to fish with an empty hand.
+  function fishingRod() {
+    if (!W.rod) {
+      W.rod = new THREE.Group(); const seg = (r0, r1, l, y, c) => mesh(new THREE.CylinderGeometry(r1, r0, l, 5), Mat({ color: c, roughness: 0.7 }), 0, y, 0, W.rod);
+      seg(0.024, 0.018, 0.9, 0.3, 0xb8975a); seg(0.018, 0.012, 0.8, 1.15, 0xc9a866); seg(0.012, 0.006, 0.7, 1.9, 0xd2b277);
+      W.rodTip = new THREE.Object3D(); W.rodTip.position.y = 2.25; W.rod.add(W.rodTip); W.rod.visible = false; scene.add(W.rod);
+      W.line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 10 }, () => V())), new THREE.LineBasicMaterial({ color: 0xf2efe6, transparent: true, opacity: 0.85 })); W.line.frustumCulled = false; W.line.visible = false; scene.add(W.line);
+    }
+    return W.rod;
+  }
+  function ripple(x, z, s = 1) { const r = W.ripples && W.ripples.find(q => q.t > 1.6); if (!r) return; r.t = 0; r.x = x; r.z = z; r.s = s; W.rip.visible = true; }
   function fishStart() {
     const p = game.p; p.pos.copy(FSTAND); p.yaw = Math.atan2(-W.fIn.x, -W.fIn.z);
+    if (fishingRod()) W.rod.visible = true;
     Object.assign(fish, { st: 'idle', n: 0, got: 0, t: 0, jump: 0 });
     S.focus = { pos: FSTAND.clone().addScaledVector(W.fIn, 4.2).addScaledVector(V(W.fIn.z, 0, -W.fIn.x), 1.2).setY(3.1), look: POND.clone().addScaledVector(W.fIn, 1.6).setY(0.4) };
     tapOpen('fish', 'Tap to cast'); $('tapScore').textContent = '0';
@@ -728,14 +779,14 @@ export function initStory(C) {
   function fishUpdate(dt, tn) {
     const pl = C.player(), tap = S.tap; S.tap = false; fish.t += dt;
     const next = (msg) => { fish.n++; fish.st = 'rest'; fish.t = 0; W.float.visible = false; tapHint(''); if (msg) toast(msg, 900); };
-    if (fish.st === 'idle') { if (tap) { fish.st = 'wait'; fish.t = 0; fish.bite = rand(1.3, 3.6); pl.play('SwordSlash', { once: true, fade: 0.06, ts: 1.3 }); C.sfx.whoosh(); W.float.visible = true; W.float.position.copy(W.floatHome); tapHint('Wait for the bite…'); } }
+    if (fish.st === 'idle') { if (tap) { fish.st = 'wait'; fish.t = 0; fish.bite = rand(1.3, 3.6); pl.play('SwordSlash', { once: true, fade: 0.06, ts: 1.3 }); C.sfx.whoosh(); W.float.visible = true; W.float.position.copy(W.floatHome); ripple(W.floatHome.x, W.floatHome.z, 0.7); tapHint('Wait for the bite…'); } }
     else if (fish.st === 'wait') {
       W.float.position.y = 0.03 + Math.sin(tn * 3) * 0.015;
-      if (tap) next('Too early'); else if (fish.t > fish.bite) { fish.st = 'bite'; fish.t = 0; C.buzz(70); tapHint('PULL!'); if (C.audio.ctx) C.tone(C.audio.ctx.currentTime, 'sine', 500, 180, 0.18, 0.5, C.audio.sfxBus);
+      if (tap) next('Too early'); else if (fish.t > fish.bite) { fish.st = 'bite'; fish.t = 0; C.buzz(70); ripple(W.floatHome.x, W.floatHome.z, 0.5); ripple(W.floatHome.x, W.floatHome.z, 0.9); tapHint('PULL!'); if (C.audio.ctx) C.tone(C.audio.ctx.currentTime, 'sine', 500, 180, 0.18, 0.5, C.audio.sfxBus);
         for (let i = 0; i < 5; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.5, vel: V(rand(-1, 1), rand(1, 2), rand(-1, 1)), size: 0.16, grow: -0.1, grav: 5, color: 0xcfe9ff }); }
     } else if (fish.st === 'bite') {
       W.float.position.y = -0.06 + Math.sin(tn * 30) * 0.02;
-      if (tap) { fish.got++; fish.jump = 0.001; pl.play('PickUp', { once: true, fade: 0.06, ts: 1.4 }); C.sfx.grab(); C.buzz([20, 30, 40]); $('tapScore').textContent = String(fish.got); next(''); pop('Got one!', ''); }
+      if (tap) { fish.got++; fish.jump = 0.001; ripple(W.floatHome.x, W.floatHome.z, 1.2); for (let i = 0; i < 8; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.6, vel: V(rand(-1.2, 1.2), rand(1.2, 2.6), rand(-1.2, 1.2)), size: 0.14, grow: -0.08, grav: 6, color: 0xdff2ff }); pl.play('PickUp', { once: true, fade: 0.06, ts: 1.4 }); C.sfx.grab(); C.buzz([20, 30, 40]); $('tapScore').textContent = String(fish.got); next(''); pop('Got one!', ''); }
       else if (fish.t > 0.85) next('It got away');
     } else if (fish.st === 'rest' && fish.t > 1.1) {
       if (fish.n >= 3) { fish.st = 'over'; const ok = fish.got >= 2; pop(fish.got + ' fish', ok ? 'A good catch' : 'Need 2. Try again'); if (ok) daily('fish', 'Fishing'); setTimeout(() => { if (S.mode === 'fish') tapStop(); }, 1600); }
@@ -864,6 +915,30 @@ export function initStory(C) {
     p.y = 0;
   }
 
+  // the pond moves: wavelets drift, ducks paddle round with small wakes, a fish rises now and then, ripples spread
+  const pondM = new THREE.Matrix4(), pondQ = new THREE.Quaternion(), pondS = V(), pondP = V(), pondE = new THREE.Euler(), pondC = new THREE.Color();
+  function pondUpdate(dt, tn) {
+    if (W.waves) { W.waves.material.map.offset.set(tn * 0.012, tn * 0.007); }
+    if (W.ducks) for (let i = 0; i < 3; i++) { const [r, w, a0] = W.duckS[i], a = a0 + tn * w, x = POND.x + Math.cos(a) * r, z = POND.z + Math.sin(a) * r;
+      pondE.set(Math.sin(tn * 2 + i) * 0.05, -a + (w > 0 ? 0 : Math.PI), 0); pondQ.setFromEuler(pondE); W.ducks.setMatrixAt(i, pondM.compose(pondP.set(x, 0.05 + Math.sin(tn * 2.3 + i) * 0.012, z), pondQ, pondS.set(1, 1, 1)));
+      if (Math.random() < dt * 1.2) ripple(x - Math.cos(a + Math.sign(w) * 1.57) * 0.25, z - Math.sin(a + Math.sign(w) * 1.57) * 0.25, 0.35); }
+    if (W.ducks) W.ducks.instanceMatrix.needsUpdate = true;
+    if (Math.random() < dt * 0.25) { const a = rand(0, 6.28), r = rand(0.4, 2.6); ripple(POND.x + Math.cos(a) * r, POND.z + Math.sin(a) * r, rand(0.4, 0.8)); } // a fish rises
+    if (W.rip && W.rip.visible) { let any = false;
+      W.ripples.forEach((q, i) => { if (q.t > 1.6) return; q.t += dt; const k = q.t / 1.6; any = true; const s = q.s * (0.15 + k * 0.85);
+        W.rip.setMatrixAt(i, pondM.compose(pondP.set(q.x, 0.04, q.z), pondQ.identity(), pondS.set(s, 1, s))); W.rip.setColorAt(i, pondC.setScalar(Math.max(0, 1 - k) * 0.5)); if (q.t > 1.6) W.rip.setMatrixAt(i, pondM.makeScale(0, 0, 0)); });
+      W.rip.instanceMatrix.needsUpdate = true; W.rip.instanceColor.needsUpdate = true; W.rip.visible = any; }
+    if (W.rod && W.rod.visible) { // butt in the hand, tip out over the water: raised to cast, lowered to the float, a jerk on the catch
+      const pl = C.player(), hand = pl.root.getObjectByName('FistR') || pl.root.getObjectByName('Fist.R'), fw = V(Math.sin(game.p.yaw), 0, Math.cos(game.p.yaw));
+      if (hand) hand.getWorldPosition(W.rod.position); else W.rod.position.copy(game.p.pos).setY(1);
+      const st = fish.st, pitch = st === 'idle' ? 1.0 : st === 'wait' ? 0.42 : st === 'bite' ? 0.3 + Math.sin(tn * 40) * 0.06 : fish.jump > 0 ? 1.15 : 0.6;
+      W.rodPitch = W.rodPitch === undefined ? pitch : W.rodPitch + (pitch - W.rodPitch) * Math.min(1, dt * (st === 'bite' ? 20 : 7));
+      W.rod.quaternion.setFromUnitVectors(UP, fw.multiplyScalar(Math.cos(W.rodPitch)).add(V(0, Math.sin(W.rodPitch), 0)).normalize()); }
+    if (W.line && W.rod && W.rod.visible && W.float.visible) { // the line hangs from the rod tip to the float with a little sag
+      const a = W.rodTip.getWorldPosition(t1), b = W.float.position, pos = W.line.geometry.attributes.position;
+      for (let i = 0; i < 10; i++) { const k = i / 9; pos.setXYZ(i, a.x + (b.x - a.x) * k, a.y + (b.y + 0.05 - a.y) * k - Math.sin(k * Math.PI) * 0.25, a.z + (b.z - a.z) * k); }
+      pos.needsUpdate = true; W.line.visible = true; } else if (W.line) W.line.visible = false;
+  }
   function update(dt) {
     const p = game.p, pl = C.player(), bull = C.bull(), tn = now();
     S.lock -= dt; S.tipsy = Math.max(0, S.tipsy - dt); S.boost -= dt; S.bullReact -= dt; S.sat -= dt;
@@ -905,6 +980,7 @@ export function initStory(C) {
     if (S.mode === 'drum') drumUpdate(tn);
     else if (S.mode === 'aim') archUpdate(dt); else if (S.mode === 'fish') fishUpdate(dt, tn); else if (S.mode === 'echo') echoUpdate(dt);
     if (W.flags) for (const f of W.flags) f.children[1].rotation.y = Math.sin(tn * 2.4 + f.position.x) * 0.35;
+    if (!S.inside) pondUpdate(dt, tn);
     { const td = today(); W.jale.forEach((sp, i) => { sp.visible = !S.inside && save.ch >= 1 && !td.jv[i]; if (sp.visible) sp.scale.setScalar(1 + Math.sin(tn * 3 + i) * 0.15); }); }
     dance.energy = Math.max(0, dance.energy - dt * (S.mode === 'drum' ? 0.42 : 0.7));
     if (dance.energy < 0.2) dance.said = false;
