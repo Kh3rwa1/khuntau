@@ -1,8 +1,8 @@
 {
   "packageId": "com.tumdah.khuntau",
   "host": "khuntau.dulalkisku0.workers.dev",
-  "name": "Khuntau: the Sohrai bull game",
-  "launcherName": "Khuntau",
+  "name": "Sohrai: the Santal festival game",
+  "launcherName": "Sohrai",
   "display": "fullscreen",
   "orientation": "default",
   "themeColor": "#2A140C",

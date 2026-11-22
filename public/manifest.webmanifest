@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Khuntau: the Sohrai bull game",
-  "short_name": "Khuntau",
-  "description": "Snatch pitha from the khunt while the bull charges. A free 3D game about Khuntau, the bull-post day of the Santal Sohrai festival.",
+  "name": "Sohrai: the Santal festival game",
+  "short_name": "Sohrai",
+  "description": "Live a day of Sohrai, the Santal harvest festival: paint the wall, garland the bull, beat the tamak and snatch pitha from the khunt while the bull charges. A free 3D game.",
   "lang": "en",
   "start_url": "/?src=app",
   "scope": "/",

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="description" content="Sohrai bull game. Snatch the pitha from the khunt without getting horned. Play with friends online.">
-<meta property="og:title" content="Khuntau: the Sohrai bull game">
+<meta property="og:title" content="Sohrai: the Santal festival game">
 <meta property="og:image" content="https://khuntau.dulalkisku0.workers.dev/og.jpg">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:url" content="https://khuntau.dulalkisku0.workers.dev/">
@@ -18,7 +18,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}</style>
-<title>Khuntau</title>
+<title>Sohrai</title>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <style>
 /* Layout: one full-screen 3D ring; HUD floats on the corners, touch controls on the bottom edge.
@@ -318,8 +318,8 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 
 <div class="overlay" id="startScreen">
   <div class="card home">
-    <div class="olchiki" lang="sat">ᱠᱷᱩᱱᱴᱟᱣ</div>
-    <h1>Khuntau</h1>
+    <div class="olchiki" lang="sat">ᱥᱚᱦᱨᱟᱭ</div>
+    <h1>Sohrai</h1>
     <p class="tag">Snatch the pitha. Dodge the bull.</p>
     <p class="challenge" id="challenge" hidden></p>
     <div class="bar" id="loadBar"><i></i></div>
@@ -2388,14 +2388,14 @@ async function shareScore() {
   const vb = meta.vil && vboard && vboard.today && vboard.today.me, above = vb && vb.above;
   if (meta.vil) track('share.vil');
   const text = (challenge && pts > challenge.beat ? `I beat ${challenge.from || 'my friend'}'s ${challenge.beat} with ${pts} points` : `I scored ${pts} points`)
-    + (meta.vil ? ` for ${meta.vil.v} (${meta.vil.d}) in Khuntau this Sohrai.` + (above ? ` Help us pass ${above.v}!` : vb && vb.rank === 1 ? ' We are #1 today. Keep us there!' : ' Play for our village!') + ` ${link}`
-      : ` in Khuntau (${rank}) this Sohrai. Can you beat me? ${link}`);
+    + (meta.vil ? ` for ${meta.vil.v} (${meta.vil.d}) in Sohrai, at the Khuntau.` + (above ? ` Help us pass ${above.v}!` : vb && vb.rank === 1 ? ' We are #1 today. Keep us there!' : ' Play for our village!') + ` ${link}`
+      : ` at the Khuntau (${rank}) in Sohrai. Can you beat me? ${link}`);
   const note = $('copyNote');
   try {
     const blob = await scoreCard(pts, rank);
     const file = new File([blob], 'khuntau-score.png', { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: 'Khuntau' }); return; }
-    if (navigator.share) { await navigator.share({ text, title: 'Khuntau' }); return; }
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: 'Sohrai' }); return; }
+    if (navigator.share) { await navigator.share({ text, title: 'Sohrai' }); return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'khuntau-score.png'; a.click();
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
     note.textContent = 'Score card saved. Attach it to your WhatsApp message.';
@@ -2416,7 +2416,7 @@ async function scoreCard(pts, rank) {
     const fade = x.createLinearGradient(0, 480, 0, 790); fade.addColorStop(0, 'rgba(26,12,6,0)'); fade.addColorStop(1, 'rgba(26,12,6,1)'); x.fillStyle = fade; x.fillRect(0, 480, W, 320);
   }
   x.textAlign = 'center'; x.fillStyle = '#ffb347'; x.font = '600 34px "Noto Sans Ol Chiki", sans-serif'; x.fillText('ᱠᱷᱩᱱᱴᱟᱣ', W / 2, 90);
-  x.font = '120px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText('Khuntau', W / 2, 212); x.fillStyle = '#f6eedd'; x.fillText('Khuntau', W / 2, 205);
+  x.font = '120px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText('Sohrai', W / 2, 212); x.fillStyle = '#f6eedd'; x.fillText('Sohrai', W / 2, 205);
   x.font = '240px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText(String(pts), W / 2, 1000); x.fillStyle = '#ffb347'; x.fillText(String(pts), W / 2, 990);
   x.font = '800 44px "Baloo 2", sans-serif'; x.fillStyle = '#f6eedd'; x.fillText('points · ' + rank, W / 2, 1070);
   x.font = '800 54px "Baloo 2", sans-serif'; x.fillStyle = '#ffb347'; x.fillText('Can you beat me?', W / 2, 1180);
@@ -3234,8 +3234,8 @@ $('hostStartBtn').addEventListener('click', () => netSend({ t: 'start' }));
 $('leaveBtn').addEventListener('click', () => leaveOnline(false));
 $('outLobbyBtn').addEventListener('click', () => { gallop(false); showLobby(); toast(net.phase === 'play' ? 'The round is finishing. The next one starts from here.' : 'Back in the lobby', 2200); });
 $('shareBtn').addEventListener('click', () => { track('share.room');
-  const text = `Come play Khuntau with me this Sohrai! Snatch the pitha before the bull gets you. Room ${net.code}: ${roomLink()}`;
-  if (navigator.share) { navigator.share({ title: 'Khuntau', text }).catch(() => {}); return; }
+  const text = `Come play Sohrai with me! Snatch the pitha before the bull gets you. Room ${net.code}: ${roomLink()}`;
+  if (navigator.share) { navigator.share({ title: 'Sohrai', text }).catch(() => {}); return; }
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 });
 $('copyLinkBtn').addEventListener('click', () => {
