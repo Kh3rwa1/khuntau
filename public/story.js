@@ -17,7 +17,32 @@ export function initStory(C) {
   // the daily round: four village activities, each worth XP once a day, so there is a reason to walk in again tomorrow
   function today() { const d = new Date(), k = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); if (save.day !== k || !save.td) { save.day = k; save.td = { drum: 0, arch: 0, fish: 0, jale: 0, jv: [0, 0, 0] }; persist(); } return save.td; }
   const doneToday = () => { const t = today(); return t.drum + t.arch + t.fish + t.jale; };
-  function daily(k, note) { const t = today(); if (t[k]) return; t[k] = 1; persist(); if (C.track) C.track('daily.' + k); C.addXp(15, note); C.markPlayedToday(); S.objKey = ''; setTimeout(() => pop('+15 XP', note), 1700); }
+  function daily(k, note) { const t = today(); if (t[k]) return; t[k] = 1; persist(); if (C.track) C.track('daily.' + k); C.addXp(15, note); C.markPlayedToday(); S.objKey = ''; setTimeout(() => pop('+15 XP', note), 1700); festCheck(); }
+
+  // ---------- the five days of Sohrai ----------
+  // The festival is lived over five real days: each day has its own part of the story, and the next day opens on the next
+  // calendar day (a reason to come back tomorrow). The khunt, the drums and the other activities stay open for free play
+  // every day. Day names and what belongs to each day are in FEST: DULOR TO CONFIRM (names and order of the customs).
+  //   1 Um: wake, handi, paint the wall     2 Dakay: the cattle (choose, oil, garland)     3 Khuntau: tamak, then the bull
+  //   4 Jale: the Sarpa enej at three houses     5 Sakrat: fish at the pond and shoot at the banana trunk
+  // save.fest = { day, on, fin, seen }: `on` is the date key on which this day's part was finished (empty while it is open).
+  // Off under ?debug (the older tests play the whole story in one sitting); ?debug&fest turns it on.
+  const FEST = [['Um', 'Wake, drink the handi and paint the wall'], ['Dakay', 'Honour the cattle: choose, oil the horns, garland'], ['Khuntau', 'Beat the tamak, then face the bull at the khunt'],
+    ['Jale', 'Join the Sarpa enej at three houses'], ['Sakrat', 'Fish at the pond and shoot at the target']];
+  const GATED = !/[?&]debug\b/.test(location.search) || /[?&]fest\b/.test(location.search);
+  const dateKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  if (!save.fest) save.fest = { day: save.ch >= 5 ? 4 : save.ch >= 3 ? 3 : save.ch >= 2 ? 2 : 1, on: '', fin: 0, seen: 0 }; /* players from before the festival keep what they did */
+  const F = save.fest;
+  function festDay() { if (GATED && !F.fin && F.on && F.on !== dateKey() && F.day < 5) { F.day++; F.on = ''; persist(); S.objKey = ''; } return F.day; }
+  const festWaiting = () => GATED && !F.fin && !!F.on && F.on === dateKey();   /* today's part is done; the next day opens tomorrow */
+  const allowed = (day) => !GATED || F.fin || festDay() > day || (festDay() === day && !festWaiting());
+  function banner(a, b) { const el = $('stageBanner'); if (!el) return; el.firstElementChild.textContent = a; el.lastElementChild.textContent = b; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+  function festCheck() { if (!GATED || F.fin || F.on) return; const d = festDay(), td = today();
+    const ok = d === 1 ? save.ch >= 2 : d === 2 ? save.ch >= 3 : d === 3 ? save.ch >= 5 : d === 4 ? !!td.jale : !!(td.fish && td.arch); if (!ok) return;
+    F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday();
+    setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!')); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
+      else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow')); } }, d === 3 ? 6500 : 2600); }
+  function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist(); setTimeout(() => { if (S.on && !S.dlg) banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1])); else F.seen = 0; }, 1800); }
 
   /* ---------- words (one table, ready to translate) ---------- */
   const T_EN = {
@@ -69,6 +94,14 @@ export function initStory(C) {
     'Stage 2: The Feint': 'चरण 2: झाँसा', 'He fakes now. Wait for the real charge!': 'अब वह झाँसा देता है। असली हमले का इंतज़ार करो!', 'Stage 3: Twice': 'चरण 3: दो बार', 'He can charge twice in a row!': 'वह लगातार दो बार दौड़ सकता है!',
     'Stage 4: The Hunter': 'चरण 4: शिकारी', 'His charge bends toward you. Roll late!': 'उसकी दौड़ तुम्हारी ओर मुड़ती है। देर से लुढ़को!', 'Stage 5: Sohrai Legend': 'चरण 5: सोहराय वीर', 'Everything he has. Hold on!': 'उसकी पूरी ताक़त। डटे रहो!',
     'A feint! Wait for the real one': 'झाँसा! असली का इंतज़ार करो', 'He is coming back!': 'वह लौट रहा है!', 'stage': 'चरण',
+    'Day # of Sohrai: Um': 'सोहराय का दिन #: उम', 'Day # of Sohrai: Dakay': 'सोहराय का दिन #: दाकाय', 'Day # of Sohrai: Khuntau': 'सोहराय का दिन #: खुंटाउ', 'Day # of Sohrai: Jale': 'सोहराय का दिन #: जाले', 'Day # of Sohrai: Sakrat': 'सोहराय का दिन #: सकरात',
+    'Wake, drink the handi and paint the wall': 'उठो, हँड़िया पियो और दीवार रँगो', 'Honour the cattle: choose, oil the horns, garland': 'मवेशियों का मान: चुनो, सींगों पर तेल, माला', 'Beat the tamak, then face the bull at the khunt': 'तामाक बजाओ, फिर खूँटे पर बैल का सामना करो',
+    'Join the Sarpa enej at three houses': 'तीन घरों पर सरपा एनेज में शामिल हो', 'Fish at the pond and shoot at the target': 'तालाब में मछली पकड़ो और निशाना लगाओ',
+    'Day # done: Um': 'दिन # पूरा: उम', 'Day # done: Dakay': 'दिन # पूरा: दाकाय', 'Day # done: Khuntau': 'दिन # पूरा: खुंटाउ', 'Day # done: Jale': 'दिन # पूरा: जाले',
+    'Day # (Dakay) opens tomorrow': 'दिन # (दाकाय) कल खुलेगा', 'Day # (Khuntau) opens tomorrow': 'दिन # (खुंटाउ) कल खुलेगा', 'Day # (Jale) opens tomorrow': 'दिन # (जाले) कल खुलेगा', 'Day # (Sakrat) opens tomorrow': 'दिन # (सकरात) कल खुलेगा',
+    'Day # done. Day # (Dakay) opens tomorrow': 'दिन # पूरा। दिन # (दाकाय) कल खुलेगा', 'Day # done. Day # (Khuntau) opens tomorrow': 'दिन # पूरा। दिन # (खुंटाउ) कल खुलेगा', 'Day # done. Day # (Jale) opens tomorrow': 'दिन # पूरा। दिन # (जाले) कल खुलेगा', 'Day # done. Day # (Sakrat) opens tomorrow': 'दिन # पूरा। दिन # (सकरात) कल खुलेगा',
+    'Day #, Jale: Sarpa enej on the village road (#/#)': 'दिन #, जाले: गाँव की सड़क पर सरपा एनेज (#/#)', 'Day #, Sakrat: catch fish at the pond': 'दिन #, सकरात: तालाब में मछली पकड़ो', 'Day #, Sakrat: archery contest': 'दिन #, सकरात: तीरंदाज़ी',
+    'Sohrai complete!': 'सोहराय पूरा!', 'You lived all five days. Johar!': 'तुमने पाँचों दिन जिए। जोहार!', 'Sohrai complete': 'सोहराय पूरा',
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
     '×# combo · Hoy!': '×# कॉम्बो · होय!', '×# combo · Johar!': '×# कॉम्बो · जोहार!', '×# combo · Got it!': '×# कॉम्बो · मिल गया!', '×# combo · Snatched!': '×# कॉम्बो · झपट लिया!',
     'Golden pitha! +#': 'सुनहरा पीठा! +#', 'Golden pitha!': 'सुनहरा पीठा!', 'Golden pitha! Worth # extra points.': 'सुनहरा पीठा! # अंक ज़्यादा।', 'Combo lost': 'कॉम्बो टूट गया',
@@ -533,7 +566,7 @@ export function initStory(C) {
   }
   $('dlg').addEventListener('pointerdown', (e) => { e.preventDefault(); nextLine(); });
 
-  function setChapter(n) { if (n > save.ch && C.track) C.track('ch.' + n); save.ch = n; persist(); S.objKey = ''; applyPaint(false); }
+  function setChapter(n) { if (n > save.ch && C.track) C.track('ch.' + n); save.ch = n; persist(); S.objKey = ''; applyPaint(false); festCheck(); }
 
   /* ---------- things you can do ---------- */
   function interactions() {
@@ -550,18 +583,18 @@ export function initStory(C) {
       add(DOOR_OUT, 1.5, 'ENTER', 'Go into the house', enterHouse);
       if (save.ch >= 1) W.spots.forEach((s, i) => { if (!save.painted[i]) add(s.stand, 1.3, 'PAINT', 'Paint the wall', () => paint(i)); });
       add(majhi.wrap.position, 1.5, 'TALK', 'Talk to the Majhi', talkMajhi);
-      if (!atRing() && save.ch >= 2) {
+      if (!atRing() && save.ch >= 2 && allowed(2)) {
         if (!save.chosen) add(W.gStand, 2.4, 'CHOOSE', 'Choose the animal', openPicker);
         else if (!save.oiled) add(W.gStand, 2.4, 'OIL', 'Oil the horns', oilHorns);
         else if (!save.garland) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', putGarland);
       }
-      if (save.ch >= 3) { const chart = save.ch === 3 || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => drumStart(!chart)); }
+      if (save.ch >= 3) { const chart = (save.ch === 3 && allowed(3)) || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => drumStart(!chart)); }
       if (save.ch >= 1) {
         add(ARCH, 1.7, 'SHOOT', 'Shoot at the target', archStart);
         add(FSTAND, 1.7, 'FISH', 'Fish in the pond', fishStart);
         JALE.forEach((j, i) => { if (!today().jv[i]) add(j.stand, 1.5, 'SING', 'Join the Sarpa enej', () => echoStart(i)); });
       }
-      { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: startRing } // the story's finale: 3 pitha
+      { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 && allowed(3) ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: startRing } // the story's finale: 3 pitha
         : { d: 0.5, label: 'RING', text: 'Play a round at the khunt', go: villageRound }); } // any other time: a normal scored round
     }
     list.sort((a, b) => a.d - b.d); return list[0] || null;
@@ -915,7 +948,7 @@ export function initStory(C) {
     Object.assign(game.p, { state: 'free', t: 0, invuln: 0 }); game.p.vel.set(0, 0, 0);
     document.documentElement.classList.add('story-on');
     for (const id of ['startScreen', 'overScreen', 'hudScore', 'pads', 'pick', 'dlg']) $(id).hidden = true;
-    $('hudStory').hidden = false; $('bestChip').hidden = true; $('langBtn').hidden = false; $('tapzone').hidden = true; applyLang(); today();
+    $('hudStory').hidden = false; $('bestChip').hidden = true; $('langBtn').hidden = false; $('tapzone').hidden = true; applyLang(); today(); festCheck(); festHello();
     const pl = C.player(); pl.wrap.visible = true; if (pl.hide) pl.hide.visible = false; pl.play('Idle');
     C.pitha.visible = save.ch >= 4; C.handi.visible = false;
     castCrowd(); placeAnimal(); applyPaint(true);
@@ -1131,7 +1164,11 @@ export function initStory(C) {
     else if (ch === 3) target = W.drumStand;
     else if (ch === 4) target = t3.set(p.x, 0, p.z).setLength(10).clone();
     let text = T.obj[ch] || '';
-    if (ch >= 5) { const td = today(), jn = td.jv.filter(Boolean).length;
+    if (festWaiting()) { target = null; text = tr('Day ' + F.day + ' done. Day ' + (F.day + 1) + ' (' + FEST[F.day][0] + ') opens tomorrow'); }
+    else if (GATED && !F.fin && ch >= 5) { const td = today(), jn = td.jv.filter(Boolean).length, d = festDay();
+      if (d <= 4) { if (jn < 3) { target = JALE[td.jv.indexOf(0)].stand; text = tr('Day 4, Jale: Sarpa enej on the village road (' + jn + '/3)'); } else text = ''; }
+      else if (!td.fish) { target = FSTAND; text = tr('Day 5, Sakrat: catch fish at the pond'); } else if (!td.arch) { target = ARCH; text = tr('Day 5, Sakrat: archery contest'); } else text = ''; }
+    else if (ch >= 5) { const td = today(), jn = td.jv.filter(Boolean).length;
       if (!td.arch) { target = ARCH; text = tr('Today: archery contest'); } else if (!td.fish) { target = FSTAND; text = tr('Today: catch fish at the pond'); }
       else if (!td.jale && jn < 3) { target = JALE[td.jv.indexOf(0)].stand; text = tr('Today: Sarpa enej on the village road (' + jn + '/3)'); }
       else if (!td.drum) { target = W.drumStand; text = tr('Today: beat the tamak'); } else text = tr('All done today. Come back tomorrow'); }
@@ -1250,7 +1287,7 @@ export function initStory(C) {
     start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing, back, tr,
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
-    label: () => save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
-    debug: { calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
+    debug: { fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }
