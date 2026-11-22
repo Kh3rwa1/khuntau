@@ -1155,11 +1155,20 @@ const grassWind = { value: 0 };
 }
 // distant hills, softened by the fog
 {
-  const hm = shade(Mat({ color: 0x5d7346, roughness: 1 }), { ao: 0 }); /* smooth: the facets read as low poly even through the haze; no contact shading (their feet are under the ground) */
+  // sal-forest hills: an uneven ridge line (the perfect domes read as placeholder shapes) and a mottled forest cover
+  const hillTex = canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#5f7446'; c.fillRect(0, 0, w, h);
+    blotches(c, w, h, 150, ['#3f5a2f', '#4c6a37', '#35502a', '#6f8450'], 6, 20, 0.75); blotches(c, w, h, 26, ['#8b8f5c', '#9a9468'], 10, 28, 0.4); /* tree crowns, then a few bare slopes */
+    speckle(c, w, h, 2500, ['#2f4826', '#5a7440', '#44603a'], 3); }, 1);
+  hillTex.repeat.set(5, 2);
+  const hm = shade(Mat({ map: hillTex, roughness: 1 }), { ao: 0 }); /* smooth shading; no contact shading (their feet are under the ground) */
   const hills = [];
   for (let i = 0; i < 14; i++) {
     const a = i / 14 * Math.PI * 2 + rand(-0.1, 0.1), r = rand(105, 135);
-    const h = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), hm);
+    const g = new THREE.SphereGeometry(1, 30, 9, 0, Math.PI * 2, 0, Math.PI / 2), P = g.attributes.position, p1 = rand(0, 6.28), p2 = rand(0, 6.28), p3 = rand(0, 6.28);
+    for (let k = 0; k < P.count; k++) { const x = P.getX(k), y = P.getY(k), z = P.getZ(k), th = Math.atan2(z, x), up = Math.max(0, y);
+      const n = 1 + (Math.sin(th * 2 + p1) * 0.16 + Math.sin(th * 5 + p2) * 0.08 + Math.sin(th * 9 + p3 + y * 6) * 0.035) * (0.4 + 0.6 * (1 - up)); P.setXYZ(k, x * n, y * (1 + Math.sin(th * 3 + p2) * 0.18 * up), z * n); }
+    g.computeVertexNormals();
+    const h = new THREE.Mesh(g, hm);
     h.scale.set(rand(22, 40), rand(7, 14), rand(14, 24));
     h.position.set(Math.cos(a) * r, -0.5, Math.sin(a) * r); h.rotation.y = -a + rand(-0.3, 0.3); scene.add(h); hills.push(h);
   }
