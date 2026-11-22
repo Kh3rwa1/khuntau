@@ -1025,9 +1025,11 @@ function initAudio() {
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
   const ctx = new AC(); audio.ctx = ctx;
   audio.master = ctx.createGain(); audio.master.gain.value = audio.muted ? 0 : 0.8;
-  const comp = ctx.createDynamicsCompressor(); audio.master.connect(comp); comp.connect(ctx.destination);
+  const comp = ctx.createDynamicsCompressor(); audio.lp = ctx.createBiquadFilter(); audio.lp.type = 'lowpass'; audio.lp.frequency.value = 18000; // slow motion muffles everything
+  audio.master.connect(audio.lp); audio.lp.connect(comp); comp.connect(ctx.destination);
   audio.sfxBus = ctx.createGain(); audio.sfxBus.connect(audio.master);
   audio.drumBus = ctx.createGain(); audio.drumBus.connect(audio.master);
+  setTimeout(startWind, 0);
   for (const el of [music.intro, music.game]) { // music through the graph so volume works on iPhone too
     const g = ctx.createGain(); g.gain.value = 0; ctx.createMediaElementSource(el).connect(g); g.connect(audio.master); el._g = g;
   }
@@ -1133,6 +1135,49 @@ const sfx = {
     for (let i = 0; i < 6; i++) noise(t + 0.05 + i * 0.09, 0.4, 0.22, 'bandpass', rand(700, 1500), 0.6); // crowd hoy
   },
 };
+/* micro sounds, all synthesized (no downloads, nothing to draw): steps, a snore, gulps and munching, a brush, a door,
+   animals, the bow, water, fire, a bell, wind, and a whoomp when time slows. Each is short, quiet and rate-limited. */
+const SB = () => audio.sfxBus, AT = () => (audio.ctx && !audio.muted ? audio.ctx.currentTime : -1), lastSfx = {};
+const gate = (k, gap) => { const n = performance.now(); if (n - (lastSfx[k] || 0) < gap * 1000) return false; lastSfx[k] = n; return true; };
+function voiced(t, type, f0, f1, dur, vol, ff, q = 1, vib = 0, vibHz = 6, attack = 0.02) { // an oscillator through a band-pass, with optional vibrato
+  const c = audio.ctx, o = c.createOscillator(), bp = c.createBiquadFilter(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  if (vib) { const l = c.createOscillator(), d = c.createGain(); l.frequency.value = vibHz; d.gain.value = vib; l.connect(d); d.connect(o.frequency); l.start(t); l.stop(t + dur + 0.05); }
+  bp.type = 'bandpass'; bp.frequency.value = ff; bp.Q.value = q; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(bp); bp.connect(g); g.connect(SB()); o.start(t); o.stop(t + dur + 0.05); }
+function sweep(t, dur, vol, f0, f1, q = 1, attack = 0.05) { // filtered noise whose colour slides
+  const c = audio.ctx, sn = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); sn.buffer = audio.noise; f.type = 'bandpass'; f.Q.value = q;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  sn.connect(f); f.connect(g); g.connect(SB()); sn.start(t, Math.random() * 0.5); sn.stop(t + dur + 0.05); }
+function startWind() { if (!audio.ctx || audio.wind) return; const c = audio.ctx, sn = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  sn.buffer = audio.noise; sn.loop = true; f.type = 'lowpass'; f.frequency.value = 420; g.gain.value = 0; sn.connect(f); f.connect(g); g.connect(audio.sfxBus); sn.start(); audio.wind = g; audio.windF = f; }
+Object.assign(sfx, {
+  step(v = 1, soft = false) { const t = AT(); if (t < 0) return; noise(t, 0.07, 0.1 * v, 'lowpass', rand(240, 420) * (soft ? 0.75 : 1), 0.7, SB()); tone(t, 'sine', rand(72, 96), 45, 0.07, 0.06 * v, SB()); },
+  snore(v = 1) { const t = AT(); if (t < 0) return; // a rattling breath in, a soft whistle out
+    voiced(t, 'sawtooth', 50, 58, 1.15, 0.1 * v, 240, 0.8, 4, 23, 0.6); sweep(t, 1.1, 0.05 * v, 180, 260, 1, 0.6);
+    sweep(t + 1.3, 0.95, 0.045 * v, 700, 360, 1.2, 0.15); tone(t + 1.35, 'sine', 820, 620, 0.7, 0.02 * v, SB()); },
+  gulp(n = 3) { const t = AT(); if (t < 0) return; for (let i = 0; i < n; i++) { tone(t + i * 0.3, 'sine', 270, 140, 0.12, 0.22, SB()); noise(t + i * 0.3, 0.05, 0.08, 'lowpass', 420, 1, SB()); } },
+  munch(n = 4) { const t = AT(); if (t < 0) return; for (let i = 0; i < n; i++) { noise(t + i * 0.18, 0.05, 0.16, 'bandpass', rand(1500, 2200), 1.5, SB()); noise(t + i * 0.18 + 0.02, 0.04, 0.08, 'lowpass', 600, 1, SB()); } },
+  brush() { const t = AT(); if (t < 0) return; sweep(t, 0.32, 0.1, 2600, 1100, 0.9); sweep(t + 0.4, 0.3, 0.09, 2400, 1000, 0.9); },
+  door() { const t = AT(); if (t < 0) return; voiced(t, 'sawtooth', 190, 360, 0.48, 0.06, 900, 5, 30, 22); tone(t + 0.45, 'sine', 95, 45, 0.16, 0.22, SB()); noise(t + 0.45, 0.06, 0.1, 'lowpass', 500, 1, SB()); },
+  flap() { const t = AT(); if (t < 0) return; for (let i = 0; i < 3; i++) noise(t + i * 0.09, 0.08, 0.14, 'bandpass', rand(700, 1000), 0.9, SB()); },
+  roll() { const t = AT(); if (t < 0) return; tone(t, 'sine', 130, 45, 0.18, 0.28, SB()); sweep(t, 0.36, 0.14, 1500, 600, 0.8, 0.03); },
+  cluck(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 2; i++) voiced(t + i * 0.12, 'triangle', 540, 380, 0.07, 0.09 * v, 900, 2, 0, 6, 0.008); },
+  flutter(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 7; i++) noise(t + i * 0.045, 0.03, 0.12 * v, 'bandpass', 1400, 1, SB()); voiced(t + 0.05, 'sawtooth', 1000, 700, 0.18, 0.07 * v, 1500, 2); },
+  bleat(v = 1) { const t = AT(); if (t < 0) return; voiced(t, 'sawtooth', 390, 360, 0.55, 0.08 * v, 1150, 2.2, 28, 8, 0.03); voiced(t, 'sawtooth', 390, 360, 0.55, 0.035 * v, 2500, 3, 28, 8, 0.03); },
+  quack(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 2; i++) voiced(t + i * 0.16, 'square', 260, 210, 0.11, 0.06 * v, 950, 3, 0, 6, 0.01); },
+  huff(v = 1) { const t = AT(); if (t < 0) return; noise(t, 0.14, 0.1 * v, 'lowpass', 480, 1, SB()); noise(t + 0.2, 0.12, 0.08 * v, 'lowpass', 440, 1, SB()); },
+  chirp(v = 1) { const t = AT(); if (t < 0) return; const n = 2 + (Math.random() * 3 | 0), f = rand(2600, 3400); for (let i = 0; i < n; i++) tone(t + i * 0.085, 'sine', f, f * 1.4, 0.055, 0.045 * v, SB()); },
+  creak() { const t = AT(); if (t < 0) return; voiced(t, 'sawtooth', 70, 115, 0.6, 0.055, 620, 4, 6, 28, 0.15); },
+  twang() { const t = AT(); if (t < 0) return; tone(t, 'triangle', 220, 168, 0.35, 0.24, SB()); tone(t, 'sine', 440, 336, 0.22, 0.09, SB()); noise(t, 0.03, 0.08, 'highpass', 3000, 1, SB()); },
+  thud(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 130, 45, 0.18, 0.3 * v, SB()); noise(t, 0.12, 0.22 * v, 'lowpass', 500, 1, SB()); },
+  plop() { const t = AT(); if (t < 0) return; tone(t, 'sine', 1000, 260, 0.09, 0.2, SB()); noise(t, 0.06, 0.1, 'bandpass', 1300, 1, SB()); },
+  splash() { const t = AT(); if (t < 0) return; noise(t, 0.45, 0.32, 'highpass', 900, 0.7, SB()); noise(t + 0.03, 0.3, 0.14, 'bandpass', 2600, 1, SB()); tone(t, 'sine', 700, 200, 0.12, 0.15, SB()); },
+  clink(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 2350, 2300, 0.5, 0.07 * v, SB()); tone(t, 'sine', 3720, 3680, 0.32, 0.04 * v, SB()); },
+  crackle(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 5; i++) noise(t + rand(0, 0.4), rand(0.008, 0.02), 0.07 * v, 'highpass', 3500, 1, SB()); },
+  slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
+  near(pos, R) { const p = game.p.pos, d = Math.hypot(pos.x - p.x, pos.z - p.z); return d >= R ? 0 : 1 - d / R; }, // loudness by distance from you
+  gate,
+});
 const synthSfx = { ...sfx };
 const voiceOnNow = () => { try { return voice.on; } catch (e) { return false; } };
 function crowdCheer(vol = 0.9, rate = 1, when = 0, quiet = 'whistle') {
@@ -1603,7 +1648,7 @@ function onCrowdLoaded() {
   }
   crowdBudget();
   setTimeout(registerSW, 1500);
-  import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
+  import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
     story = m.initStory({ props: villageProps, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
@@ -2280,12 +2325,12 @@ function updatePlayer(dt) {
 
   if (p.state === 'free' && game.mode === 'play') {
     if (input.roll && p.rollCd <= 0) {
-      p.state = 'roll'; p.t = 0; p.rollCd = 0.35;
+      p.state = 'roll'; p.t = 0; p.rollCd = 0.35; sfx.roll();
       p.rollDir.copy(mag > 0.1 ? move.normalize() : fwdOf(p.yaw, new THREE.Vector3()));
       p.yaw = Math.atan2(p.rollDir.x, p.rollDir.z);
       player.play('Roll', { once: true, fade: 0.06, ts: 1.5 }); sfx.whoosh();
     } else if (input.tease && p.teaseCd <= 0) {
-      p.state = 'tease'; p.t = 0; p.teaseCd = 1.3; p.teaseT = game.t;
+      p.state = 'tease'; p.t = 0; p.teaseCd = 1.3; p.teaseT = game.t; sfx.flap();
       if (game.mode === 'play') { const b = game.b; p.yaw = Math.atan2(b.pos.x - p.pos.x, b.pos.z - p.pos.z); }
       player.play('SwordSlash', { once: true, fade: 0.08, ts: 1.5 }); player.flap = 0.9;
       sfx.tease(); if (game.online) netSend({ t: 'tease' });
@@ -2298,7 +2343,7 @@ function updatePlayer(dt) {
       hint('Get inside the dotted ring at the post first.', 1500);
     } else {
       const speed = 5.4 * mag * ((p.boost || 0) > 0 ? 1.3 : 1);
-      p.vel.copy(move).setLength(speed);
+      p.vel.copy(move).setLength(speed); p.stepD = (p.stepD || 0) + speed * dt; if (p.stepD > 1.15) { p.stepD = 0; sfx.step(0.6); }
       if (mag > 0.08) { p.yaw = turnTo(p.yaw, Math.atan2(move.x, move.z), 12, dt); player.play(mag > 0.55 ? 'Run' : 'Walk', { ts: mag > 0.55 ? 1 : 1.2 }); }
       else { p.vel.set(0, 0, 0); player.play('Idle'); }
       p.pos.addScaledVector(p.vel, dt);
@@ -2510,6 +2555,15 @@ function ringShot(shot) { if (reduceMotion || game.online || game.mode === 'stor
 function ringShotEnd() { cineR.shot = null; ringBars.forEach(b => b.style.height = '0'); }
 document.addEventListener('pointerdown', () => { if (cineR.shot && cineR.shot.skip && performance.now() / 1000 - cineR.t0 > 0.3) ringShotEnd(); }, true);
 const ringFov = () => camera.aspect < 1 ? 62 : 50;
+// sound that follows the moment: slow motion muffles everything (and starts with a whoomp), a soft wind bed (quieter
+// indoors and in the ring), the garland bell clinking as he charges
+function audioFrame() {
+  if (!audio.ctx) return; const c = audio.ctx, slow = game.slow > 0 && !game.online;
+  if (audio.lp) audio.lp.frequency.setTargetAtTime(slow ? 650 : 18000, c.currentTime, slow ? 0.05 : 0.25);
+  if (slow && !audio.wasSlow && gate('slowmo', 1)) sfx.slowmo(); audio.wasSlow = slow;
+  if (audio.wind) { const inside = game.mode === 'story' && story && story.debug && story.debug.S.inside; audio.wind.gain.setTargetAtTime(game.mode === 'story' ? (inside ? 0.008 : 0.045) : 0.018, c.currentTime, 0.6); audio.windF.frequency.setTargetAtTime(380 + Math.sin(game.t * 0.3) * 120, c.currentTime, 0.6); }
+  if (garland.visible && game.b.state === 'charge' && game.mode !== 'story' && gate('clink', 0.26)) sfx.clink(0.8);
+}
 function updateCamera(dt) {
   const portrait = camera.aspect < 1;
   if (game.mode === 'story' && story) { if (cineR.shot) ringShotEnd(); story.cam(dt, portrait); return; }
@@ -3003,6 +3057,7 @@ async function onRtc(from, d) {
 }
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
+if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
 if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
@@ -3115,7 +3170,7 @@ function frame() {
     audio.intensity = lerp(audio.intensity, want, 1 - Math.pow(0.05, dt));
     gallop(!inStory && game.b.state === 'charge' && (game.mode === 'play' || game.online));
   }
-  updateParticles(dt);
+  updateParticles(dt); audioFrame();
   updateCamera(dt); updateFlames(dt);
   renderer.render(scene, camera);
   adaptQuality(clock.elapsedTime); voiceMix(dt);

@@ -174,7 +174,8 @@ export function initLife(C) {
     DOG_GAPS.forEach(([gi, r, ry], i) => { const a = 0.35 + (2 * Math.PI / 9) * gi; dogPos.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, ry, lift: 0 }); if (C.props) C.props.push({ x: dogPos[i].x, z: dogPos[i].z, r: 0.5, top: 0.5 }); });
     return m; })();
   function dogsUpdate(dt) { const p = game.p.pos;
-    dogPos.forEach((d, i) => { const near = Math.hypot(p.x - d.x, p.z - d.z) < 2.6; d.lift += ((near ? 1 : 0) - d.lift) * Math.min(1, dt * 3);
+    dogPos.forEach((d, i) => { const near = Math.hypot(p.x - d.x, p.z - d.z) < 2.6; if (near && !d.near && C.sfx) C.sfx.huff(0.8); d.near = near; d.lift += ((near ? 1 : 0) - d.lift) * Math.min(1, dt * 3);
+      if (C.sfx) { const v = C.sfx.near(d, 3.5); if (v > 0 && !near && (d.sn = (d.sn ?? rand(0, 3)) - dt) < 0) { d.sn = 3.4; C.sfx.snore(v * 0.45); } } /* dogs snore too */
       const br = 1 + Math.sin(t * 1.6 + i * 2) * 0.035; E.set(0, d.ry, 0); Q.setFromEuler(E); M.compose(P3.set(d.x, 0, d.z), Q, S3.set(1.2, (br + d.lift * 0.35) * 1.2, 1.2)); dogs.setMatrixAt(i, M); });
     dogs.instanceMatrix.needsUpdate = true; }
   function update(dt) {
@@ -184,6 +185,7 @@ export function initLife(C) {
     const th = threats();
     flock.forEach((c, i) => {
       let scare = null; for (const q of th) { const d = Math.hypot(c.p.x - q.x, c.p.z - q.z); if (d < 2.2) scare = q; }
+      if (scare && c.st !== 'run' && C.sfx && C.sfx.gate('flutter', 0.5)) C.sfx.flutter(Math.max(0.3, C.sfx.near(c.p, 9))); /* wings and a squawk */
       if (scare) { c.st = 'run'; const a = Math.atan2(c.p.x - scare.x, c.p.z - scare.z) + rand(-0.5, 0.5); c.t = near(V(c.p.x + Math.sin(a) * 3, 0, c.p.z + Math.cos(a) * 3), 0.6, 1.0); c.w = 0.8; }
       if (c.st === 'run') { if (step(c, 3.6, dt) || (c.w -= dt) < 0) { c.st = 'peck'; c.w = rand(0.6, 2.5); } }
       else if (c.st === 'walk') { if (step(c, 0.7, dt)) { c.st = 'peck'; c.w = rand(0.8, 3); } }
@@ -192,11 +194,13 @@ export function initLife(C) {
       E.set(peck, c.yaw, 0); Q.setFromEuler(E); M.compose(P3.set(c.p.x, hop, c.p.z), Q, S3.set(1.3, 1.3, 1.3)); chicks.setMatrixAt(i, M);
     });
     chicks.instanceMatrix.needsUpdate = true;
+    if (C.sfx && Math.random() < dt * 0.5) { const c = flock[(Math.random() * flock.length) | 0], v = c ? C.sfx.near(c.p, 8) : 0; if (v > 0.05) C.sfx.cluck(v); } /* clucking when you are near */
     // goats
     herdG.forEach((g, i) => { if ((g.w -= dt) < 0) { if (step(g, 0.35, dt)) { g.w = rand(3, 9); g.t = near(g.p, 4, 1.4); } }
       const head = g.w > 0 ? Math.max(0, Math.sin(t * 1.3 + g.graze)) * 0.35 : 0;
       E.set(head * 0.6, g.yaw, 0); Q.setFromEuler(E); M.compose(P3.set(g.p.x, 0, g.p.z), Q, S3.set(1, 1, 1)); goats.setMatrixAt(i, M); });
     goats.instanceMatrix.needsUpdate = true;
+    if (C.sfx && Math.random() < dt * 0.08) { const g = herdG[(Math.random() * herdG.length) | 0], v = g ? C.sfx.near(g.p, 10) : 0; if (v > 0.05) C.sfx.bleat(v); } /* now and then a goat bleats */
     // birds
     sky.forEach((b, i) => { b.a += b.s * dt; const x = b.cx + Math.cos(b.a) * b.r, z = b.cz + Math.sin(b.a) * b.r, flap = 0.35 + 0.65 * Math.abs(Math.sin(t * 7 + b.f));
       E.set(0, Math.atan2(-Math.sin(b.a) * Math.sign(b.s), Math.cos(b.a) * Math.sign(b.s)), Math.sin(t * 0.7 + b.f) * 0.2); Q.setFromEuler(E); M.compose(P3.set(x, b.h + Math.sin(t + b.f) * 0.6, z), Q, S3.set(1, flap, 1)); birds.setMatrixAt(i, M); });

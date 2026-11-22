@@ -559,10 +559,10 @@ export function initStory(C) {
   }
 
   function enterHouse() {
-    fade(() => { S.inside = true; W.room.visible = true; game.p.pos.copy(W.inside.spawn); game.p.yaw = -Math.PI / 2; snapCam(); });
+    C.sfx.door(); fade(() => { S.inside = true; W.room.visible = true; game.p.pos.copy(W.inside.spawn); game.p.yaw = -Math.PI / 2; snapCam(); });
   }
   function leaveHouse() {
-    fade(() => { S.inside = false; W.room.visible = false; game.p.pos.copy(STEP_OUT); game.p.yaw = H.rot; S.camYaw = H.rot; snapCam(); });
+    C.sfx.door(); fade(() => { S.inside = false; W.room.visible = false; game.p.pos.copy(STEP_OUT); game.p.yaw = H.rot; S.camYaw = H.rot; snapCam(); });
   }
   function gulp() { if (!C.audio.ctx) return; const t = C.audio.ctx.currentTime; [0, 0.16, 0.32, 0.5].forEach((d, i) => C.tone(t + d, 'sine', 300 - i * 30, 150 - i * 15, 0.13, 0.4, C.audio.sfxBus)); C.play('bells', { vol: 0.4, rate: 1.4, when: 0.7 }); }
   function drinkHandi() {
@@ -577,7 +577,7 @@ export function initStory(C) {
   function eatPitha() {
     const left = W.cakes.filter(c => c.visible); if (!left.length) { hint('The plate is empty. Gogo will make more tomorrow.', 2000); return; }
     C.player().play('PickUp', { once: true, fade: 0.1, ts: 1.3 }); S.lock = 0.9;
-    setTimeout(() => { left[left.length - 1].visible = false; C.play('bells', { vol: 0.5, rate: 1.2 }); pop('Pitha!', 'Sweet rice cake'); C.buzz(20); }, 450);
+    setTimeout(() => { left[left.length - 1].visible = false; C.sfx.munch(); C.play('bells', { vol: 0.5, rate: 1.2 }); pop('Pitha!', 'Sweet rice cake'); C.buzz(20); }, 450);
   }
   // resting: sit on the khatia, lie back with your head on the pillow, breathe slowly, then get up
   const REST_Q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(V(0, 0, -1), V(-1, 0, 0), V(0, 1, 0))); // up -> pillow end, face -> sky
@@ -593,7 +593,7 @@ export function initStory(C) {
   function paint(i) {
     const s = W.spots[i], pl = C.player();
     game.p.yaw = Math.atan2(s.look.x - game.p.pos.x, s.look.z - game.p.pos.z);
-    pl.play('SwordSlash', { once: true, fade: 0.08, ts: 1.2 }); S.lock = 1.2; C.sfx.whoosh();
+    pl.play('SwordSlash', { once: true, fade: 0.08, ts: 1.2 }); S.lock = 1.2; C.sfx.brush();
     save.painted[i] = 1; persist(); s.art.visible = true; s.art.material.opacity = 0; s.k = 0; s.outline.visible = false;
     setTimeout(() => { C.play('bells', { vol: 0.5, rate: 1.1 }); C.buzz(20); }, 500);
     const left = save.painted.filter(v => !v).length;
@@ -741,7 +741,7 @@ export function initStory(C) {
 
   /* ---------- tap games: archery and fishing share one full-screen tap layer ---------- */
   $('tapzone').addEventListener('pointerdown', (e) => { if (e.target.id === 'tapQuit') return; e.preventDefault();
-    if (S.mode === 'aim') { arch.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, u: arch.u, v: arch.v }; arch.held = 0; try { $('tapzone').setPointerCapture(e.pointerId); } catch (x) {} return; }
+    if (S.mode === 'aim') { if (!arch.fly && !cine.shot && arch.wait <= 0) C.sfx.creak(); arch.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, u: arch.u, v: arch.v }; arch.held = 0; try { $('tapzone').setPointerCapture(e.pointerId); } catch (x) {} return; }
     S.tap = true; });
   // archery: the crosshair follows the drag (so the thumb never covers the target), letting go shoots
   $('tapzone').addEventListener('pointermove', (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return;
@@ -786,7 +786,7 @@ export function initStory(C) {
     if (arch.fly) {
       const f = arch.fly; f.k = Math.min(1, f.k + dt / 0.42); f.a.position.lerpVectors(f.from, f.to, f.k); f.a.position.y += Math.sin(f.k * Math.PI) * 0.5;
       if (f.k >= 1) { arch.fly = null; arch.wait = 0.55;
-        if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); for (let i = 0; i < 6; i++) C.emit(C.sparkPool, f.to, { life: 0.45, vel: V(rand(-0.8, 0.8), rand(0.3, 1.4), rand(-0.8, 0.8)), size: 0.1, grow: -0.05, grav: 5, color: 0xdfeeb0 }); /* banana fibre flies */ pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = f.bull ? 0.16 : 0.09; } else { toast('Missed', 700); for (let i = 0; i < 4; i++) C.emit(C.dustPool, f.to, { life: 0.5, vel: V(rand(-0.5, 0.5), rand(0.3, 0.8), rand(-0.5, 0.5)), size: 0.22, grow: 0.6 }); }
+        if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); for (let i = 0; i < 6; i++) C.emit(C.sparkPool, f.to, { life: 0.45, vel: V(rand(-0.8, 0.8), rand(0.3, 1.4), rand(-0.8, 0.8)), size: 0.1, grow: -0.05, grav: 5, color: 0xdfeeb0 }); /* banana fibre flies */ pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = f.bull ? 0.16 : 0.09; } else { toast('Missed', 700); C.sfx.thud(0.8); for (let i = 0; i < 4; i++) C.emit(C.dustPool, f.to, { life: 0.5, vel: V(rand(-0.5, 0.5), rand(0.3, 0.8), rand(-0.5, 0.5)), size: 0.22, grow: 0.6 }); }
         $('tapScore').textContent = arch.hits + '/5';
         if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); }
         else archNock(); }
@@ -794,7 +794,7 @@ export function initStory(C) {
     else if (S.tap && !arch.over && !cine.shot) {
       const rel = arch.rel; arch.rel = null; const u = rel ? rel.u : u0, v = rel ? rel.v : v0, r = Math.hypot(u, v);
       const hit = r < FACE_R, a = W.arrows[arch.n++], pl = C.player();
-      { const ac = pl.actions.Shoot_OneHanded; if (ac && pl.curName === 'Shoot_OneHanded') { ac.paused = false; ac.timeScale = 1.7; } else pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); } C.sfx.whoosh(); arch.draw = 0;
+      { const ac = pl.actions.Shoot_OneHanded; if (ac && pl.curName === 'Shoot_OneHanded') { ac.paused = false; ac.timeScale = 1.7; } else pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); } C.sfx.whoosh(); C.sfx.twang(); arch.draw = 0;
       const from = W.nocked.visible ? W.nocked.position.clone() : game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5); W.nocked.visible = false; // leaves from the string
       // the arrow goes where the crosshair was: stuck in the face, or past the target and gone
       const to = hit ? TARGET.clone().addScaledVector(W.aSide, u).setY(FACE_Y + v).addScaledVector(W.aDir, -(0.32 + 0.4)) : TARGET.clone().addScaledVector(W.aSide, u * 1.4).addScaledVector(W.aDir, rand(1.2, 2.6)).setY(0.22); // a miss sticks in the ground
@@ -833,14 +833,14 @@ export function initStory(C) {
   function fishUpdate(dt, tn) {
     const pl = C.player(), tap = S.tap; S.tap = false; fish.t += dt;
     const next = (msg) => { fish.n++; fish.st = 'rest'; fish.t = 0; W.float.visible = false; tapHint(''); if (msg) toast(msg, 900); };
-    if (fish.st === 'idle') { if (tap) { fish.st = 'wait'; fish.t = 0; fish.bite = rand(1.3, 3.6); pl.play('SwordSlash', { once: true, fade: 0.06, ts: 1.3 }); C.sfx.whoosh(); W.float.visible = true; W.float.position.copy(W.floatHome); ripple(W.floatHome.x, W.floatHome.z, 0.7); tapHint('Wait for the bite…'); } }
+    if (fish.st === 'idle') { if (tap) { fish.st = 'wait'; fish.t = 0; fish.bite = rand(1.3, 3.6); pl.play('SwordSlash', { once: true, fade: 0.06, ts: 1.3 }); C.sfx.whoosh(); W.float.visible = true; W.float.position.copy(W.floatHome); ripple(W.floatHome.x, W.floatHome.z, 0.7); setTimeout(() => C.sfx.plop(), 280); tapHint('Wait for the bite…'); } }
     else if (fish.st === 'wait') {
       W.float.position.y = 0.03 + Math.sin(tn * 3) * 0.015;
       if (tap) next('Too early'); else if (fish.t > fish.bite) { fish.st = 'bite'; fish.t = 0; C.buzz(70); ripple(W.floatHome.x, W.floatHome.z, 0.5); ripple(W.floatHome.x, W.floatHome.z, 0.9); tapHint('PULL!'); if (C.audio.ctx) C.tone(C.audio.ctx.currentTime, 'sine', 500, 180, 0.18, 0.5, C.audio.sfxBus);
         for (let i = 0; i < 5; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.5, vel: V(rand(-1, 1), rand(1, 2), rand(-1, 1)), size: 0.16, grow: -0.1, grav: 5, color: 0xcfe9ff }); }
     } else if (fish.st === 'bite') {
       W.float.position.y = -0.06 + Math.sin(tn * 30) * 0.02;
-      if (tap) { fish.got++; fish.jump = 0.001;
+      if (tap) { fish.got++; fish.jump = 0.001; C.sfx.splash();
         { const side = V(W.fIn.z, 0, -W.fIn.x), mid = W.floatHome.clone().lerp(game.p.pos, 0.45);
           if (cinema({ dur: 1.0, at(t, P, L) { P.copy(mid).addScaledVector(side, 3.4).addScaledVector(W.fIn, -0.9).setY(0.5); L.copy(W.floatHome).lerp(game.p.pos, 0.3).setY(0.75); return { snap: 0.0008, zoom: 0.85 }; /* held still on the splash: the fish arcs through the frame */ } })) game.slow = 0.7; } /* low over the water; stops before the fish reaches you */ ripple(W.floatHome.x, W.floatHome.z, 1.2); for (let i = 0; i < 8; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.6, vel: V(rand(-1.2, 1.2), rand(1.2, 2.6), rand(-1.2, 1.2)), size: 0.14, grow: -0.08, grav: 6, color: 0xdff2ff }); pl.play('PickUp', { once: true, fade: 0.06, ts: 1.4 }); C.sfx.grab(); C.buzz([20, 30, 40]); $('tapScore').textContent = String(fish.got); next(''); pop('Got one!', ''); }
       else if (fish.t > 0.85) next('It got away');
@@ -1020,6 +1020,7 @@ export function initStory(C) {
     if (mag > 0.08) {
       const sp = (S.inside ? 3.4 : 5.4) * mag * (S.boost > 0 ? 1.15 : 1);
       p.vel.copy(mv).setLength(sp); p.yaw = C.turnTo(p.yaw, Math.atan2(mv.x, mv.z), 11, dt);
+      S.stepD = (S.stepD || 0) + sp * dt; if (S.stepD > (mag > 0.55 ? 0.95 : 0.7)) { S.stepD = 0; C.sfx.step(S.inside ? 0.6 : 0.9, S.inside); }
       pl.play(mag > 0.55 ? 'Run' : 'Walk', { ts: (mag > 0.55 ? 1 : 1.2) * (S.inside ? 0.8 : 1) });
       p.pos.addScaledVector(p.vel, dt);
     } else { p.vel.set(0, 0, 0); if (free && (pl.curName === 'Run' || pl.curName === 'Walk')) pl.play('Idle'); }
@@ -1029,6 +1030,7 @@ export function initStory(C) {
       const r = S.rest; r.t += dt; const a = W.inside.restAt;
       pl.wrap.position.set(a.x, a.y + 0.6 + Math.sin(r.t * 1.9) * 0.008, a.z); pl.wrap.quaternion.copy(REST_Q);
       if ((r.z -= dt) < 0) { r.z = 1.5; toast('z z z…', 900); }
+      if ((r.sn = (r.sn ?? 0.4) - dt) < 0) { r.sn = 3.1; C.sfx.snore(); } /* a snore with every few breaths */
       if (r.t > 5 || (r.t > 0.8 && (Math.hypot(input.x, input.y) > 0.3 || S.act))) { S.act = false; wake(); }
     }
     input.roll = input.grab = input.tease = false;
@@ -1050,6 +1052,10 @@ export function initStory(C) {
     else if (S.mode === 'aim') archUpdate(dt); else if (S.mode === 'fish') fishUpdate(dt, tn); else if (S.mode === 'echo') echoUpdate(dt);
     if (W.flags) for (const f of W.flags) f.children[1].rotation.y = Math.sin(tn * 2.4 + f.position.x) * 0.35;
     if (!S.inside) pondUpdate(dt, tn);
+    if (!S.inside && S.mode !== 'drum') { const sf = C.sfx, p2 = game.p.pos;
+      if (Math.random() < dt * 0.22) sf.chirp(rand(0.4, 1)); /* birdsong in the trees */
+      { const v = sf.near(POND, 11); if (v > 0 && Math.random() < dt * 0.18) sf.quack(v); }
+      for (const o of C.props || []) if (o.top === 0.6) { const v = sf.near(o, 4); if (v > 0 && sf.gate('crackle', 0.45)) { sf.crackle(v); break; } } }
     if (W.arrowIM) archDecor(dt);
     { const td = today(); W.jale.forEach((sp, i) => { sp.visible = !S.inside && save.ch >= 1 && !td.jv[i]; if (sp.visible) sp.scale.setScalar(1 + Math.sin(tn * 3 + i) * 0.15); }); }
     dance.energy = Math.max(0, dance.energy - dt * (S.mode === 'drum' ? 0.42 : 0.7));
