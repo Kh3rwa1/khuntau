@@ -350,17 +350,53 @@ export function initStory(C) {
     const line = mesh(new THREE.BoxGeometry(2.6, 0.02, 0.1), paste, ARCH.x + aDir.x * 0.6, 0.02, ARCH.z + aDir.z * 0.6, scene); line.rotation.y = Math.atan2(aDir.x, aDir.z);
     const flag = (pos, col) => { const g2 = new THREE.Group(); g2.position.copy(pos); mesh(new THREE.CylinderGeometry(0.03, 0.04, 3.2, 6), wood, 0, 1.6, 0, g2); const f = mesh(new THREE.PlaneGeometry(0.9, 0.5), Mat({ color: col, roughness: 0.8, side: THREE.DoubleSide }), 0.48, 2.9, 0, g2); f.name = 'cloth'; scene.add(g2); return g2; };
     W.flags = [flag(ARCH.clone().addScaledVector(W.aSide, -2.4).addScaledVector(W.aDir, -0.6), 0xffb347), flag(FSTAND.clone().addScaledVector(V(-FSTAND.z, 0, FSTAND.x).normalize(), 1.6), 0x3f8fb8)];
+    { // the lane is worn into the grass: a trodden patch at the line, a path to the target, scuffs where arrows were fetched
+      const L = ARCH.distanceTo(TARGET) + 1.6, laneTex = C.canvasTex(128, 512, (c, w, h) => {
+        const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(120,96,64,0)'); g.addColorStop(0.5, 'rgba(120,96,64,.42)'); g.addColorStop(1, 'rgba(120,96,64,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+        for (const [y, r] of [[h * 0.93, 70], [h * 0.06, 50]]) { const rg = c.createRadialGradient(w / 2, y, 0, w / 2, y, r); rg.addColorStop(0, 'rgba(104,82,54,.6)'); rg.addColorStop(1, 'rgba(104,82,54,0)'); c.fillStyle = rg; c.fillRect(0, 0, w, h); }
+        for (let i = 0; i < 160; i++) { const y = rand(0, h), x = w / 2 + rand(-1, 1) * w * 0.25; c.fillStyle = i % 2 ? 'rgba(80,62,40,.3)' : 'rgba(170,150,110,.3)'; c.beginPath(); c.ellipse(x, y, 2.5, 5, rand(-0.3, 0.3), 0, 6.28); c.fill(); }
+        const e = c.createLinearGradient(0, 0, 0, h); e.addColorStop(0, 'rgba(0,0,0,0)'); e.addColorStop(0.06, 'rgba(0,0,0,1)'); e.addColorStop(0.94, 'rgba(0,0,0,1)'); e.addColorStop(1, 'rgba(0,0,0,0)');
+        c.globalCompositeOperation = 'destination-in'; c.fillStyle = e; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over'; });
+      const lane = mesh(new THREE.PlaneGeometry(2.4, L).rotateX(-Math.PI / 2), Mat({ map: laneTex, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }), 0, 0.012, 0, scene);
+      lane.position.copy(ARCH).lerp(TARGET, 0.5).setY(0.012); lane.rotation.y = Math.atan2(aDir.x, aDir.z);
+      // at the line: spare arrows stuck in the ground, a marker peg at each end of the line
+      const parts = [], put = (g, hex, p, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(vcol(g, hex)); o.position.copy(p); o.rotation.set(rx, ry, rz); parts.push(o); scene.add(o); };
+      const at = (side, fwd, y = 0) => ARCH.clone().addScaledVector(W.aSide, side).addScaledVector(aDir, fwd).setY(y);
+      for (let k = 0; k < 6; k++) { const p = at(-1.05 + rand(-0.08, 0.08), -0.25 + rand(-0.08, 0.08), 0.36); put(new THREE.CylinderGeometry(0.014, 0.014, 0.8, 5), 0x6a5541, p, rand(-0.12, 0.12), 0, rand(-0.12, 0.12));
+        put(new THREE.BoxGeometry(0.01, 0.13, 0.08), 0xffc23a, p.clone().setY(0.7), 0, rand(0, 3), 0); }
+      for (const sd of [-1.35, 1.35]) put(new THREE.CylinderGeometry(0.03, 0.04, 0.32, 6), 0x5e4630, at(sd, 0.6, 0.16));
+      scene.updateMatrixWorld(true); C.bakeStatic(parts, Mat({ vertexColors: true, roughness: 0.8 })); }
     const tg = new THREE.Group(); tg.position.copy(TARGET); scene.add(tg); W.target = tg;
     tg.rotation.y = Math.atan2(-aDir.x, -aDir.z); // local +z faces the shooter
-    const trunk = mesh(new THREE.CylinderGeometry(0.3, 0.36, 2.6, 12), Mat({ color: 0xb7c48a, roughness: 0.8 }), 0, 1.3, 0, tg); trunk.castShadow = true;
-    // painted face, big enough to read on a phone: white, red, white, red bull (radii match the hit zone)
-    [[0.62, paste], [0.47, red], [0.3, paste], [0.13, red]].forEach(([r, m], i) => mesh(new THREE.CircleGeometry(r, 28), m, 0, FACE_Y, 0.31 + i * 0.006, tg));
-    mesh(new THREE.CircleGeometry(0.66, 28), dark, 0, FACE_Y, 0.305, tg);
-    // banana leaves: each turns to its side first, then leans out from the top of the trunk (YXZ), lit a little from within
-    const bLeaf = Mat({ color: 0x6fa046, emissive: 0x1f3d12, roughness: 0.8, side: THREE.DoubleSide });
-    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5 + 0.3, lean = 0.85, lf = mesh(new THREE.PlaneGeometry(0.42, 1.4), bLeaf, Math.sin(a) * 0.62 * Math.sin(lean), 2.55 + 0.7 * Math.cos(lean), Math.cos(a) * 0.62 * Math.sin(lean), tg); lf.rotation.set(lean, a, 0, 'YXZ'); }
-    const gold = Mat({ color: 0xffc23a, roughness: 0.6, side: THREE.DoubleSide });
-    W.arrows = []; for (let i = 0; i < 5; i++) { const a = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.85, 6).rotateX(Math.PI / 2), wood, 0, 0, 0, a); mesh(new THREE.ConeGeometry(0.055, 0.14, 6).rotateX(Math.PI / 2), dark, 0, 0, 0.48, a); for (const r of [0, Math.PI / 2]) mesh(new THREE.PlaneGeometry(0.2, 0.24), gold, 0, 0, -0.34, a).rotation.set(0, Math.PI / 2, r); a.visible = false; scene.add(a); W.arrows.push(a); }
+    // the target is one vertex-coloured mesh (it was six): a banana trunk with its sheath stripes, lashed with rope, set in
+    // a mound of earth, old arrow holes in the trunk, the painted face (radii match the hit zone), cut sheath stubs
+    { const parts = [], tint = (g, hex, shade) => { vcol(g, hex); if (shade) { const c = g.attributes.color, q = g.attributes.position; for (let i = 0; i < c.count; i++) { const k = shade(q.getX(i), q.getY(i), q.getZ(i)); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); } } parts.push(g); return g; };
+      tint(new THREE.CylinderGeometry(0.3, 0.36, 2.6, 16, 6).translate(0, 1.3, 0), 0xb7c48a, (x, y, z) => 0.82 + 0.18 * Math.sin(Math.atan2(z, x) * 7) + (y < 0.3 ? -0.15 : 0));
+      tint(new THREE.CircleGeometry(0.66, 28).translate(0, FACE_Y, 0.305), 0x2b2620);
+      [[0.62, 0xf6eedd], [0.47, 0xc0281e], [0.3, 0xf6eedd], [0.13, 0xc0281e]].forEach(([r, c], i) => tint(new THREE.CircleGeometry(r, 28).translate(0, FACE_Y, 0.31 + i * 0.006), c));
+      for (const y of [0.32, 2.3]) for (let k = 0; k < 2; k++) tint(new THREE.TorusGeometry(0.33 - (y > 1 ? 0.04 : 0), 0.025, 4, 16).rotateX(Math.PI / 2).translate(0, y + k * 0.06, 0), 0xc9b07a);
+      for (let k = 0; k < 14; k++) { const a = rand(0, Math.PI * 2), y = rand(0.5, 2.1); if (Math.abs(y - FACE_Y) < 0.75 && Math.sin(a) > 0.1) continue; tint(new THREE.CircleGeometry(0.022, 6).rotateY(Math.PI / 2 - a).translate(Math.cos(a) * 0.335, y, Math.sin(a) * 0.335), 0x3a3324); } // old holes, off the painted face (it looks along +z)
+      tint(new THREE.CylinderGeometry(0.42, 0.75, 0.2, 14).translate(0, 0.1, 0), 0x6e5a40, (x, y, z) => 0.9 + 0.1 * Math.sin(Math.atan2(z, x) * 5));
+      for (let k = 0; k < 4; k++) { const a = k * 1.7 + 0.4; tint(new THREE.CylinderGeometry(0.05, 0.07, 0.22, 5).translate(0, 0.11, 0).rotateZ(0.5).rotateY(a).translate(Math.cos(a) * 0.2, 2.6, -Math.sin(a) * 0.2), 0x9aa86a); }
+      const tm = new THREE.Mesh(C.mergeGeometries(parts), Mat({ vertexColors: true, roughness: 0.8 })); tm.castShadow = true; tg.add(tm); }
+    // banana leaves: each turns to its side first, then leans out from the top of the trunk (YXZ), lit a little from within;
+    // all five in one mesh, each with a torn notch along its edge
+    { const bLeaf = Mat({ color: 0x6fa046, emissive: 0x1f3d12, roughness: 0.8, side: THREE.DoubleSide }), lg = [], o = new THREE.Object3D();
+      for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5 + 0.3, lean = 0.85 + (i % 2) * 0.15, g = new THREE.PlaneGeometry(0.42, 1.4, 1, 4);
+        const q = g.attributes.position; for (let j = 0; j < q.count; j++) { const y = q.getY(j); q.setZ(j, -0.18 * Math.pow((y + 0.7) / 1.4, 2)); if (j % 2 && y > 0) q.setX(j, q.getX(j) * 0.7); } // droops, ragged on one side
+        o.position.set(Math.sin(a) * 0.62 * Math.sin(lean), 2.55 + 0.7 * Math.cos(lean), Math.cos(a) * 0.62 * Math.sin(lean)); o.rotation.set(lean, a, 0, 'YXZ'); o.updateMatrix(); lg.push(g.applyMatrix4(o.matrix)); }
+      tg.add(new THREE.Mesh(C.mergeGeometries(lg), bLeaf)); }
+    // arrows: five to shoot and one on the string, all drawn by one instanced mesh that follows these placeholders
+    { const g = [vcol(new THREE.CylinderGeometry(0.028, 0.028, 0.85, 6).rotateX(Math.PI / 2), 0x6a5541), vcol(new THREE.ConeGeometry(0.055, 0.14, 6).rotateX(Math.PI / 2).translate(0, 0, 0.48), 0x2b2620)];
+      for (const r of [0, Math.PI / 2]) g.push(vcol(new THREE.PlaneGeometry(0.2, 0.24).rotateY(Math.PI / 2).rotateZ(r).translate(0, 0, -0.34), 0xffc23a));
+      W.arrowIM = new THREE.InstancedMesh(C.mergeGeometries(g), Mat({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide }), 6); W.arrowIM.frustumCulled = false; scene.add(W.arrowIM);
+      W.arrows = []; for (let i = 0; i < 6; i++) { const a = new THREE.Object3D(); a.visible = false; scene.add(a); W.arrows.push(a); } W.nocked = W.arrows[5]; }
+    // the bow: a bamboo stave bent toward the target with a cloth grip, and its string (shown only while shooting)
+    { const L = 0.9, curve = new THREE.CatmullRomCurve3([V(0, -L, -0.1), V(0, -L / 2, 0.025), V(0, 0, 0.05), V(0, L / 2, 0.025), V(0, L, -0.1)]);
+      const sg2 = C.mergeGeometries([vcol(new THREE.TubeGeometry(curve, 20, 0.03, 6), 0xd8b66a), vcol(new THREE.CylinderGeometry(0.042, 0.042, 0.18, 6).translate(0, 0, 0.05), 0x7a2a1e)]);
+      W.bow = new THREE.Group(); W.bow.add(new THREE.Mesh(sg2, Mat({ vertexColors: true, roughness: 0.6 }))); W.bowL = L;
+      W.bowString = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(0, L, -0.1), V(0, 0, -0.1), V(0, -L, -0.1)]), new THREE.LineBasicMaterial({ color: 0xf2efe6 })); W.bow.add(W.bowString);
+      W.bow.visible = false; scene.add(W.bow); }
 
     /* --- the pond --- */
     W.fIn = t1.copy(FSTAND).sub(POND).setY(0).normalize().clone();
@@ -710,18 +746,20 @@ export function initStory(C) {
   $('tapQuit').addEventListener('click', () => { if (S.mode === 'aim' || S.mode === 'fish') tapStop(); });
   function tapOpen(mode, text) { S.mode = mode; S.tap = false; $('tapzone').hidden = false; reticle.hidden = mode !== 'aim'; tapHint(text); $('tapScore').textContent = ''; game.p.vel.set(0, 0, 0); C.player().play('Idle', { fade: 0.15 }); }
   function tapHint(text) { $('tapHint').textContent = tr(text); }
-  function tapStop() { reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; if (W.rod) W.rod.visible = false; if (W.line) W.line.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
+  function tapStop() { reticle.hidden = true; arch.drag = null; S.mode = 'walk'; S.focus = null; $('tapzone').hidden = true; W.float.visible = false; W.fishM.visible = false; if (W.rod) W.rod.visible = false; if (W.line) W.line.visible = false; if (W.bow) W.bow.visible = false; if (W.nocked) W.nocked.visible = false; S.lookT = -9; S.camYaw = game.p.yaw + Math.PI; }
 
   const arch = { n: 0, hits: 0, t: 0, fly: null, wait: 0, over: false };
   function archStart() {
     const p = game.p; p.pos.copy(ARCH); p.yaw = Math.atan2(W.aDir.x, W.aDir.z);
-    Object.assign(arch, { n: 0, hits: 0, t: rand(0, 6), fly: null, wait: 0.4, over: false, drag: null, held: 0 }); archNock(); for (const a of W.arrows) a.visible = false;
+    Object.assign(arch, { n: 0, hits: 0, t: rand(0, 6), fly: null, wait: 0.4, over: false, drag: null, held: 0, draw: 0 }); W.bow.visible = true; archNock(); for (const a of W.arrows) a.visible = false;
     S.focus = { pos: ARCH.clone().addScaledVector(W.aDir, -2.2).addScaledVector(W.aSide, 1.15).setY(2.3), look: TARGET.clone().addScaledVector(W.aSide, 0.35).setY(FACE_Y - 0.15) };
     $('hint').classList.remove('show');
     tapOpen('aim', C.isTouch ? 'Drag to aim, let go to shoot' : 'Drag to aim, let go to shoot. Or arrow keys and Space'); $('tapScore').textContent = '0/5';
   }
   // each arrow starts with the aim off the target, so every shot is aimed
-  function archNock() { const a = rand(0, Math.PI * 2), r = rand(0.9, 1.3); arch.u = Math.cos(a) * r; arch.v = Math.sin(a) * r * 0.7; arch.held = 0; }
+  function archNock() { const a = rand(0, Math.PI * 2), r = rand(0.9, 1.3); arch.u = Math.cos(a) * r; arch.v = Math.sin(a) * r * 0.7; arch.held = 0; archHold(); }
+  // hold the bow out: the shooting clip, frozen with the arm raised (the clip plays on from there on release)
+  function archHold() { if (S.mode !== 'aim') return; const pl = C.player(), ac = pl.actions.Shoot_OneHanded; if (!ac) return; if (pl.curName !== 'Shoot_OneHanded' || !ac.paused) pl.play('Shoot_OneHanded', { once: true, fade: 0.15 }); ac.time = 0.2; ac.paused = true; }
   const FACE_R = 0.62, BULL_R = 0.13, archPt = V(), archPt2 = V();
   function archUpdate(dt) {
     // sway: a held bow never sits still; it grows a little per arrow and a lot if you hold too long (tired arms)
@@ -739,7 +777,7 @@ export function initStory(C) {
     if (arch.fly) {
       const f = arch.fly; f.k = Math.min(1, f.k + dt / 0.42); f.a.position.lerpVectors(f.from, f.to, f.k); f.a.position.y += Math.sin(f.k * Math.PI) * 0.5;
       if (f.k >= 1) { arch.fly = null; arch.wait = 0.55;
-        if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = f.bull ? 0.16 : 0.09; } else { f.a.visible = false; toast('Missed', 700); }
+        if (f.hit) { arch.hits++; C.sfx.snap(); C.buzz(25); for (let i = 0; i < 6; i++) C.emit(C.sparkPool, f.to, { life: 0.45, vel: V(rand(-0.8, 0.8), rand(0.3, 1.4), rand(-0.8, 0.8)), size: 0.1, grow: -0.05, grav: 5, color: 0xdfeeb0 }); /* banana fibre flies */ pop(f.bull ? 'Bullseye!' : 'Hit!', ''); W.target.rotation.z = f.bull ? 0.16 : 0.09; } else { toast('Missed', 700); for (let i = 0; i < 4; i++) C.emit(C.dustPool, f.to, { life: 0.5, vel: V(rand(-0.5, 0.5), rand(0.3, 0.8), rand(-0.5, 0.5)), size: 0.22, grow: 0.6 }); }
         $('tapScore').textContent = arch.hits + '/5';
         if (arch.n >= 5) { arch.over = true; const ok = arch.hits >= 3; setTimeout(() => { pop(arch.hits + '/5', ok ? 'Sharp eye' : 'Need 3. Try again'); if (ok) { C.crowdCheer(0.6); daily('arch', 'Archery contest'); } }, 500); setTimeout(() => { if (S.mode === 'aim') tapStop(); }, 2100); }
         else archNock(); }
@@ -747,10 +785,10 @@ export function initStory(C) {
     else if (S.tap && !arch.over) {
       const rel = arch.rel; arch.rel = null; const u = rel ? rel.u : u0, v = rel ? rel.v : v0, r = Math.hypot(u, v);
       const hit = r < FACE_R, a = W.arrows[arch.n++], pl = C.player();
-      pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); C.sfx.whoosh();
-      const from = game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5);
+      { const ac = pl.actions.Shoot_OneHanded; if (ac && pl.curName === 'Shoot_OneHanded') { ac.paused = false; ac.timeScale = 1.7; } else pl.play('Shoot_OneHanded', { once: true, fade: 0.05, ts: 1.7 }); } C.sfx.whoosh(); arch.draw = 0;
+      const from = W.nocked.visible ? W.nocked.position.clone() : game.p.pos.clone().setY(1.3).addScaledVector(W.aDir, 0.5); W.nocked.visible = false; // leaves from the string
       // the arrow goes where the crosshair was: stuck in the face, or past the target and gone
-      const to = TARGET.clone().addScaledVector(W.aSide, u).setY(FACE_Y + v).addScaledVector(W.aDir, hit ? -(0.32 + 0.4) : 3);
+      const to = hit ? TARGET.clone().addScaledVector(W.aSide, u).setY(FACE_Y + v).addScaledVector(W.aDir, -(0.32 + 0.4)) : TARGET.clone().addScaledVector(W.aSide, u * 1.4).addScaledVector(W.aDir, rand(1.2, 2.6)).setY(0.22); // a miss sticks in the ground
       a.visible = true; a.position.copy(from); a.lookAt(to); arch.fly = { a, from, to, k: 0, hit, bull: r < BULL_R };
     }
     W.target.rotation.z *= Math.pow(0.02, dt); S.tap = false;
@@ -939,6 +977,19 @@ export function initStory(C) {
       for (let i = 0; i < 10; i++) { const k = i / 9; pos.setXYZ(i, a.x + (b.x - a.x) * k, a.y + (b.y + 0.05 - a.y) * k - Math.sin(k * Math.PI) * 0.25, a.z + (b.z - a.z) * k); }
       pos.needsUpdate = true; W.line.visible = true; } else if (W.line) W.line.visible = false;
   }
+  const archM = new THREE.Matrix4(), archZ = new THREE.Matrix4().makeScale(0, 0, 0), archB = new THREE.Matrix4(), archQ = new THREE.Quaternion();
+  function archDecor(dt) {
+    if (W.bow.visible) { const pl = C.player(), hand = pl.root.getObjectByName('FistR') || pl.root.getObjectByName('Fist.R');
+      if (hand) hand.getWorldPosition(W.bow.position); else W.bow.position.copy(game.p.pos).setY(1.1);
+      W.bow.position.addScaledVector(W.aSide, 0.38).y += 0.1; // a long bow, held a little toward the camera: behind the body it was invisible
+      const x = V().crossVectors(UP, W.aDir).normalize(); W.bow.quaternion.setFromRotationMatrix(archB.makeBasis(x, UP, W.aDir)).multiply(archQ.setFromAxisAngle(V(0, 0, 1), W.bowCant ?? -0.28)); // canted, top out toward the camera
+      const aiming = S.mode === 'aim' && !arch.fly && !arch.over && arch.wait <= 0; arch.draw = (arch.draw || 0) + ((aiming && arch.drag ? 1 : 0) - (arch.draw || 0)) * Math.min(1, dt * (arch.drag ? 5 : 18));
+      const nz = -0.1 - arch.draw * 0.42, sp = W.bowString.geometry.attributes.position; sp.setZ(1, nz); sp.needsUpdate = true;
+      if (aiming && C.player().curName !== 'Shoot_OneHanded') archHold();
+      W.nocked.visible = aiming; if (aiming) { W.nocked.position.copy(W.bow.position).addScaledVector(W.aDir, nz + 0.42); W.nocked.quaternion.copy(W.bow.quaternion); } }
+    let any = false; W.arrows.forEach((a, i) => { if (a.visible) { any = true; a.updateMatrix(); W.arrowIM.setMatrixAt(i, archM.copy(a.matrix)); } else W.arrowIM.setMatrixAt(i, archZ); });
+    W.arrowIM.instanceMatrix.needsUpdate = true; W.arrowIM.visible = any;
+  }
   function update(dt) {
     const p = game.p, pl = C.player(), bull = C.bull(), tn = now();
     S.lock -= dt; S.tipsy = Math.max(0, S.tipsy - dt); S.boost -= dt; S.bullReact -= dt; S.sat -= dt;
@@ -981,6 +1032,7 @@ export function initStory(C) {
     else if (S.mode === 'aim') archUpdate(dt); else if (S.mode === 'fish') fishUpdate(dt, tn); else if (S.mode === 'echo') echoUpdate(dt);
     if (W.flags) for (const f of W.flags) f.children[1].rotation.y = Math.sin(tn * 2.4 + f.position.x) * 0.35;
     if (!S.inside) pondUpdate(dt, tn);
+    if (W.arrowIM) archDecor(dt);
     { const td = today(); W.jale.forEach((sp, i) => { sp.visible = !S.inside && save.ch >= 1 && !td.jv[i]; if (sp.visible) sp.scale.setScalar(1 + Math.sin(tn * 3 + i) * 0.15); }); }
     dance.energy = Math.max(0, dance.energy - dt * (S.mode === 'drum' ? 0.42 : 0.7));
     if (dance.energy < 0.2) dance.said = false;
