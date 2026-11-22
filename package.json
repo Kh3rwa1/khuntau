@@ -5,7 +5,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "serve": "node tests/serve.mjs",
-    "test": "node tests/story1.mjs 390 780 p && node tests/story2.mjs && node tests/story3.mjs && HI=1 node tests/story1.mjs 390 780 h && HI=1 node tests/story3.mjs && node tests/laptop.mjs && node tests/calls.mjs && node tests/ring.mjs && node tests/merged.mjs && node tests/walk.mjs && node tests/camera.mjs && node tests/sound.mjs && node tests/drum.mjs && node tests/busy.mjs && node tests/slowphone.mjs && node tests/santali.mjs && node tests/offline.mjs",
+    "test": "node tests/story1.mjs 390 780 p && node tests/story2.mjs && node tests/story3.mjs && HI=1 node tests/story1.mjs 390 780 h && HI=1 node tests/story3.mjs && node tests/laptop.mjs && node tests/calls.mjs && node tests/ring.mjs && node tests/merged.mjs && node tests/walk.mjs && node tests/camera.mjs && node tests/look.mjs && node tests/sound.mjs && node tests/drum.mjs && node tests/busy.mjs && node tests/slowphone.mjs && node tests/santali.mjs && node tests/offline.mjs",
     "test:online": "node tests/online.mjs && node tests/online-ui.mjs && node tests/village.mjs && node tests/merged.mjs http://127.0.0.1:8787 && node tests/ring.mjs http://127.0.0.1:8787"
   },
   "devDependencies": {

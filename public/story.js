@@ -338,11 +338,12 @@ export function initStory(C) {
         return al < 12.5 ? Math.hypot(q.x - ux * 12.5, q.z - uz * 12.5) : al > L ? Math.hypot(q.x - dx, q.z - dz) : Math.abs(q.x * uz - q.z * ux); }));
       const tree = [[3.9, -1.2], [3.4, -1.7], [4.4, -0.8], [3.0, -2.2], [-4.4, -1.8], [-3.8, -2.4]].map(([a, b]) => AC.clone().addScaledVector(W.aR, a).addScaledVector(W.aIn, b)).reduce((best, q) => pathGap(q) > pathGap(best) + 0.01 ? q : best);
       put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
-      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); put(new THREE.SphereGeometry(rand(1.4, 2.1), 7, 5), [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)); }
+      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); const cg = new THREE.SphereGeometry(rand(1.4, 2.1), 16, 11).scale(1, 0.86, 1), cm = put(cg, [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)), cc = cg.attributes.color, cn = cg.attributes.normal;
+        for (let i = 0; i < cc.count; i++) { const f = 0.5 + 0.5 * (cn.getY(i) * 0.5 + 0.5); cc.setXYZ(i, cc.getX(i) * f, cc.getY(i) * f, cc.getZ(i) * f); } cm.userData.smooth = true; } /* soft canopy, darker underneath */
       for (let k = 0; k < 5; k++) { const side = k % 2 ? 1 : -1, q = AC.clone().addScaledVector(W.aIn, 2.2 + rand(-0.4, 0.4)).addScaledVector(W.aR, side * (3.3 + k * 0.25)), yw = rand(0, 6.28), col = [0x2e241a, 0x5a3a22, 0x7a2a22][k % 3];
         for (const o of [-0.065, 0.065]) put(new THREE.BoxGeometry(0.1, 0.02, 0.26), col, q.clone().add(V(Math.cos(yw) * o, 0, -Math.sin(yw) * o)), 0.012, yw); } /* sandals left at the edge: people dance barefoot */
-      for (const o of props) scene.add(o);
-      scene.updateMatrixWorld(true); C.bakeStatic(props, Mat({ vertexColors: true, flatShading: true, roughness: 0.95 }));
+      for (const o of props) { if (o.geometry.index) o.geometry = o.geometry.toNonIndexed(); if (!o.userData.smooth) o.geometry.computeVertexNormals(); scene.add(o); } /* faceted props keep their look through face normals; the canopy is smooth */
+      scene.updateMatrixWorld(true); C.bakeStatic(props, Mat({ vertexColors: true, roughness: 0.95 }));
       // what you can bump into
       if (C.props) C.props.push({ x: bench.x + W.aIn.x * 0.6, z: bench.z + W.aIn.z * 0.6, r: 0.4 }, { x: bench.x - W.aIn.x * 0.6, z: bench.z - W.aIn.z * 0.6, r: 0.4 }, { x: cot.x, z: cot.z, r: 0.9 }, { x: tree.x, z: tree.z, r: 0.55, top: 9, cr: 2.4, cy: 4.2 });
       W.akhraProps = { bench, cot, tree };
@@ -663,7 +664,7 @@ export function initStory(C) {
   const drum = { free: false, t0: 0, notes: [], hits: 0, end: 0, click: -4, lo: false, done: false };
   function drumStart(free) {
     const pl = C.player(), p = game.p;
-    if (cine.shot) cinemaEnd(); S.mode = 'drum'; drum.free = free; drum.done = false; drum.hits = 0; drum.notes = []; drum.errs = []; drum.sched = -4;
+    if (cine.shot) cinemaEnd(); S.mode = 'drum'; drum.free = free; drum.done = false; drum.hits = 0; drum.notes = []; drum.errs = []; drum.sched = -4; drum.lastTn = null; drum.gap = 0;
     p.pos.copy(W.drumStand); p.yaw = Math.atan2(W.aIn.x, W.aIn.z); p.vel.set(0, 0, 0);
     S.camYaw = Math.atan2(-W.aIn.x, -W.aIn.z); S.lookT = now() + 999;
     giveSticks(pl); showSticks(true); pl.play('Idle', { fade: 0.15 });
@@ -718,8 +719,11 @@ export function initStory(C) {
     if (drum.free || drum.done) return;
     // count-in and a soft stick click on every beat. Clicks are booked on the audio clock a little ahead, minus the
     // speaker's own delay, so you hear each one exactly when its note reaches the line (not up to a frame late).
+    // The look-ahead grows with the longest recent frame gap: a hitch (garbage collection, a slow phone) longer than the
+    // window used to let a click slip past and play late.
     const ctx = C.audio.ctx, outLat = ctx ? clamp((ctx.outputLatency || 0) + (ctx.baseLatency || 0), 0, 0.3) : 0;
-    while (drum.sched <= 16 && drum.t0 + drum.sched * BEAT - tn < 0.25 + outLat) {
+    const gap = drum.lastTn != null ? clamp(tn - drum.lastTn, 0, 1) : 0; drum.lastTn = tn; drum.gap = Math.max(gap, (drum.gap || 0) * 0.95);
+    while (drum.sched <= 16 && drum.t0 + drum.sched * BEAT - tn < 0.25 + outLat + Math.min(0.9, drum.gap * 2.5)) {
       if (ctx && !C.audio.muted) C.noise(Math.max(ctx.currentTime, ctx.currentTime + (drum.t0 + drum.sched * BEAT - tn) - outLat), 0.03, drum.sched < 0 ? 0.3 : 0.1, 'highpass', 3000, 1, C.audio.sfxBus);
       drum.sched++;
     }

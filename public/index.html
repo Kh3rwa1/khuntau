@@ -488,18 +488,20 @@ const Mat = (p = {}) => CHEAP ? new THREE.MeshLambertMaterial(stripPbr(p)) : new
 const MAX_PIX = [0.6e6, 1.5e6, 3.2e6][QUALITY], PR_CAP = [1, 1.5, 2][QUALITY];
 const perf = { scale: 1, acc: 0, n: 0, t: 0, shadowsCut: false, stage: 0, bad: 0, longs: 0, hold: 2.5, hist: [] };
 const targetPR = () => Math.max(0.5, Math.min(devicePixelRatio, PR_CAP, Math.sqrt(MAX_PIX / (innerWidth * innerHeight))) * perf.scale);
-const renderer = new THREE.WebGLRenderer({ antialias: QUALITY === 2, powerPreference: 'high-performance', stencil: false });
+// edge smoothing (MSAA) on mid phones too: on their tile-based GPUs it is resolved on chip and nearly free; jagged
+// edges were the first thing that made the game look cheap. Budget phones (QUALITY 0) still go without.
+const renderer = new THREE.WebGLRenderer({ antialias: QUALITY >= 1, powerPreference: 'high-performance', stencil: false });
 renderer.setPixelRatio(targetPR());
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = !CHEAP;
 renderer.shadowMap.type = QUALITY === 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
 $('stage').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xc9d6df, 40, 140);
+scene.fog = new THREE.Fog(0xe6cfaa, 45, 165);
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
 camera.position.set(0, 6, 14);
 
@@ -511,39 +513,61 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), tmpV3 = new THREE.Vector3();
 
 /* ---------- sky & light ---------- */
-const sunDir = new THREE.Vector3(-0.55, 0.52, -0.65).normalize();
+// late afternoon on Sohrai (harvest, November): a low warm sun from behind the post, cool blue in the shade,
+// golden haze on the horizon. The haze colour is the fog colour, so the land melts into the sky.
+const sunDir = new THREE.Vector3(-0.62, 0.40, -0.68).normalize();
+const HAZE = new THREE.Color(0xe6cfaa); let skyMesh;
 {
+  // clouds painted once into a strip that wraps round the sky (one texture read per pixel, no extra draw)
+  const cloudTex = canvasTex(1024, 256, (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) { const cx = Math.random() * w, cy = h * (0.35 + Math.random() * 0.45), len = 40 + Math.random() * 120;
+      for (let k = 0; k < 14; k++) { const x = cx + (Math.random() - 0.5) * len * 2, y = cy + (Math.random() - 0.5) * 16 - k * 0.6, r = 10 + Math.random() * 26;
+        for (const dx of [0, -w, w]) { const g = ctx.createRadialGradient(x + dx, y, 0, x + dx, y, r); g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(x + dx - r, y - r, r * 2, r * 2); } } }
+  });
+  cloudTex.wrapS = THREE.RepeatWrapping; cloudTex.generateMipmaps = false; cloudTex.minFilter = THREE.LinearFilter; /* no mips: the wrap seam would pick the smallest one and draw a line */
   const g = new THREE.SphereGeometry(220, 32, 16);
   const m = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { sun: { value: sunDir } },
+    uniforms: { sun: { value: sunDir }, clouds: { value: cloudTex }, haze: { value: HAZE } },
     vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-    fragmentShader: `varying vec3 vP; uniform vec3 sun;
+    fragmentShader: `varying vec3 vP; uniform vec3 sun; uniform vec3 haze; uniform sampler2D clouds;
       void main(){
-        float h = clamp(vP.y, -0.2, 1.0);
-        vec3 top = vec3(0.16,0.36,0.70), mid = vec3(0.42,0.62,0.86), hor = vec3(0.80,0.86,0.90);
-        vec3 c = mix(hor, mid, smoothstep(0.0, 0.25, h));
-        c = mix(c, top, smoothstep(0.25, 0.9, h));
-        float s = max(dot(normalize(vP), sun), 0.0);
-        c += vec3(1.0,0.86,0.62) * pow(s, 8.0) * 0.25 + vec3(1.0,0.97,0.9) * pow(s, 900.0) * 3.0;
-        if (h < 0.0) c = mix(vec3(0.55,0.58,0.55), hor, smoothstep(-0.2,0.0,h));
+        vec3 d = normalize(vP); float h = clamp(d.y, -0.2, 1.0);
+        float s = max(dot(d, sun), 0.0);
+        vec3 top = vec3(0.07,0.22,0.58), mid = vec3(0.26,0.47,0.80);   /* linear values: tone mapping lightens and greys them */
+        vec3 c = mix(haze, mid, smoothstep(0.0, 0.2, h));
+        c = mix(c, top, smoothstep(0.2, 0.85, h));
+        c = mix(c, vec3(1.0,0.80,0.55), pow(s, 3.0) * 0.35 * (1.0 - smoothstep(0.0, 0.6, h)));   /* warm glow round the low sun */
+        if (h > 0.0) { vec2 uv = vec2(atan(d.x, d.z) / 6.2832 + 0.5, clamp(h / 0.42, 0.0, 1.0));
+          float cl = texture2D(clouds, uv).a * smoothstep(0.02, 0.1, h) * (1.0 - smoothstep(0.3, 0.42, h));
+          vec3 cc = mix(vec3(0.95,0.94,0.96), vec3(1.0,0.84,0.62), pow(s, 2.0)) * (0.98 + 0.2 * h);   /* white, lit gold on the sun side */
+          c = mix(c, cc, clamp(cl * 1.6, 0.0, 0.92)); }
+        c += vec3(1.0,0.82,0.55) * pow(s, 14.0) * 0.4 + vec3(1.0,0.95,0.82) * pow(s, 1100.0) * 3.5;
+        if (h < 0.0) c = haze;
         gl_FragColor = vec4(c, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`
   });
-  scene.add(new THREE.Mesh(g, m));
+  skyMesh = new THREE.Mesh(g, m); scene.add(skyMesh);
 }
-scene.add(new THREE.HemisphereLight(0xcfe2ff, 0x5c5236, 0.9));
-const sun = new THREE.DirectionalLight(0xfff0d8, 3.0);
+scene.add(new THREE.HemisphereLight(0xa9c4ea, 0x7a5a36, 0.85)); /* cool sky in the shadows, warm earth bounce from below */
+const sun = new THREE.DirectionalLight(0xffcf96, 3.5);
 sun.position.copy(sunDir).multiplyScalar(35);
 sun.castShadow = !CHEAP;
 { const ms = [512, 1024, 2048][QUALITY]; sun.shadow.mapSize.set(ms, ms); }
-Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 70 });
-sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
-scene.add(sun);
-const fill = new THREE.DirectionalLight(0xbcd4ff, 0.3);
-fill.position.set(10, 8, 12);
+Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 80 });
+sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.045;
+scene.add(sun); scene.add(sun.target);
+// the shadow box follows whatever the camera looks at (it was fixed on the ring, so the village had no shadows),
+// snapped to whole shadow-map texels so the edges do not crawl as you walk
+const sunFollow = (() => { const step = 32 / sun.shadow.mapSize.x, f = new THREE.Vector3(), q = new THREE.Quaternion(), qi = new THREE.Quaternion(), l = new THREE.Vector3();
+  q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), sunDir); qi.copy(q).invert();
+  return (x, z) => { l.set(x, 0, z).applyQuaternion(qi); l.x = Math.round(l.x / step) * step; l.y = Math.round(l.y / step) * step; f.copy(l).applyQuaternion(q);
+    sun.target.position.copy(f); sun.position.copy(f).addScaledVector(sunDir, 40); }; })();
+const fill = new THREE.DirectionalLight(0xffd9b0, 0.35); /* warm bounce from the sunlit ground on the side away from the sun */
+fill.position.set(10, 4, 12);
 scene.add(fill);
 
 /* ---------- procedural textures ---------- */
@@ -939,13 +963,21 @@ for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoo
 // trees
 {
   // trunks and leaves in three greens share one vertex-coloured mesh: one draw for every tree (it was four)
-  const treeM = Mat({ vertexColors: true, roughness: 0.9, flatShading: true }), LEAF = [0x3e6b2c, 0x4f7d35, 0x355a26];
-  const trunks = [], leaves = [[], [], []], trunkG = (r0, r1, h, s) => vc(new THREE.CylinderGeometry(r0, r1, h, s).toNonIndexed(), 0x4a3f33), leafG = (r, k) => vc(new THREE.IcosahedronGeometry(r, 1), LEAF[k % 3]);
+  // soft-shaded canopies (flat shading made every leaf ball a faceted gem): lumpy, lighter on top, dark underneath
+  // where the leaves shade themselves. Duplicated corners get the same bump from a hash of their position, so no cracks.
+  const treeM = Mat({ vertexColors: true, roughness: 0.9 }), LEAF = [0x3e6b2c, 0x4f7d35, 0x355a26];
+  const hash = (x, y, z) => { const v = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return v - Math.floor(v); };
+  const leafG = (r, k) => { const g = new THREE.IcosahedronGeometry(r, QUALITY >= 1 ? 2 : 1), p = g.attributes.position, n = g.attributes.normal, c = new THREE.Color(LEAF[k % 3]), col = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), h = hash(Math.round(x * 100), Math.round(y * 100), Math.round(z * 100)), b = 1 + (h - 0.5) * 0.2;
+      p.setXYZ(i, x * b, y * b * 0.86, z * b); const up = n.getY(i), sh = 0.5 + 0.5 * (up * 0.5 + 0.5); /* no per-corner jitter: on big triangles it painted the facets back in */
+      col[i * 3] = c.r * sh; col[i * 3 + 1] = c.g * sh; col[i * 3 + 2] = c.b * sh * 0.95; }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); return g; };
+  const trunks = [], leaves = [[], [], []], trunkG = (r0, r1, h, s) => vc(new THREE.CylinderGeometry(r0, r1, h, s).toNonIndexed(), 0x4a3f33);
   for (let i = 0; i < 24; i++) {
     const a = rand(0, Math.PI * 2), r = rand(31, 55), g = new THREE.Group();
     const h = rand(3, 5);
-    const t = new THREE.Mesh(trunkG(0.18, 0.3, h, 6), treeM); t.position.y = h / 2; t.castShadow = QUALITY === 2; g.add(t); trunks.push(t);
-    for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(leafG(rand(1.3, 2.2), k), treeM); f.position.set(rand(-1, 1), h + rand(0, 1.6), rand(-1, 1)); f.castShadow = QUALITY === 2; g.add(f); leaves[k % 3].push(f); }
+    const t = new THREE.Mesh(trunkG(0.18, 0.3, h, 6), treeM); t.position.y = h / 2; t.castShadow = QUALITY >= 1; g.add(t); trunks.push(t);
+    for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(leafG(rand(1.3, 2.2), k), treeM); f.position.set(rand(-1, 1), h + rand(0, 1.6), rand(-1, 1)); f.castShadow = QUALITY >= 1; g.add(f); leaves[k % 3].push(f); }
     g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g);
   }
   // a few big trees inside the village, between houses at its edge (same meshes, no extra draws)
@@ -1001,7 +1033,7 @@ const flames = billboards(flameTex, 30, THREE.AdditiveBlending);
 }
 // distant hills, softened by the fog
 {
-  const hm = Mat({ color: 0x5d7346, roughness: 1, flatShading: true });
+  const hm = Mat({ color: 0x5d7346, roughness: 1 }); /* smooth: the facets read as low poly even through the haze */
   const hills = [];
   for (let i = 0; i < 14; i++) {
     const a = i / 14 * Math.PI * 2 + rand(-0.1, 0.1), r = rand(105, 135);
@@ -1290,6 +1322,15 @@ const loaded = {}; let loadedCount = 0;
 // Each character arrives as 6 or 7 separate pieces (skin, shirt, hair…), each drawn and animated on its own.
 // Fuse them into one piece coloured per vertex: about 6x fewer draws per character, the biggest saving on weak phones.
 let charMat = Mat({ vertexColors: true, roughness: 0.8 });
+// rim light: the low sun behind people and animals outlines their edges in warm light (golden-hour backlight), so they
+// lift off the ground and the crowd instead of reading as dark cut-outs. A few shader instructions, no extra pass.
+const rimU = { rimDir: { value: new THREE.Vector3() }, rimCol: { value: new THREE.Color(0xffc68a).multiplyScalar(0.6) } };
+function addRim(m) { m.userData.rim = true; m.onBeforeCompile = sh => { Object.assign(sh.uniforms, rimU);
+    sh.fragmentShader = 'uniform vec3 rimDir; uniform vec3 rimCol;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', `{ vec3 vd = normalize(vViewPosition); float fr = pow(1.0 - clamp(dot(normal, vd), 0.0, 1.0), 3.0);
+      float back = clamp(dot(rimDir, -vd), 0.0, 1.0); outgoingLight += rimCol * fr * (0.3 + 0.7 * back) * smoothstep(-0.35, 0.45, dot(normal, rimDir)); }
+      #include <opaque_fragment>`); };
+  m.customProgramCacheKey = () => 'rim'; return m; }
+addRim(charMat);
 // accessories folded into a person's skinned mesh at load: no extra draw calls, each item rides its bone and is
 // coloured per person through tint(). Everyone of a kind wears them (the player too, on the man model).
 const ACC = {
@@ -1397,6 +1438,8 @@ function plain(attr, k) {
   for (let i = 0; i < attr.count; i++) for (let j = 0; j < attr.itemSize; j++) o[i * attr.itemSize + j] = attr.getComponent(i, j);
   return new THREE.BufferAttribute(o, attr.itemSize);
 }
+const ZEBU = { bull: { hump: 0.17, dew: 0.12, horn: 1.55, up: 0.2 }, cow: { hump: 0.07, dew: 0.05, horn: 1.25, up: 0.08 } };
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 function mergeChar(gltf, kind) {
   const groups = new Map();
   gltf.scene.traverse(o => { if (o.isSkinnedMesh) { const a = groups.get(o.skeleton) || []; a.push(o); groups.set(o.skeleton, a); } });
@@ -1417,7 +1460,50 @@ function mergeChar(gltf, kind) {
     merged.setAttribute('color', new THREE.BufferAttribute(col, 3)); merged.userData.parts = parts;
     meshes[0].geometry = merged; meshes[0].material = charMat;
     for (const m of meshes.slice(1)) m.parent.remove(m);
+    if (ZEBU[kind]) { fitModel(gltf); zebu(merged, ZEBU[kind]); gltf.userData.zebu = true; } /* measured before reshaping, so the hump and horns do not shrink the animal */
   }
+}
+// The stock model is a European-looking box of a cow. Santal cattle are zebu: a hump over the shoulders, a dewlap
+// hanging from throat to chest, horns that sweep out and up. Reshape the bind pose (bones and weights unchanged,
+// so every animation still fits), then give it smooth shading with creases kept at hooves and horn tips.
+// Bind space: x across, y up (hooves -0.57, back 0.55), z forward (tail -1, nose +1).
+function zebu(g, Z) {
+  const parts = g.userData.parts, P = g.attributes.position, pos = new Float32Array(P.count * 3);
+  for (let i = 0; i < P.count; i++) { pos[i * 3] = P.getX(i); pos[i * 3 + 1] = P.getY(i); pos[i * 3 + 2] = P.getZ(i); }
+  const horns = parts.find(p => p.name === 'Horns'), eyes = parts.filter(p => /^Eye/.test(p.name));
+  const inPart = (pt, i) => pt && i >= pt.start && i < pt.start + pt.count;
+  // horn centre line per side, sampled before bending: the cross-section rides on it
+  const bins = 8, cl = [[], []]; if (horns) for (let s = 0; s < 2; s++) for (let b = 0; b < bins; b++) cl[s][b] = [0, 0, 0];
+  const hornT = x => clamp((Math.abs(x) - 0.08) / 0.19, 0, 1);
+  if (horns) { for (let i = horns.start; i < horns.start + horns.count; i++) { const x = pos[i * 3], s = x < 0 ? 0 : 1, b = Math.min(bins - 1, hornT(x) * bins | 0), c = cl[s][b]; c[0] += pos[i * 3 + 1]; c[1] += pos[i * 3 + 2]; c[2]++; }
+    for (let s = 0; s < 2; s++) { let last = [0.5, 0.78]; for (let b = 0; b < bins; b++) { const c = cl[s][b]; if (c[2]) { c[0] /= c[2]; c[1] /= c[2]; last = [c[0], c[1]]; } else { c[0] = last[0]; c[1] = last[1]; } } } }
+  for (let i = 0; i < P.count; i++) {
+    let x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+    if (inPart(horns, i)) { const t = hornT(x), s = x < 0 ? 0 : 1, b = Math.min(bins - 1, t * bins | 0), c = cl[s][b], taper = 1 - 0.38 * t;
+      const sx = Math.sign(x) || 1; x = sx * (0.08 + Math.max(0, Math.abs(x) - 0.08) * Z.horn); y = c[0] + (y - c[0]) * taper + Z.up * t * t; z = c[1] + (z - c[1]) * taper - 0.03 * t * t; }
+    else if (!eyes.some(e => inPart(e, i))) {
+      // hump: steep in front where it meets the neck, a long slope back along the spine
+      const dz = z - 0.24, sg = dz > 0 ? 0.1 : 0.17, wh = Math.exp(-dz * dz / (2 * sg * sg)) * Math.exp(-x * x / (2 * 0.14 * 0.14)) * ss(0.3, 0.52, y);
+      y += Z.hump * wh; z -= 0.03 * wh;
+      // dewlap: a thin fold of skin hanging under the neck and chest, deepest just in front of the forelegs
+      const yc = 0.25 + (z - 0.3) * 0.55, wd = Math.exp(-Math.pow((z - 0.45) / 0.15, 2)) * ss(yc, yc - 0.2, y) * Math.exp(-x * x / (2 * 0.09 * 0.09)) * ss(-0.2, -0.05, y) * (z > 0.22 && z < 0.82 ? 1 : 0);
+      y -= Z.dew * wd; x *= 1 - 0.35 * wd; }
+    pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  // smooth normals: average the faces meeting at each point (across colour seams too) unless they meet at more than 60 degrees
+  const idx = g.index.array, nf = idx.length / 3, fn = new Float32Array(nf * 3), groups = new Map(), key = i => Math.round(pos[i * 3] * 2e3) + ',' + Math.round(pos[i * 3 + 1] * 2e3) + ',' + Math.round(pos[i * 3 + 2] * 2e3);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), own = new Float32Array(P.count * 3);
+  for (let f = 0; f < nf; f++) { const i0 = idx[f * 3], i1 = idx[f * 3 + 1], i2 = idx[f * 3 + 2];
+    a.fromArray(pos, i0 * 3); b.fromArray(pos, i1 * 3).sub(a); c.fromArray(pos, i2 * 3).sub(a); b.cross(c); fn[f * 3] = b.x; fn[f * 3 + 1] = b.y; fn[f * 3 + 2] = b.z;
+    const l = b.length() || 1; for (const i of [i0, i1, i2]) { own[i * 3] += b.x / l; own[i * 3 + 1] += b.y / l; own[i * 3 + 2] += b.z / l; const k = key(i); let gr = groups.get(k); if (!gr) groups.set(k, gr = []); gr.push(f); } }
+  const N = new Float32Array(P.count * 3), old = g.attributes.normal, cosC = Math.cos(60 * Math.PI / 180), r = new THREE.Vector3(), o = new THREE.Vector3(), fv = new THREE.Vector3();
+  for (let i = 0; i < P.count; i++) {
+    if (eyes.some(e => inPart(e, i))) { N[i * 3] = old.getX(i); N[i * 3 + 1] = old.getY(i); N[i * 3 + 2] = old.getZ(i); continue; }
+    o.fromArray(own, i * 3).normalize(); r.set(0, 0, 0);
+    for (const f of groups.get(key(i)) || []) { fv.fromArray(fn, f * 3); const l = fv.length(); if (l && fv.dot(o) / l > cosC) r.add(fv); }
+    if (r.lengthSq() < 1e-12) r.copy(o); r.normalize(); N[i * 3] = r.x; N[i * 3 + 1] = r.y; N[i * 3 + 2] = r.z; }
+  g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  g.computeBoundingSphere(); g.userData.zebu = true;
 }
 // soft dark disc under a character, used when real-time shadows are off
 const blobs = [];
@@ -1780,7 +1866,7 @@ async function loadModel(url) {
 let coreDone = false, crowdDone = false;
 function loadSet(keys) {
   return Promise.all(keys.map(k => loadModel(files[k]).then(g => {
-    mergeChar(g, k); fitModel(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (Math.min(loadedCount, 2) / 2 * 100) + '%';
+    mergeChar(g, k); if (!g.userData.fit) fitModel(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (Math.min(loadedCount, 2) / 2 * 100) + '%';
   })));
 }
 const loadFail = (err) => { console.error(err); $('startBtn').textContent = 'Could not load. Refresh to retry'; $('loadErr').textContent = String(err && err.message || err).slice(0, 140); };
@@ -3177,7 +3263,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3303,6 +3389,8 @@ function frame() {
   }
   updateParticles(dt); audioFrame();
   updateCamera(dt); updateFlames(dt);
+  rimU.rimDir.value.copy(sunDir).transformDirection(camera.matrixWorldInverse);
+  if (sun.castShadow) { camera.getWorldDirection(tmpV3); tmpV3.y = 0; if (tmpV3.lengthSq() < 1e-4) tmpV3.set(0, 0, -1); tmpV3.normalize(); sunFollow(camera.position.x + tmpV3.x * 13, camera.position.z + tmpV3.z * 13); }
   blobDraw(); renderer.render(scene, camera);
   adaptQuality(clock.elapsedTime); voiceMix(dt);
   requestAnimationFrame(frame);
@@ -3328,7 +3416,7 @@ function applyStage(n) {
   setShadows(n < 2);
   if (n >= 3 && !CHEAP && !perf.lambert) { // mid-session switch; from the next launch everything is built cheap from the start
     perf.lambert = true; scene.environment = null; const cache = new Map();
-    const cheap = (m) => { if (!m || !m.isMeshStandardMaterial) return m; let l = cache.get(m); if (!l) { l = new THREE.MeshLambertMaterial({ color: m.color, map: m.map, vertexColors: m.vertexColors, transparent: m.transparent, opacity: m.opacity, side: m.side, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity, alphaTest: m.alphaTest, depthWrite: m.depthWrite, flatShading: m.flatShading }); cache.set(m, l); } return l; };
+    const cheap = (m) => { if (!m || !m.isMeshStandardMaterial) return m; let l = cache.get(m); if (!l) { l = new THREE.MeshLambertMaterial({ color: m.color, map: m.map, vertexColors: m.vertexColors, transparent: m.transparent, opacity: m.opacity, side: m.side, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity, alphaTest: m.alphaTest, depthWrite: m.depthWrite, flatShading: m.flatShading }); if (m.userData.rim) addRim(l); cache.set(m, l); } return l; };
     charMat = cheap(charMat); perf.cheapen = () => scene.traverse(o => { if (o.isMesh) o.material = cheap(o.material); }); perf.cheapen();
   }
   perf.thin = n >= 4; if (crowd.length) crowdBudget();
