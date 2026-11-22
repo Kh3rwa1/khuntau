@@ -28,7 +28,7 @@ async function run(W, H, t, mobile) {
   check(await page.waitForFunction(() => !document.getElementById('vilAsk').hidden && !document.getElementById('overScreen').hidden, { timeout: 8000 }).then(() => true, () => false), `${t}: after a scoring round you are asked to play for your village`);
   await shot('1-ask');
   await page.evaluate(() => document.getElementById('vilAsk').click()); await sleep(400);
-  await page.select('#vilDist', 'Godda'); await sleep(500);
+  await page.select('#vilDist', 'Godda'); await page.waitForFunction((v) => [...document.querySelectorAll('#vilList option')].some(o => o.value === v), { timeout: 10000 }, `${tag} Upper`).catch(() => {}); /* the list comes from the server: wait for it instead of a fixed half second */
   const sug = await page.$$eval('#vilList option', o => o.map(x => x.value));
   check(sug.includes(`${tag} Upper`), `${t}: villages already playing in the district are suggested`);
   await page.type('#vilName', `${tag} Home`); await shot('2-form');
