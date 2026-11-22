@@ -634,12 +634,15 @@ export function initStory(C) {
       const hp = bull.head ? bull.head.getWorldPosition(V()) : game.b.pos.clone().setY(1.5);
       for (let i = 0; i < 10; i++) C.emit(C.sparkPool, hp, { life: 0.7, vel: V(rand(-1, 1), rand(0.5, 2), rand(-1, 1)), size: 0.24, grow: -0.2, grav: 3, color: i % 2 ? 0xffd27a : 0xffffff });
       bull.play('Idle_HitReact1', { once: true, fade: 0.1 }); S.bullReact = 0.9;
+      cinema({ dur: 1.6, at(t, P, L) { const h = bull.head ? bull.head.getWorldPosition(t4) : game.b.pos.clone().setY(1.5); P.copy(h).addScaledVector(W.gF, 1.1).addScaledVector(W.gR, 1.35 - t * 0.25).setY(h.y + 0.15); L.copy(h); /* to the side: you stand right in front of him */ return { snap: 0.001, zoom: 0.72 }; } });
     }, 550);
   }
   function putGarland() {
     const pl = C.player(); pl.play('PickUp', { once: true, fade: 0.1, ts: 1.1 }); S.lock = 1.1;
     setTimeout(() => {
       save.garland = 1; persist(); C.garland.visible = true; C.sfx.grab(); pop('Garlanded', 'Marigolds for the day');
+      cinema({ dur: 2.2, at(t, P, L) { const n = C.garland.position, k = Math.min(1, t / 2.0), e = k * k * (3 - 2 * k);
+        P.copy(n).addScaledVector(W.gF, 1.5 + e * 2.3).addScaledVector(W.gR, 1.3 + e * 1.1).setY(n.y + 0.1 + e * 0.8); L.copy(n).lerp(game.b.pos.clone().setY(0.9), e * 0.6); return { snap: 0.002, zoom: 0.75 + e * 0.2 }; } });
       setTimeout(() => say(T.majhi3, () => fade(() => { setChapter(3); placeAnimal(); C.sfx.bellow(); }, 450)), 1000);
     }, 550);
   }
@@ -655,7 +658,7 @@ export function initStory(C) {
   const drum = { free: false, t0: 0, notes: [], hits: 0, end: 0, click: -4, lo: false, done: false };
   function drumStart(free) {
     const pl = C.player(), p = game.p;
-    S.mode = 'drum'; drum.free = free; drum.done = false; drum.hits = 0; drum.notes = []; drum.errs = []; drum.sched = -4;
+    if (cine.shot) cinemaEnd(); S.mode = 'drum'; drum.free = free; drum.done = false; drum.hits = 0; drum.notes = []; drum.errs = []; drum.sched = -4;
     p.pos.copy(W.drumStand); p.yaw = Math.atan2(W.aIn.x, W.aIn.z); p.vel.set(0, 0, 0);
     S.camYaw = Math.atan2(-W.aIn.x, -W.aIn.z); S.lookT = now() + 999;
     giveSticks(pl); showSticks(true); pl.play('Idle', { fade: 0.15 });
@@ -729,7 +732,9 @@ export function initStory(C) {
       drum.done = true; const ok = drum.hits >= NEED;
       if (drum.errs.length >= 6) { const e = drum.errs.slice().sort((a, b) => a - b), m = e[e.length >> 1]; calib = clamp(calib + m * 0.7, -0.1, 0.15); try { localStorage.setItem('khuntau-drumlag', calib.toFixed(3)); } catch (x) {} }
       pop(drum.hits + '/' + CHART.length, ok ? 'The beat is yours' : 'Need ' + NEED + '. Try again');
-      if (ok) { C.crowdCheer(0.9); C.buzz([30, 40, 60]); dance.energy = 1.5; for (const c of dancers) c.play('Victory', { once: true, fade: 0.2 }); S.sat = 1.6; }
+      if (ok) { C.crowdCheer(0.9); C.buzz([30, 40, 60]); dance.energy = 1.5; for (const c of dancers) c.play('Victory', { once: true, fade: 0.2 }); S.sat = 1.6;
+        const out = V(Math.cos(AA), 0, Math.sin(AA)), tan = V(-Math.sin(AA), 0, Math.cos(AA)), base = out.clone().multiplyScalar(15.4), half = Math.max(1.5, (dancers.length - 1) * 0.6);
+        cinema({ dur: 1.45, at(t, P, L) { const u = -half + (t / 1.45) * 2 * half; P.copy(base).addScaledVector(tan, u).addScaledVector(out, 3.0).setY(1.15); L.copy(base).addScaledVector(tan, u + 0.9).setY(1.05); return { snap: 0.0015, zoom: 0.8 }; } }); }
       setTimeout(() => { drumStop(); if (ok && save.ch === 3) { setChapter(4); say(T.drumWin); } else if (ok && save.ch >= 5) daily('drum', 'Tamak played'); }, 1500);
     }
   }
@@ -835,7 +840,9 @@ export function initStory(C) {
         for (let i = 0; i < 5; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.5, vel: V(rand(-1, 1), rand(1, 2), rand(-1, 1)), size: 0.16, grow: -0.1, grav: 5, color: 0xcfe9ff }); }
     } else if (fish.st === 'bite') {
       W.float.position.y = -0.06 + Math.sin(tn * 30) * 0.02;
-      if (tap) { fish.got++; fish.jump = 0.001; ripple(W.floatHome.x, W.floatHome.z, 1.2); for (let i = 0; i < 8; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.6, vel: V(rand(-1.2, 1.2), rand(1.2, 2.6), rand(-1.2, 1.2)), size: 0.14, grow: -0.08, grav: 6, color: 0xdff2ff }); pl.play('PickUp', { once: true, fade: 0.06, ts: 1.4 }); C.sfx.grab(); C.buzz([20, 30, 40]); $('tapScore').textContent = String(fish.got); next(''); pop('Got one!', ''); }
+      if (tap) { fish.got++; fish.jump = 0.001;
+        { const side = V(W.fIn.z, 0, -W.fIn.x), mid = W.floatHome.clone().lerp(game.p.pos, 0.45);
+          if (cinema({ dur: 1.0, at(t, P, L) { P.copy(mid).addScaledVector(side, 3.4).addScaledVector(W.fIn, -0.9).setY(0.5); L.copy(W.floatHome).lerp(game.p.pos, 0.3).setY(0.75); return { snap: 0.0008, zoom: 0.85 }; /* held still on the splash: the fish arcs through the frame */ } })) game.slow = 0.7; } /* low over the water; stops before the fish reaches you */ ripple(W.floatHome.x, W.floatHome.z, 1.2); for (let i = 0; i < 8; i++) C.emit(C.sparkPool, W.floatHome, { life: 0.6, vel: V(rand(-1.2, 1.2), rand(1.2, 2.6), rand(-1.2, 1.2)), size: 0.14, grow: -0.08, grav: 6, color: 0xdff2ff }); pl.play('PickUp', { once: true, fade: 0.06, ts: 1.4 }); C.sfx.grab(); C.buzz([20, 30, 40]); $('tapScore').textContent = String(fish.got); next(''); pop('Got one!', ''); }
       else if (fish.t > 0.85) next('It got away');
     } else if (fish.st === 'rest' && fish.t > 1.1) {
       if (fish.n >= 3) { fish.st = 'over'; const ok = fish.got >= 2; pop(fish.got + ' fish', ok ? 'A good catch' : 'Need 2. Try again'); if (ok) daily('fish', 'Fishing'); setTimeout(() => { if (S.mode === 'fish') tapStop(); }, 1600); }

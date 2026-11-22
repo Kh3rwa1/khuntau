@@ -36,6 +36,7 @@ async function chart(deltaSrc) {
     const iv = setInterval(() => { if (d.drum.done) { clearInterval(iv); setTimeout(() => done({ states: d.drum.notes.map(n => n.state), hits: d.drum.hits, n: d.drum.notes.length || res.length, calib: d.calib(), judged, sched: d.drum.sched }), 100); } }, 50);
   }), deltaSrc);
 }
+await page.evaluate(() => { window.__drumCine = 0; (function f() { if (__k.story.debug.arch.cine) window.__drumCine++; requestAnimationFrame(f); })(); });
 await page.evaluate(() => { window.__srcs.length = 0; window.__dust = 0; (function f() { window.__dust = Math.max(window.__dust, __k.dustPool.live); requestAnimationFrame(f); })(); });
 // 1. on time (relative to the touch lag): all hit, no learning drift
 let r = await chart('(i) => 0');
@@ -46,6 +47,7 @@ let r = await chart('(i) => 0');
   check(errs.length && Math.max(...errs) < 0.012, `every click is heard on its beat with a 120 ms speaker lag taken off (worst ${(Math.max(...errs) * 1000).toFixed(1)} ms)`);
   check(cl.s.every(e => e.when > e.ct + 0.01), 'clicks are booked ahead, never played late from the frame loop'); }
 check(r.hits === r.n, `on-time taps all count (${r.hits}/${r.n})`);
+check(await page.evaluate(() => window.__drumCine > 0), 'a won chart gets a tracking shot along the dancers');
 check(await page.evaluate(() => window.__dust > 0), 'the dancers kick up dust when their feet land on the beat');
 check(await page.evaluate(() => { const a = __k.story.debug.W.akhraProps; return !!a && ['bench', 'cot', 'tree'].every(k => __k.villageProps.some(o => Math.hypot(o.x - a[k].x, o.z - a[k].z) < 0.7)); }), 'the akhra bench, cot and tree are solid (in the collision list)');
 check(Math.abs(r.calib) < 0.01, `on-time play leaves the timing alone (calib ${r.calib.toFixed(3)})`);
