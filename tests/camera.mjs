@@ -51,7 +51,7 @@ check(await page.evaluate(() => { const t = __k.story.debug.W.akhraProps.tree; r
 // roads and yards are one textured mesh; yard things, log seats and the sleeping dogs are solid; the dogs breathe
 check(await page.evaluate(() => { let n = 0; __k.scene.traverse(o => { if (o.isMesh && o.material && o.material.map && o.material.map.image && o.material.map.image.width === 512 && o.material.map.image.height === 1024) n++; }); return n === 1; }), 'all roads and swept yards are a single draw');
 check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o => o.top === 0.6).length >= 2 && v.filter(o => o.top === 1.6).length >= 2 && v.filter(o => o.top === 0.5).length >= 6; }), 'yard stoves and mortars, log seats and the dogs are solid');
-{ const sy = () => page.evaluate(() => { let y = null; __k.scene.traverse(o => { if (o.isInstancedMesh && o.count === 2 && y === null) { const m = new __k.THREE.Matrix4(); o.getMatrixAt(0, m); y = new __k.THREE.Vector3().setFromMatrixScale(m).y; } }); return y; });
+{ const sy = () => page.evaluate(() => { const m = new __k.THREE.Matrix4(); __k.life.dogs.getMatrixAt(0, m); return new __k.THREE.Vector3().setFromMatrixScale(m).y; });
   const a = await sy(); await sleep(900); const b = await sy(); check(a && b && Math.abs(a - b) > 0.005, `the dogs asleep in the square breathe (${a && a.toFixed(3)} -> ${b && b.toFixed(3)})`); }
 // the pork stall behind house 7: people gathered, the butcher chopping, the scale tipping, the cleaver heard near it
 { const m = await page.evaluate(() => { const M = __k.market, h = __k.houses[7], f = [Math.sin(h.rot), Math.cos(h.rot)], behind = (x, z) => (x - h.x) * f[0] + (z - h.z) * f[1] < 0;
@@ -61,6 +61,11 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   await page.evaluate(() => { window.__sfxLog.length = 0; const M = __k.market, d = __k.story.debug; __k.game.p.pos.set(M.spot[0] + 2.5, 0, M.spot[1] + 2.5); d.snapCam(); }); await sleep(3500);
   check(await page.evaluate((z0) => Math.abs(__k.market.scale.rotation.z - z0) > 0.005, m.z0), 'the balance scale tips as things are weighed');
   check(await page.evaluate(() => window.__sfxLog.includes('chop') && window.__sfxLog.includes('chatter')), 'near the stall you hear the cleaver and people talking'); }
+// the water carrier walks her route between the pump and house 3, the pot riding on her head
+{ const pos = () => page.evaluate(() => { const W = __k.market.carrier, p = W.a.wrap.position, h = W.head.getWorldPosition(new __k.THREE.Vector3()); return { x: p.x, z: p.z, pot: W.pot.position.distanceTo(h) }; });
+  await page.evaluate(() => { const W = __k.market.carrier; W.wait = 0; __k.game.p.pos.set(W.a.wrap.position.x + 4, 0, W.a.wrap.position.z + 4); __k.story.debug.snapCam(); });
+  const a = await pos(); await sleep(2500); const b = await pos();
+  check(Math.hypot(b.x - a.x, b.z - a.z) > 0.5 && b.pot < 0.45, `a woman carries a water pot on her head between the pump and a house (walked ${Math.hypot(b.x - a.x, b.z - a.z).toFixed(1)} m, pot ${b.pot.toFixed(2)} m above her head)`); }
 // reduced motion: no cinematic shots at all
 { const pg2 = await browser.newPage(); await pg2.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
   await pg2.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); await pg2.evaluateOnNewDocument(() => localStorage.setItem('khuntau-played', '1'));

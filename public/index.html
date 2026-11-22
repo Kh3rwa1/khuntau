@@ -1383,6 +1383,14 @@ const blobs = [];
 const blobMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
 { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 4, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); blobMat.alphaMap = new THREE.CanvasTexture(c); }
 const blobGeo = new THREE.PlaneGeometry(1, 1);
+// every soft shadow disc in one instanced draw (they were one mesh, one draw call each: 14 in a wide village view), and
+// none for characters that are culled off screen (their discs used to be drawn anyway)
+const blobIM = new THREE.InstancedMesh(blobGeo, blobMat, 48); blobIM.frustumCulled = false; blobIM.renderOrder = 2; blobIM.count = 0; scene.add(blobIM);
+const _bz = new THREE.Matrix4().makeScale(0, 0, 0);
+function blobDraw() { let n = 0;
+  for (const b of blobs) { if (n >= 48) break; let o = b, vis = true; while (o) { if (!o.visible) { vis = false; break; } o = o.parent; } const ow = b.userData.owner; if (vis && ow && ow.root && !ow.root.visible) vis = false;
+    if (!vis || !b.parent) continue; b.updateWorldMatrix(true, false); blobIM.setMatrixAt(n++, b.matrixWorld); }
+  blobIM.count = n; blobIM.instanceMatrix.needsUpdate = true; }
 function setShadows(on) { on = on && !CHEAP; sun.castShadow = on; for (const b of blobs) b.visible = !on; }
 function actor(gltf, height, clone) {
   const root = clone ? SkeletonUtils.clone(gltf.scene) : gltf.scene;
@@ -1413,8 +1421,8 @@ function actor(gltf, height, clone) {
     o.geometry = g; o.material = charMat; a.body = o;
     for (const p of parts) a.mats[p.name] = { part: p };
   });
-  const blob = new THREE.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.035; blob.scale.setScalar(height * 0.62); blob.renderOrder = 2; blob.visible = !sun.castShadow;
-  wrap.add(blob); blobs.push(blob); a.blob = blob;
+  const blob = new THREE.Object3D(); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.035; blob.scale.setScalar(height * 0.62); blob.visible = !sun.castShadow; // a placeholder: blobDraw() draws every shadow in one call
+  wrap.add(blob); blobs.push(blob); a.blob = blob; blob.userData.owner = a;
   a.play = (name, { fade = 0.18, once = false, ts = 1 } = {}) => {
     const next = actions[name]; if (!next) return;
     next.timeScale = ts;
@@ -1458,7 +1466,7 @@ function madalMesh() {
   const capA = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), leatherMat); capA.position.y = -0.29; capA.rotation.x = Math.PI / 2;
   const capB = new THREE.Mesh(new THREE.CircleGeometry(0.11, 16), leatherMat); capB.position.y = 0.29; capB.rotation.x = -Math.PI / 2;
   const cordM = new THREE.MeshBasicMaterial({ color: 0xe8dcc0 });
-  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const c = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.6, 3), cordM); c.position.set(Math.cos(a) * 0.17, 0, Math.sin(a) * 0.17); g.add(c); }
+  g.add(new THREE.Mesh(mergeGeometries(Array.from({ length: 6 }, (_, i) => { const a = i / 6 * Math.PI * 2; return new THREE.CylinderGeometry(0.006, 0.006, 0.6, 3).translate(Math.cos(a) * 0.17, 0, Math.sin(a) * 0.17); })), cordM)); // the six cords in one draw
   g.add(body, capA, capB); g.rotation.z = Math.PI / 2; // lies across the drummer's waist
   return g;
 }
@@ -1682,6 +1690,13 @@ function onCrowdLoaded() {
       const [x, z] = B(lx, lb); a.wrap.position.set(x, 0, z); a.role = role; scene.add(a.wrap); market.people.push(a); villageProps.push({ x, z, r: 0.35, top: 1.8 }); }
     const [bx, bz] = B(0, LB), [sx2, sz2] = B(-1.5, LB + 0.4), [tx, tz] = B(1.2, LB);
     for (const a of market.people) { if (a.role === 'butcher') { faceTo(a, bx, bz); a.play('SwordSlash', { ts: 0.75 }); } else if (a.role === 'weigher') { faceTo(a, sx2, sz2); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } else { faceTo(a, tx + rand(-0.4, 0.4), tz); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } } }
+  // a woman carrying a clay water pot on her head between the hand pump and house 3's door, pausing at each end
+  { const gA = (i) => 0.35 + (2 * Math.PI / 9) * i, pump = [Math.cos(gA(2.5)) * 21.4, Math.sin(gA(2.5)) * 21.4], h = houses[3], door = [h.x + Math.sin(h.rot) * (h.d / 2 + 1.0), h.z + Math.cos(h.rot) * (h.d / 2 + 1.0)];
+    const mid = [Math.cos(gA(2.7)) * 19.6, Math.sin(gA(2.7)) * 19.6], a = actor(loaded.woman, 1.62, true);
+    tint(a, { Skin: 0x6a4026, Shirt: 0xe8c547, Pants: 0x8a2a22, Hair: 0x120c08, Necklace: 0xd8352a, Bangles: 0xf2b134, Sari: 0xe8c547, SariBorder: 0x8a2a22, Pallu: 0xe8c547 });
+    const pot = new THREE.Mesh(mergeGeometries([vc(new THREE.SphereGeometry(0.17, 9, 7).scale(1, 0.9, 1), 0x9a4c2a), vc(new THREE.CylinderGeometry(0.07, 0.09, 0.08, 9).translate(0, 0.17, 0), 0x8a4222), vc(new THREE.TorusGeometry(0.1, 0.03, 4, 10).rotateX(Math.PI / 2).translate(0, -0.15, 0), 0xc9b07a)]), houseVC);
+    scene.add(a.wrap); scene.add(pot); a.wrap.position.set(pump[0], 0, pump[1]); a.play('Idle');
+    market.carrier = { a, pot, route: [pump, mid, door], i: 0, dir: 1, wait: 2, head: a.root.getObjectByName('Head') }; }
   setTimeout(registerSW, 1500);
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
@@ -3195,6 +3210,13 @@ function frame() {
     const seen = (a) => { _sp.center.copy(a.wrap.position); _sp.center.y += 0.9; return _fr.intersectsSphere(_sp); };
     for (const c of crowd) c.root.visible = (!inStory && (c.busy || c.goingHome)) || seen(c);
     for (const d of drummers) d.root.visible = seen(d);
+    if (market.carrier) { const W = market.carrier, a = W.a, p = a.wrap.position; // walk the route, pause at each end, the pot rides on her head
+      if (W.wait > 0) { W.wait -= dt; if (a.curName !== 'Idle') a.play('Idle', { fade: 0.3 }); }
+      else { const ni = W.i + W.dir, t = W.route[ni], dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz);
+        if (d < 0.15) { W.i = ni; if (ni === 0 || ni === W.route.length - 1) { W.dir = -W.dir; W.wait = rand(2.5, 4.5); } }
+        else { const st = Math.min(d, 1.05 * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 6, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.25, ts: 0.85 }); } }
+      const vis = seen(a) && Math.hypot(game.p.pos.x - p.x, game.p.pos.z - p.z) < 34; a.root.visible = vis; W.pot.visible = vis;
+      if (vis) a.mixer.update(dt); if (W.head) { a.root.updateMatrixWorld(true); W.head.getWorldPosition(W.pot.position); W.pot.position.y += 0.33; W.pot.rotation.y = a.wrap.rotation.y; } } /* the pot follows her head even off screen, so it never pops */
     if (market.people.length) { let any = false; const close = Math.hypot(game.p.pos.x - market.spot[0], game.p.pos.z - market.spot[1]) < 18; if (market.scale) market.scale.visible = close; /* behind a house: from further away the house hides them anyway, so do not draw them */
       for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; if (perf.odd) a.mixer.update(perf.cdt); } }
       if (market.scale) market.scale.rotation.z = Math.sin(game.t * 0.9) * 0.1 * (0.6 + 0.4 * Math.sin(game.t * 0.23)); /* weighing: the beam dips and settles */
@@ -3213,7 +3235,7 @@ function frame() {
   }
   updateParticles(dt); audioFrame();
   updateCamera(dt); updateFlames(dt);
-  renderer.render(scene, camera);
+  blobDraw(); renderer.render(scene, camera);
   adaptQuality(clock.elapsedTime); voiceMix(dt);
   requestAnimationFrame(frame);
 }
