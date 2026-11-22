@@ -31,6 +31,7 @@ check(await ev(() => __k.story.debug.festWaiting() && __k.story.debug.fest.day =
 check(await until(() => /Day 1 done/.test(document.getElementById('stageBanner').textContent) && document.getElementById('stageBanner').classList.contains('show'), 8000), 'a banner says Day 1 is done and Dakay Din opens tomorrow');
 await page.screenshot({ path: 'tests/out/fest-1-done.jpg', type: 'jpeg', quality: 70 });
 check(/Day 2 \(Dakay Din\) opens tomorrow/.test(await obj()), `the objective says so (${await obj()})`);
+check(['RING'].includes(await nearLabels(0, 6, 'RING')), 'the khunt is still open for a scored round while you wait');
 // free world: the garland (a day 3 thing) is offered today, but the Majhi or an elder scolds you first, then lets you
 check((await nearLabels(g[0], g[1], 'GARLAND')) === 'GARLAND', 'nothing is locked: the garland is offered on day 1');
 await ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
@@ -41,7 +42,6 @@ for (let i = 0; i < 3 && !(await ev(() => document.getElementById('dlg').hidden)
 check(await until(() => __k.story.debug.save.garland === 1, 8000), 'then you may do it anyway');
 check(await ev(() => { let ran = 0; __k.story.debug.rebuke(3, 'the garland', () => { ran = 1; }); return ran === 1 && document.getElementById('dlg').hidden; }), 'the same thing is not scolded twice in a day');
 check(await ev(() => { const d = __k.story.debug; return d.fest.day === 1 && d.festWaiting() && d.fest.reb === 1; }), 'and it does not move the festival on: still day 1');
-check(['RING'].includes(await nearLabels(0, 6, 'RING')), 'the khunt is still open for a scored round while you wait');
 // day 2 (Dakay Din): the alpana before the door
 await sleep(6000); await ev(() => { const d = __k.story.debug; d.S.dlg = null; d.S.focus = null; document.getElementById('dlg').hidden = true; }); /* let the garland's shot and the Majhi's words finish */
 await tomorrow(); await sleep(400);
