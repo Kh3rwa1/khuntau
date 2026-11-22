@@ -736,10 +736,16 @@ export function initStory(C) {
     $('laneT').textContent = ''; $('laneU').textContent = '';
     if (free) { hint('Play anything. The village follows your hands.', 2400); return; }
     drum.t0 = now() + BEAT * 4 + 0.3; drum.click = -4;
+    // The whole click track is booked on the audio clock now, at the start: no frame, however late (a slow phone, a
+    // loading hitch), can make a click play off the beat. It goes through its own gain so stopping the chart cuts it.
+    { const ctx = C.audio.ctx; if (drum.bus) { try { drum.bus.disconnect(); } catch (e) {} drum.bus = null; }
+      if (ctx && !C.audio.muted && ctx.state === 'running') { const outLat = clamp((ctx.outputLatency || 0) + (ctx.baseLatency || 0), 0, 0.3), base = ctx.currentTime - now(); drum.bus = ctx.createGain(); drum.bus.connect(C.audio.sfxBus);
+        for (let k = -4; k <= 16; k++) C.noise(Math.max(ctx.currentTime + 0.02, base + drum.t0 + k * BEAT - outLat), 0.03, k < 0 ? 0.3 : 0.1, 'highpass', 3000, 1, drum.bus); drum.sched = 17; } }
     for (const [lane, b] of CHART) { const el = document.createElement('div'); el.className = 'note'; $(lane === 'T' ? 'laneT' : 'laneU').appendChild(el); drum.notes.push({ lane, time: drum.t0 + b * BEAT, el, state: 0 }); }
     drum.end = drum.t0 + CHART[CHART.length - 1][1] * BEAT + 0.7; drum.laneH = $('laneT').clientHeight;
   }
   function drumStop() {
+    if (drum.bus) { try { drum.bus.disconnect(); } catch (e) {} drum.bus = null; }
     S.mode = 'walk'; $('pads').hidden = true; showSticks(false); C.musicLevel(C.BED.village); S.lookT = -9;
     $('laneT').textContent = ''; $('laneU').textContent = ''; drum.notes = [];
   }
@@ -786,11 +792,11 @@ export function initStory(C) {
     // The look-ahead grows with the longest recent frame gap: a hitch (garbage collection, a slow phone) longer than the
     // window used to let a click slip past and play late.
     const ctx = C.audio.ctx, outLat = ctx ? clamp((ctx.outputLatency || 0) + (ctx.baseLatency || 0), 0, 0.3) : 0;
-    const gap = drum.lastTn != null ? clamp(tn - drum.lastTn, 0, 1) : 0; drum.lastTn = tn; drum.gap = Math.max(gap, (drum.gap || 0) * 0.95);
-    while (drum.sched <= 16 && drum.t0 + drum.sched * BEAT - tn < 0.25 + outLat + Math.min(0.9, drum.gap * 2.5)) {
-      if (ctx && !C.audio.muted) C.noise(Math.max(ctx.currentTime, ctx.currentTime + (drum.t0 + drum.sched * BEAT - tn) - outLat), 0.03, drum.sched < 0 ? 0.3 : 0.1, 'highpass', 3000, 1, C.audio.sfxBus);
-      drum.sched++;
-    }
+    const gap = drum.lastTn != null ? clamp(tn - drum.lastTn, 0, 1) : 0; drum.lastTn = tn; drum.gap = Math.max(gap, (drum.gap || 0) * 0.95, S.gap || 0); /* S.gap: the slowest recent frame anywhere in the village, known before the chart starts */
+    // normally the whole track was booked when the chart began; if sound was not running yet (first tap still unlocking
+    // it), book everything that is left in one go as soon as it is
+    if (drum.sched <= 16 && ctx && !C.audio.muted && ctx.state === 'running') { const base = ctx.currentTime - tn; if (!drum.bus) { drum.bus = ctx.createGain(); drum.bus.connect(C.audio.sfxBus); }
+      for (let k = drum.sched; k <= 16; k++) { const w = base + drum.t0 + k * BEAT - outLat; if (w > ctx.currentTime + 0.02) C.noise(w, 0.03, k < 0 ? 0.3 : 0.1, 'highpass', 3000, 1, drum.bus); } drum.sched = 17; }
     while (tn >= drum.t0 + drum.click * BEAT && drum.click <= 16) { $('beatCount').textContent = drum.click < 0 ? String(-drum.click) : ''; drum.click++; }
     const tj = tn - off(); // judging clock, same offset as strike()
     const hgt = drum.laneH || 200;
@@ -1082,6 +1088,7 @@ export function initStory(C) {
     W.arrowIM.instanceMatrix.needsUpdate = true; W.arrowIM.visible = any;
   }
   function update(dt) {
+    { const n = performance.now(); if (S.lastNow) S.gap = Math.max(Math.min(1.5, (n - S.lastNow) / 1000), (S.gap || 0) * 0.985); S.lastNow = n; } /* real frame gap, decaying: the drum's click look-ahead grows with it */
     const p = game.p, pl = C.player(), bull = C.bull(), tn = now();
     S.lock -= dt; S.tipsy = Math.max(0, S.tipsy - dt); S.boost -= dt; S.bullReact -= dt; S.sat -= dt;
     const free = S.mode === 'walk' && !S.dlg && !pick.on && S.lock <= 0;

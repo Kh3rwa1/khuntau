@@ -1410,7 +1410,7 @@ Object.assign(sfx, {
     const f0 = [112, 128, 176, 205, 228][(Math.random() * 5) | 0], n = 3 + (Math.random() * 4 | 0); let at = t;
     for (let i = 0; i < n; i++) { const d = rand(0.07, 0.15), a = f0 * rand(0.92, 1.22), F1 = rand(420, 820), F2 = rand(1100, 2100);
       voiced(at, 'sawtooth', a, a * rand(0.82, 0.96), d, 0.05 * v, F1, 4, 0, 6, 0.015); voiced(at, 'sawtooth', a, a * rand(0.82, 0.96), d, 0.022 * v, F2, 6, 0, 6, 0.015);
-      if (Math.random() < 0.5) noise(at, 0.03, 0.02 * v, 'bandpass', rand(2500, 4200), 2, SB()); at += d + rand(0.02, 0.09) + (Math.random() < 0.2 ? rand(0.1, 0.25) : 0); } },
+      if (Math.random() < 0.5) noise(at, 0.045, 0.02 * v, 'bandpass', rand(2500, 4200), 2, SB()); /* not 0.03 s: that length is the drum's beat click, and drum.mjs tells clicks by it */ at += d + rand(0.02, 0.09) + (Math.random() < 0.2 ? rand(0.1, 0.25) : 0); } },
   laugh(v = 1) { const t = AT(); if (t < 0) return; const f = rand(190, 280); for (let i = 0; i < 4; i++) voiced(t + i * 0.13, 'sawtooth', f * (1 - i * 0.05), f * 0.8, 0.09, 0.045 * v * (1 - i * 0.15), 900, 3, 0, 6, 0.01); }, /* a short laugh in a crowd */
   slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
   near(pos, R) { const p = game.p.pos, d = Math.hypot(pos.x - p.x, pos.z - p.z); return d >= R ? 0 : 1 - d / R; }, // loudness by distance from you
