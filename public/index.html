@@ -483,7 +483,37 @@ const START_STAGE = Math.max(savedStage >= 4 ? savedStage - 1 : savedStage, QUAL
 // cheap mode: simple lighting and no real-time shadows. Chosen before anything is built so every material is made cheap.
 const CHEAP = START_STAGE >= 3;
 const stripPbr = ({ roughness, metalness, envMapIntensity, ...rest }) => rest;
-const Mat = (p = {}) => CHEAP ? new THREE.MeshLambertMaterial(stripPbr(p)) : new THREE.MeshStandardMaterial(p);
+const Mat = (p = {}) => shade(CHEAP ? new THREE.MeshLambertMaterial(stripPbr(p)) : new THREE.MeshStandardMaterial(p), { ao: 0.55 });
+// One small shader addition shared by every lit material (it works without real-time shadows, so budget phones get it):
+//  ao    contact shading: walls, posts, legs and props darken toward the ground they stand on (surfaces facing up,
+//        like the ground itself, are left alone). The value is how dark it gets at the very bottom.
+//  eave  the top of a mud wall darkens under the thatch overhang     under  roof undersides (back faces) in shade
+//  rim   warm backlight on the edges of people and animals (the low sun behind them)
+// The house interior lives 40 m under the ground; heights there are taken from its own floor.
+const rimU = { rimDir: { value: new THREE.Vector3() }, rimCol: { value: new THREE.Color(0xffc68a).multiplyScalar(0.6) } };
+function shade(m, o) {
+  const fx = m.userData.fx = Object.assign({}, m.userData.fx, o), key = JSON.stringify(fx);
+  m.onBeforeCompile = sh => {
+    if (fx.rim) Object.assign(sh.uniforms, rimU);
+    sh.vertexShader = 'varying float vAoY;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      { vec4 aw = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        aw = instanceMatrix * aw;
+      #endif
+        vAoY = (modelMatrix * aw).y; }`);
+    let f = '';
+    if (fx.ao) f += `float nUp = dot(normal, normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz));
+      ao = mix(1.0, mix(${fx.ao.toFixed(3)}, 1.0, smoothstep(0.0, 0.6, y)), 1.0 - clamp(nUp, 0.0, 1.0));\n`;
+    if (fx.eave) f += `ao *= 1.0 - 0.34 * smoothstep(1.8, 2.6, y);\n`;
+    if (fx.under) f += `if (!gl_FrontFacing) ao *= 0.5;\n`;
+    sh.fragmentShader = 'varying float vAoY;\n' + (fx.rim ? 'uniform vec3 rimDir; uniform vec3 rimCol;\n' : '') + sh.fragmentShader
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      { float y = vAoY < -20.0 ? vAoY + 40.0 : vAoY, ao = 1.0; ${f} diffuseColor.rgb *= ao; }`)
+      .replace('#include <opaque_fragment>', (fx.rim ? `{ vec3 vd = normalize(vViewPosition); float fr = pow(1.0 - clamp(dot(normal, vd), 0.0, 1.0), 3.0);
+      float back = clamp(dot(rimDir, -vd), 0.0, 1.0); outgoingLight += rimCol * fr * (0.3 + 0.7 * back) * smoothstep(-0.35, 0.45, dot(normal, rimDir)); }\n` : '') + '#include <opaque_fragment>');
+  };
+  m.customProgramCacheKey = () => key; m.needsUpdate = true; return m;
+}
 // cap the number of pixels drawn: tablets have huge screens at 2x, which is what made them slow
 const MAX_PIX = [0.6e6, 1.5e6, 3.2e6][QUALITY], PR_CAP = [1, 1.5, 2][QUALITY];
 const perf = { scale: 1, acc: 0, n: 0, t: 0, shadowsCut: false, stage: 0, bad: 0, longs: 0, hold: 2.5, hist: [] };
@@ -504,6 +534,47 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xe6cfaa, 45, 165);
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
 camera.position.set(0, 6, 14);
+
+/* ---------- screen effects (mid phones and laptops) ---------- */
+// The frame is drawn to the screen exactly as before, copied into a texture, and one full-screen pass goes on top:
+// a soft glow round the brightest parts (sun, diya flames, the beam, sunlit sky; made at a quarter of the size), a
+// gentle S-curve, a touch warmer and richer, and a soft vignette. Working on the finished image keeps every additive
+// effect looking as it was tuned. Four extra draws and one copy. Auto-quality drops it first (stage 1), budget phones
+// never build it, and ?nofx turns it off.
+const fx = (() => {
+  if (QUALITY < 1 || /[?&]nofx\b/.test(location.search)) return null;
+  let src = null; const sz = new THREE.Vector2(), a = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false }), b = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
+  const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), sc = new THREE.Scene(), quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); quad.frustumCulled = false; sc.add(quad);
+  const vs = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+  const M = (fs, u) => new THREE.ShaderMaterial({ uniforms: u, vertexShader: vs, fragmentShader: fs, depthTest: false, depthWrite: false, toneMapped: false });
+  const bright = M(`uniform sampler2D t; uniform vec2 px; varying vec2 vUv;
+    vec3 f(vec2 o){ vec3 c = texture2D(t, vUv + o * px).rgb; return c * smoothstep(0.8, 1.0, max(c.r, max(c.g, c.b))); }
+    void main(){ gl_FragColor = vec4((f(vec2(-1.0, -1.0)) + f(vec2(1.0, -1.0)) + f(vec2(-1.0, 1.0)) + f(vec2(1.0, 1.0))) * 0.25, 1.0); }`, { t: { value: null }, px: { value: new THREE.Vector2() } });
+  const blur = M(`uniform sampler2D t; uniform vec2 dir; varying vec2 vUv;
+    void main(){ vec3 c = texture2D(t, vUv).rgb * 0.227 + (texture2D(t, vUv + dir * 1.385).rgb + texture2D(t, vUv - dir * 1.385).rgb) * 0.316
+      + (texture2D(t, vUv + dir * 3.231).rgb + texture2D(t, vUv - dir * 3.231).rgb) * 0.070; gl_FragColor = vec4(c, 1.0); }`, { t: { value: null }, dir: { value: new THREE.Vector2() } });
+  const comp = M(`uniform sampler2D t; uniform sampler2D g; uniform float glow; uniform float aspect; varying vec2 vUv;
+    void main(){ vec3 c = texture2D(t, vUv).rgb, gl = texture2D(g, vUv).rgb * glow;
+      c = 1.0 - (1.0 - c) * (1.0 - gl);                                   /* screen the glow on */
+      c = mix(c, c * c * (3.0 - 2.0 * c), 0.22);                          /* gentle S-curve */
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722)); c = mix(vec3(l), c, 1.08) * vec3(1.02, 1.0, 0.97);
+      vec2 d = (vUv - 0.5) * vec2(max(aspect, 1.0), max(1.0 / aspect, 1.0)); c *= 1.0 - 0.22 * smoothstep(0.35, 0.9, length(d));
+      gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0); }`, { t: { value: null }, g: { value: null }, glow: { value: 0.7 }, aspect: { value: 1 } });
+  return { on: true, comp,
+    setSize() { renderer.getDrawingBufferSize(sz); if (!src || src.image.width !== sz.x || src.image.height !== sz.y) { if (src) src.dispose(); src = new THREE.FramebufferTexture(sz.x, sz.y); src.minFilter = src.magFilter = THREE.LinearFilter; }
+      const w = Math.max(1, sz.x >> 2), h = Math.max(1, sz.y >> 2); a.setSize(w, h); b.setSize(w, h); bright.uniforms.px.value.set(1 / sz.x, 1 / sz.y); comp.uniforms.aspect.value = sz.x / sz.y; },
+    render() {
+      if (!src) this.setSize();
+      renderer.setRenderTarget(null); renderer.render(scene, camera); renderer.copyFramebufferToTexture(src);
+      const w = a.width, h = a.height;
+      quad.material = bright; bright.uniforms.t.value = src; renderer.setRenderTarget(a); renderer.render(sc, cam);
+      quad.material = blur; blur.uniforms.t.value = a.texture; blur.uniforms.dir.value.set(1 / w, 0); renderer.setRenderTarget(b); renderer.render(sc, cam);
+      blur.uniforms.t.value = b.texture; blur.uniforms.dir.value.set(0, 1 / h); renderer.setRenderTarget(a); renderer.render(sc, cam);
+      quad.material = comp; comp.uniforms.t.value = src; comp.uniforms.g.value = a.texture; renderer.setRenderTarget(null); renderer.render(sc, cam);
+    } };
+})();
+renderer.info.autoReset = false; /* reset once per frame in draw(), so the call count covers the whole frame */
+function draw() { renderer.info.reset(); if (fx && fx.on) fx.render(); else renderer.render(scene, camera); }
 
 const UPV = new THREE.Vector3(0, 1, 0);
 const ARENA_R = 11.5, ROPE_L = 6.2, GRAB_R = 1.45, POST_H = 2.7;
@@ -762,13 +833,14 @@ const doorMat = Mat({ color: 0x24160e });
 // shared meshes (walls in one draw; the texture tiling lives in the UVs instead of per-house materials).
 const houseWalls = [], housePlinth = [], houseWood = [], houseTiles = [];
 const wallTexR = wallTex.clone(); wallTexR.needsUpdate = true; wallTexR.wrapS = THREE.RepeatWrapping;
-const wallMat = Mat({ map: wallTexR, roughness: 0.95 });
+const wallMat = shade(Mat({ map: wallTexR, roughness: 0.95 }), { eave: true });
 // plinth, woodwork, doorways and windows share one vertex-coloured material: one draw call for all of them
 const houseVC = Mat({ vertexColors: true, roughness: 0.95, flatShading: true }), plinthMat = 0x8a5a3a, woodMat = 0x5e4630, holeMat = 0x24160e;
 const vc = (geo, hex) => { const c = new THREE.Color(hex), n = geo.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([c.r, c.g, c.b], i * 3); geo.setAttribute('color', new THREE.BufferAttribute(a, 3)); return geo; };
 const tileTex = canvasTex(128, 128, (c, w, h) => { c.fillStyle = '#7a3a22'; c.fillRect(0, 0, w, h); // overlapping rows of half-round clay tiles
   for (let y = 0; y < h; y += 16) for (let x = (y / 16) % 2 ? -8 : 0; x < w; x += 16) { const g = c.createLinearGradient(x, 0, x + 16, 0); g.addColorStop(0, '#5e2a18'); g.addColorStop(0.5, '#b0583a'); g.addColorStop(1, '#5e2a18'); c.fillStyle = g; c.fillRect(x + 1, y, 14, 15); c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x, y + 14, 16, 2); } }, 4);
-const tileMat = Mat({ map: tileTex, roughness: 0.85, side: THREE.DoubleSide });
+const thatchMat = shade(Mat({ map: thatchTex, roughness: 1, side: THREE.DoubleSide }), { under: true }); /* one material for every thatch roof (each house made its own) */
+const tileMat = shade(Mat({ map: tileTex, roughness: 0.85, side: THREE.DoubleSide }), { under: true });
 function house(x, z, rot, w = 5, d = 4, tiles = false) {
   const g = new THREE.Group();
   const geo = new THREE.BoxGeometry(w, 2.6, d), uv = geo.attributes.uv; // repeat the wall band by each face's width
@@ -791,7 +863,7 @@ function house(x, z, rot, w = 5, d = 4, tiles = false) {
   const cone = (sx, sz, h, y) => { const c = new THREE.ConeGeometry(1, h, 4, 1, true); c.rotateY(Math.PI / 4); c.scale(sx, 1, sz); c.translate(0, y, 0); return c; };
   if (tiles) { add(houseTiles, cone(w * 0.84, d * 0.84, 2.0, 2.6 + 1.0), tileMat, 0, 0, 0); add(houseTiles, new THREE.BoxGeometry(0.22, 0.16, 0.22), tileMat, 0, 4.62, 0); }
   else {
-    const roof = new THREE.Mesh(cone(w * 0.84, d * 0.84, 2.1, 2.6 + 1.05), Mat({ map: thatchTex, roughness: 1, side: THREE.DoubleSide })); roof.castShadow = true; g.add(roof); houseRoofs.push(roof);
+    const roof = new THREE.Mesh(cone(w * 0.84, d * 0.84, 2.1, 2.6 + 1.05), thatchMat); roof.castShadow = true; g.add(roof); houseRoofs.push(roof);
     const tier = new THREE.Mesh(cone(w * 0.6, d * 0.6, 1.5, 3.55), roof.material); g.add(tier); houseRoofs.push(tier);
     const knot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 0.34, 6), roof.material); knot.position.y = 4.78; g.add(knot); houseRoofs.push(knot);
   }
@@ -1033,7 +1105,7 @@ const flames = billboards(flameTex, 30, THREE.AdditiveBlending);
 }
 // distant hills, softened by the fog
 {
-  const hm = Mat({ color: 0x5d7346, roughness: 1 }); /* smooth: the facets read as low poly even through the haze */
+  const hm = shade(Mat({ color: 0x5d7346, roughness: 1 }), { ao: 0 }); /* smooth: the facets read as low poly even through the haze; no contact shading (their feet are under the ground) */
   const hills = [];
   for (let i = 0; i < 14; i++) {
     const a = i / 14 * Math.PI * 2 + rand(-0.1, 0.1), r = rand(105, 135);
@@ -1323,14 +1395,8 @@ const loaded = {}; let loadedCount = 0;
 // Fuse them into one piece coloured per vertex: about 6x fewer draws per character, the biggest saving on weak phones.
 let charMat = Mat({ vertexColors: true, roughness: 0.8 });
 // rim light: the low sun behind people and animals outlines their edges in warm light (golden-hour backlight), so they
-// lift off the ground and the crowd instead of reading as dark cut-outs. A few shader instructions, no extra pass.
-const rimU = { rimDir: { value: new THREE.Vector3() }, rimCol: { value: new THREE.Color(0xffc68a).multiplyScalar(0.6) } };
-function addRim(m) { m.userData.rim = true; m.onBeforeCompile = sh => { Object.assign(sh.uniforms, rimU);
-    sh.fragmentShader = 'uniform vec3 rimDir; uniform vec3 rimCol;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', `{ vec3 vd = normalize(vViewPosition); float fr = pow(1.0 - clamp(dot(normal, vd), 0.0, 1.0), 3.0);
-      float back = clamp(dot(rimDir, -vd), 0.0, 1.0); outgoingLight += rimCol * fr * (0.3 + 0.7 * back) * smoothstep(-0.35, 0.45, dot(normal, rimDir)); }
-      #include <opaque_fragment>`); };
-  m.customProgramCacheKey = () => 'rim'; return m; }
-addRim(charMat);
+// lift off the ground and the crowd instead of reading as dark cut-outs. Their feet darken less than a wall's base.
+shade(charMat, { rim: true, ao: 0.74 });
 // accessories folded into a person's skinned mesh at load: no extra draw calls, each item rides its bone and is
 // coloured per person through tint(). Everyone of a kind wears them (the player too, on the man model).
 const ACC = {
@@ -1438,6 +1504,22 @@ function plain(attr, k) {
   for (let i = 0; i < attr.count; i++) for (let j = 0; j < attr.itemSize; j++) o[i * attr.itemSize + j] = attr.getComponent(i, j);
   return new THREE.BufferAttribute(o, attr.itemSize);
 }
+// People: the stock heads are a third of the body (toy proportions). Shrink each head toward the neck in the bind pose
+// (bones untouched, so animations, held props and the sari still fit) and smooth the shading. Measured before, so bodies
+// keep their size; people end up a little shorter. gltf.userData.headDrop: how far the top of the head came down, as a
+// share of the model's old height (the water carrier's pot uses it).
+const HEAD_K = 0.84;
+function person(g, mesh, gltf) {
+  const bones = mesh.skeleton.bones, hi = bones.findIndex(b => b.name === 'Head'); if (hi < 0) return;
+  const piv = new THREE.Vector3().applyMatrix4(mesh.skeleton.boneInverses[hi].clone().invert()).applyMatrix4(mesh.bindMatrixInverse);
+  const P = g.attributes.position, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, v = new THREE.Vector3(); let top = -1e9, bot = 1e9;
+  for (let i = 0; i < P.count; i++) { let w = 0; for (let j = 0; j < 4; j++) if (si.getComponent(i, j) === hi) w += sw.getComponent(i, j);
+    v.fromBufferAttribute(P, i); top = Math.max(top, v.y); bot = Math.min(bot, v.y); if (w <= 0) continue;
+    const f = 1 - (1 - HEAD_K) * w; v.sub(piv).multiplyScalar(f).add(piv); P.setXYZ(i, v.x, v.y, v.z); }
+  P.needsUpdate = true; gltf.userData.headDrop = (1 - HEAD_K) * (top - piv.y) / (top - bot);
+  smoothNormals(g, 66, (g.userData.parts || []).filter(p => p.name === 'Face'));
+  g.computeBoundingSphere(); gltf.userData.person = true;
+}
 const ZEBU = { bull: { hump: 0.17, dew: 0.12, horn: 1.55, up: 0.2 }, cow: { hump: 0.07, dew: 0.05, horn: 1.25, up: 0.08 } };
 const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 function mergeChar(gltf, kind) {
@@ -1460,13 +1542,32 @@ function mergeChar(gltf, kind) {
     merged.setAttribute('color', new THREE.BufferAttribute(col, 3)); merged.userData.parts = parts;
     meshes[0].geometry = merged; meshes[0].material = charMat;
     for (const m of meshes.slice(1)) m.parent.remove(m);
-    if (ZEBU[kind]) { fitModel(gltf); zebu(merged, ZEBU[kind]); gltf.userData.zebu = true; } /* measured before reshaping, so the hump and horns do not shrink the animal */
+    if (ZEBU[kind]) { fitModel(gltf); zebu(merged, ZEBU[kind]); gltf.userData.zebu = true; }
+    else if (ACC[kind] && kind !== 'bull') { fitModel(gltf); person(merged, meshes[0], gltf); } /* measured before reshaping, so the hump and horns do not shrink the animal */
   }
 }
 // The stock model is a European-looking box of a cow. Santal cattle are zebu: a hump over the shoulders, a dewlap
 // hanging from throat to chest, horns that sweep out and up. Reshape the bind pose (bones and weights unchanged,
 // so every animation still fits), then give it smooth shading with creases kept at hooves and horn tips.
 // Bind space: x across, y up (hooves -0.57, back 0.55), z forward (tail -1, nose +1).
+// smooth shading for the stock models (they come flat-shaded: every face its own normal, which is what read as "low
+// poly" up close). Parts in `skip` (eyes) keep their normals.
+function smoothNormals(g, crease, skip = []) {
+  const P = g.attributes.position, pos = P.array, inPart = (pt, i) => pt && i >= pt.start && i < pt.start + pt.count, eyes = skip;
+  // smooth normals: average the faces meeting at each point (across colour seams too) unless they meet at more than `crease` degrees
+  const idx = g.index.array, nf = idx.length / 3, fn = new Float32Array(nf * 3), groups = new Map(), key = i => Math.round(pos[i * 3] * 2e3) + ',' + Math.round(pos[i * 3 + 1] * 2e3) + ',' + Math.round(pos[i * 3 + 2] * 2e3);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), own = new Float32Array(P.count * 3);
+  for (let f = 0; f < nf; f++) { const i0 = idx[f * 3], i1 = idx[f * 3 + 1], i2 = idx[f * 3 + 2];
+    a.fromArray(pos, i0 * 3); b.fromArray(pos, i1 * 3).sub(a); c.fromArray(pos, i2 * 3).sub(a); b.cross(c); fn[f * 3] = b.x; fn[f * 3 + 1] = b.y; fn[f * 3 + 2] = b.z;
+    const l = b.length() || 1; for (const i of [i0, i1, i2]) { own[i * 3] += b.x / l; own[i * 3 + 1] += b.y / l; own[i * 3 + 2] += b.z / l; const k = key(i); let gr = groups.get(k); if (!gr) groups.set(k, gr = []); gr.push(f); } }
+  const N = new Float32Array(P.count * 3), old = g.attributes.normal, cosC = Math.cos(crease * Math.PI / 180), r = new THREE.Vector3(), o = new THREE.Vector3(), fv = new THREE.Vector3();
+  for (let i = 0; i < P.count; i++) {
+    if (eyes.some(e => inPart(e, i))) { N[i * 3] = old.getX(i); N[i * 3 + 1] = old.getY(i); N[i * 3 + 2] = old.getZ(i); continue; }
+    o.fromArray(own, i * 3).normalize(); r.set(0, 0, 0);
+    for (const f of groups.get(key(i)) || []) { fv.fromArray(fn, f * 3); const l = fv.length(); if (l && fv.dot(o) / l > cosC) r.add(fv); }
+    if (r.lengthSq() < 1e-12) r.copy(o); r.normalize(); N[i * 3] = r.x; N[i * 3 + 1] = r.y; N[i * 3 + 2] = r.z; }
+  g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+}
 function zebu(g, Z) {
   const parts = g.userData.parts, P = g.attributes.position, pos = new Float32Array(P.count * 3);
   for (let i = 0; i < P.count; i++) { pos[i * 3] = P.getX(i); pos[i * 3 + 1] = P.getY(i); pos[i * 3 + 2] = P.getZ(i); }
@@ -1490,19 +1591,7 @@ function zebu(g, Z) {
       y -= Z.dew * wd; x *= 1 - 0.35 * wd; }
     pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; }
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  // smooth normals: average the faces meeting at each point (across colour seams too) unless they meet at more than 60 degrees
-  const idx = g.index.array, nf = idx.length / 3, fn = new Float32Array(nf * 3), groups = new Map(), key = i => Math.round(pos[i * 3] * 2e3) + ',' + Math.round(pos[i * 3 + 1] * 2e3) + ',' + Math.round(pos[i * 3 + 2] * 2e3);
-  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), own = new Float32Array(P.count * 3);
-  for (let f = 0; f < nf; f++) { const i0 = idx[f * 3], i1 = idx[f * 3 + 1], i2 = idx[f * 3 + 2];
-    a.fromArray(pos, i0 * 3); b.fromArray(pos, i1 * 3).sub(a); c.fromArray(pos, i2 * 3).sub(a); b.cross(c); fn[f * 3] = b.x; fn[f * 3 + 1] = b.y; fn[f * 3 + 2] = b.z;
-    const l = b.length() || 1; for (const i of [i0, i1, i2]) { own[i * 3] += b.x / l; own[i * 3 + 1] += b.y / l; own[i * 3 + 2] += b.z / l; const k = key(i); let gr = groups.get(k); if (!gr) groups.set(k, gr = []); gr.push(f); } }
-  const N = new Float32Array(P.count * 3), old = g.attributes.normal, cosC = Math.cos(60 * Math.PI / 180), r = new THREE.Vector3(), o = new THREE.Vector3(), fv = new THREE.Vector3();
-  for (let i = 0; i < P.count; i++) {
-    if (eyes.some(e => inPart(e, i))) { N[i * 3] = old.getX(i); N[i * 3 + 1] = old.getY(i); N[i * 3 + 2] = old.getZ(i); continue; }
-    o.fromArray(own, i * 3).normalize(); r.set(0, 0, 0);
-    for (const f of groups.get(key(i)) || []) { fv.fromArray(fn, f * 3); const l = fv.length(); if (l && fv.dot(o) / l > cosC) r.add(fv); }
-    if (r.lengthSq() < 1e-12) r.copy(o); r.normalize(); N[i * 3] = r.x; N[i * 3 + 1] = r.y; N[i * 3 + 2] = r.z; }
-  g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  smoothNormals(g, 60, eyes);
   g.computeBoundingSphere(); g.userData.zebu = true;
 }
 // soft dark disc under a character, used when real-time shadows are off
@@ -2233,7 +2322,7 @@ function gameOver() {
   setTimeout(() => { setMusic('intro'); if (isBest && pts > 0) sfx.cheer(); }, 1500);
   if (isBest) { best = pts; try { localStorage.setItem('khuntau-best', best); } catch (e) {} }
   // freeze this moment for the share card
-  setTimeout(() => { try { renderer.render(scene, camera); lastShot = renderer.domElement.toDataURL('image/jpeg', 0.85); } catch (e) { lastShot = null; } }, 500);
+  setTimeout(() => { try { draw(); lastShot = renderer.domElement.toDataURL('image/jpeg', 0.85); } catch (e) { lastShot = null; } }, 500);
   setTimeout(() => {
     const beat = challenge && pts > challenge.beat;
     $('overTitle').textContent = beat ? `You beat ${challenge.from || 'them'}!` : isBest && pts > 0 ? 'New best!' : 'Horned!';
@@ -3263,7 +3352,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3341,7 +3430,7 @@ function frame() {
   const rawDt = Math.min(clock.getDelta(), 0.05);
   if (game.slow > 0) game.slow -= rawDt;
   const dt = game.slow > 0 && !game.online ? rawDt * 0.3 : rawDt; // a breath of slow motion on the best moments
-  if (game.mode === 'paused') { renderer.render(scene, camera); requestAnimationFrame(frame); return; }
+  if (game.mode === 'paused') { draw(); requestAnimationFrame(frame); return; }
   game.t += dt;
   if (bull && player) {
     readMove();
@@ -3371,7 +3460,7 @@ function frame() {
         if (d < 0.15) { W.i = ni; if (ni === 0 || ni === W.route.length - 1) { W.dir = -W.dir; W.wait = rand(2.5, 4.5); } }
         else { const st = Math.min(d, 1.05 * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 6, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.25, ts: 0.85 }); } }
       const vis = seen(a) && Math.hypot(game.p.pos.x - p.x, game.p.pos.z - p.z) < 34; a.root.visible = vis; W.pot.visible = vis;
-      if (vis) a.mixer.update(dt); if (W.head) { a.root.updateMatrixWorld(true); W.head.getWorldPosition(W.pot.position); W.pot.position.y += 0.33; W.pot.rotation.y = a.wrap.rotation.y; } } /* the pot follows her head even off screen, so it never pops */
+      if (vis) a.mixer.update(dt); if (W.head) { a.root.updateMatrixWorld(true); W.head.getWorldPosition(W.pot.position); W.pot.position.y += 0.33 - 1.62 * (loaded.woman.userData.headDrop || 0); W.pot.rotation.y = a.wrap.rotation.y; } } /* the pot follows her head even off screen, so it never pops */
     if (market.people.length) { let any = false; const close = Math.hypot(game.p.pos.x - market.spot[0], game.p.pos.z - market.spot[1]) < 18; if (market.scale) market.scale.visible = close; /* behind a house: from further away the house hides them anyway, so do not draw them */
       for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; if (perf.odd) a.mixer.update(perf.cdt); } }
       if (market.scale) market.scale.rotation.z = Math.sin(game.t * 0.9) * 0.1 * (0.6 + 0.4 * Math.sin(game.t * 0.23)); /* weighing: the beam dips and settles */
@@ -3391,7 +3480,7 @@ function frame() {
   updateCamera(dt); updateFlames(dt);
   rimU.rimDir.value.copy(sunDir).transformDirection(camera.matrixWorldInverse);
   if (sun.castShadow) { camera.getWorldDirection(tmpV3); tmpV3.y = 0; if (tmpV3.lengthSq() < 1e-4) tmpV3.set(0, 0, -1); tmpV3.normalize(); sunFollow(camera.position.x + tmpV3.x * 13, camera.position.z + tmpV3.z * 13); }
-  blobDraw(); renderer.render(scene, camera);
+  blobDraw(); draw();
   adaptQuality(clock.elapsedTime); voiceMix(dt);
   requestAnimationFrame(frame);
 }
@@ -3413,10 +3502,11 @@ if (/[?&]fps\b/.test(location.search)) {
 function applyStage(n) {
   perf.stage = n;
   perf.scale = n >= 6 ? 0.55 : n >= 5 ? 0.7 : n >= 1 ? 0.85 : 1; renderer.setPixelRatio(targetPR());
+  if (fx) { fx.on = n < 1; fx.setSize(); } /* screen effects are the first thing to go */
   setShadows(n < 2);
   if (n >= 3 && !CHEAP && !perf.lambert) { // mid-session switch; from the next launch everything is built cheap from the start
     perf.lambert = true; scene.environment = null; const cache = new Map();
-    const cheap = (m) => { if (!m || !m.isMeshStandardMaterial) return m; let l = cache.get(m); if (!l) { l = new THREE.MeshLambertMaterial({ color: m.color, map: m.map, vertexColors: m.vertexColors, transparent: m.transparent, opacity: m.opacity, side: m.side, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity, alphaTest: m.alphaTest, depthWrite: m.depthWrite, flatShading: m.flatShading }); if (m.userData.rim) addRim(l); cache.set(m, l); } return l; };
+    const cheap = (m) => { if (!m || !m.isMeshStandardMaterial) return m; let l = cache.get(m); if (!l) { l = new THREE.MeshLambertMaterial({ color: m.color, map: m.map, vertexColors: m.vertexColors, transparent: m.transparent, opacity: m.opacity, side: m.side, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity, alphaTest: m.alphaTest, depthWrite: m.depthWrite, flatShading: m.flatShading }); if (m.userData.fx) shade(l, m.userData.fx); cache.set(m, l); } return l; };
     charMat = cheap(charMat); perf.cheapen = () => scene.traverse(o => { if (o.isMesh) o.material = cheap(o.material); }); perf.cheapen();
   }
   perf.thin = n >= 4; if (crowd.length) crowdBudget();
@@ -3457,6 +3547,7 @@ addEventListener('resize', () => {
   camera.fov = camera.aspect < 1 ? 62 : 50;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  if (fx) fx.setSize();
 });
 dispatchEvent(new Event('resize'));
 document.addEventListener('visibilitychange', () => {

@@ -1,6 +1,8 @@
 // The look on a mid phone (the A34's tier): golden-hour light with shadows that follow you round the village, edge
 // smoothing on, smooth trees, a rim-lit zebu bull (hump, dewlap, upswept horns) that keeps its size, and the budget
 // path (q=low) still building the same bull without errors.
+// Also: contact shading in the materials (step 3), screen effects on mid phones that auto-quality drops first (step 4),
+// people with smaller heads and smooth shading (step 5).
 //   node tests/look.mjs     (static server on 8791)
 import puppeteer from 'puppeteer';
 import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
@@ -44,7 +46,22 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   check(far.d < 18 && far.fromRing > 10, `the shadows follow you into the village (shadow centre ${far.d.toFixed(1)} m from you, ${far.fromRing.toFixed(1)} m from the ring)`);
   await page.screenshot({ path: 'tests/out/look-village.jpg', type: 'jpeg', quality: 70 });
   check(await page.evaluate(() => { let ok = false; __k.scene.traverse(o => { if (o.isMesh && o.material && o.material.vertexColors && o.geometry.attributes.position.count > 40000 && !o.material.flatShading && o.castShadow) ok = true; }); return ok; }), 'trees are smooth-shaded and cast shadows on mid phones');
-  check(await page.evaluate(() => __k.charMat.userData.rim === true), 'people and animals have the warm rim light');
+  check(await page.evaluate(() => __k.charMat.userData.fx.rim === true), 'people and animals have the warm rim light');
+  // step 3: contact shading baked into the materials (works without real-time shadows)
+  const ao = await page.evaluate(() => ({ wall: __k.wallMat.userData.fx, roof: __k.thatchMat.userData.fx, people: __k.charMat.userData.fx }));
+  check(ao.wall.ao > 0 && ao.wall.eave && ao.roof.under && ao.people.ao > ao.wall.ao, `walls darken at the ground and under the eaves, roof undersides are shaded, feet darken less than walls (${JSON.stringify(ao)})`);
+  // step 4: screen effects on a mid phone, the first thing auto-quality drops, back when it recovers
+  const fx = await page.evaluate(async () => { const r = { built: !!__k.fx, on: __k.fx && __k.fx.on }; const calls = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(__k.renderer.info.render.calls))));
+    r.callsOn = await calls(); __k.applyStage(1); r.offAt1 = !__k.fx.on; r.callsOff = await calls(); __k.applyStage(0); r.backAt0 = __k.fx.on; return r; });
+  check(fx.built && fx.on, 'mid phones get the screen effects (glow, grade, vignette)');
+  check(fx.offAt1 && fx.backAt0 && fx.callsOn - fx.callsOff >= 4, `auto-quality drops them first and brings them back (${fx.callsOn} draws with, ${fx.callsOff} without)`);
+  // step 5: people with smaller heads and smooth shading, bodies unchanged
+  const ppl = await page.evaluate(() => { const out = {}; for (const k of ['man', 'woman', 'worker']) { const g = __k.loaded[k]; let m; g.scene.traverse(o => { if (o.isSkinnedMesh && !m) m = o; });
+      const geo = m.geometry, p = geo.attributes.position, n = geo.attributes.normal, bones = m.skeleton.bones, hi = bones.findIndex(b => b.name === 'Head');
+      const piv = new __k.THREE.Vector3().applyMatrix4(m.skeleton.boneInverses[hi].clone().invert()); let top = -9, bot = 9; for (let i = 0; i < p.count; i++) { top = Math.max(top, p.getY(i)); bot = Math.min(bot, p.getY(i)); }
+      const seen = new Map(); let pairs = 0, same = 0; for (let i = 0; i < p.count; i++) { const kk = [p.getX(i), p.getY(i), p.getZ(i)].map(v => Math.round(v * 2000)).join(','); const j = seen.get(kk); if (j === undefined) { seen.set(kk, i); continue; } pairs++; if (n.getX(i) * n.getX(j) + n.getY(i) * n.getY(j) + n.getZ(i) * n.getZ(j) > 0.999) same++; }
+      out[k] = { person: !!g.userData.person, head: (top - piv.y) / (top - bot), smooth: same / pairs }; } return out; });
+  for (const [k, v] of Object.entries(ppl)) check(v.person && v.head < 0.325 && v.smooth > 0.5, `${k}: a smaller head (${Math.round(v.head * 100)}% of the height, was about 34%) and smooth shading (${Math.round(v.smooth * 100)}% shared normals)`);
   const b = await bullShape(page);
   check(b.zebu && b.hump > b.back + 0.1, `the bull has a zebu hump over the shoulders (top ${b.hump.toFixed(2)} vs back ${b.back.toFixed(2)})`);
   check(b.low < 0.03, `a dewlap hangs under his neck (lowest ${b.low.toFixed(2)}; the plain model's neck was at 0.09)`);
@@ -55,12 +72,18 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   await page.evaluate(() => __k.setAnimal('redcow')); await page.waitForFunction(() => __k.loaded.cow, { timeout: 30000 }).catch(() => {});
   const cow = await page.evaluate(() => { const g = __k.loaded.cow; return { has: !!g, z: !!(g && g.userData.zebu) }; });
   check(cow.has && cow.z, 'the cow is reshaped too (small hump)');
+  check(!logs.some(l => /Shader Error|Program Info Log|VALIDATE_STATUS/i.test(l)), 'every shader compiles (contact shading, rim, screen effects)');
   check(!realErrors(logs).length, 'mid: no page errors ' + realErrors(logs).join(' | ')); await page.close(); }
+// ?nofx turns the screen effects off on a phone where they cause trouble
+{ const page = await browser.newPage(); await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
+  await page.goto('http://127.0.0.1:8791/?debug&q=mid&nofx', { waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__k && __k.renderer, { timeout: 60000 });
+  check(await page.evaluate(() => __k.fx === null), '?nofx turns the screen effects off'); await page.close(); }
 
 // ---------- budget phone ----------
 { const { page, logs } = await open('low');
   const r = await page.evaluate(() => ({ aa: __k.renderer.getContext().getContextAttributes().antialias, shadows: __k.sun.castShadow, lambert: __k.charMat.type }));
-  check(!r.aa && !r.shadows && r.lambert === 'MeshLambertMaterial', `budget phones keep the cheap path (no MSAA, no shadows, ${r.lambert})`);
+  check(!r.aa && !r.shadows && r.lambert === 'MeshLambertMaterial' && await page.evaluate(() => __k.fx === null), `budget phones keep the cheap path (no MSAA, no shadows, no screen effects, ${r.lambert})`);
+  check(await page.evaluate(() => __k.wallMat.userData.fx.eave && __k.charMat.userData.fx.ao > 0), 'budget phones still get the contact shading (it needs no shadows)');
   const b = await bullShape(page);
   check(b.zebu && b.hump > b.back + 0.1, `budget phones get the same zebu bull (${b.zebu}, hump ${b.hump.toFixed(2)} vs ${b.back.toFixed(2)})`);
   await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(3000);
