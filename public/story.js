@@ -1151,7 +1151,8 @@ export function initStory(C) {
   const cineBars = [0, 1].map(i => { const d = document.createElement('div'); d.style.cssText = `position:fixed;left:0;right:0;${i ? 'bottom' : 'top'}:0;height:0;background:#000;z-index:4;pointer-events:none;transition:height .3s ease`; document.body.appendChild(d); return d; });
   function cinema(shot) { if (C.reduceMotion) return false; cine.shot = shot; cine.t0 = now(); cine.last = 0; arch.cine = true; cineBars.forEach(b => b.style.height = '7vh'); $('tapHint').style.visibility = 'hidden'; return true; }
   function cinemaEnd() { const s2 = cine.shot; cine.shot = null; arch.cine = false; cineBars.forEach(b => b.style.height = '0'); $('tapHint').style.visibility = '';
-    if (S.focus) { cine.fov = 0; camera.fov = baseFov(); camera.updateProjectionMatrix(); snapCam(); } /* cut straight back to the aiming view: easing back, a drag started meanwhile was measured against a moving camera */ if (game.slow > 0 && s2 && s2.slowed) game.slow = 0; if (s2 && s2.end) s2.end(); }
+    if (S.focus) { cine.fov = 0; camera.fov = baseFov(); camera.updateProjectionMatrix(); snapCam(); } /* cut straight back to the aiming view: easing back, a drag started meanwhile was measured against a moving camera */
+    if (S.mode === 'aim') arch.wait = Math.max(arch.wait, 0.1); /* and aim only once a frame has measured the settled view (the drag scale was still the zoomed one on this frame) */ if (game.slow > 0 && s2 && s2.slowed) game.slow = 0; if (s2 && s2.end) s2.end(); }
   document.addEventListener('pointerdown', () => { if (cine.shot && now() - cine.t0 > 0.2) cinemaEnd(); }, true); // a tap skips
   const baseFov = () => camera.aspect < 1 ? 62 : 50;
   function cineCam(dt) { // drives the camera while a shot runs; returns false when none
