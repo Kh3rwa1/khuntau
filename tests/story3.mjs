@@ -44,7 +44,7 @@ for (let n = 0; n < 3; n++) { await page.waitForFunction(() => __k.story.debug.f
 check(await ev(() => window.__fishCine > 0), 'fishing: landing a fish gets a slow-motion shot');
 await mode('walk'); check(await ev(() => __k.story.debug.fish.got) >= 3 && await ev(() => __k.story.debug.save.td.fish) === 1, 'fishing: 3 fish counts for the day');
 // three houses
-for (let h = 0; h < 3; h++) { const j = await ev((h) => { const hs = __k.houses[[2, 5, 7][h]], f = hs.d / 2 + 1.1; const p = [hs.x + Math.sin(hs.rot) * f, hs.z + Math.cos(hs.rot) * f]; __k.game.p.pos.set(p[0], 0, p[1]); return p; }, h);
+for (let h = 0; h < 3; h++) { const j = await ev((h) => { const hs = __k.houses[[2, 5, 8][h]], f = hs.d / 2 + 1.1; const p = [hs.x + Math.sin(hs.rot) * f, hs.z + Math.cos(hs.rot) * f]; __k.game.p.pos.set(p[0], 0, p[1]); return p; }, h);
   await near('SING'); if (h === 0) await shot('08-door'); await act(); await mode('echo'); await page.waitForFunction(() => __k.story.debug.echo.ph === 'input', { timeout: 60000 }); if (h === 0) await shot('09-echo');
   const seq = await ev(() => __k.story.debug.echo.seq); for (const l of seq) { await ev((l) => __k.story.debug.strike(l), l); await sleep(250); } await mode('walk'); await sleep(400); }
 check(await ev(() => { const t = __k.story.debug.save.td; return t.jale === 1 && t.jv.every(v => v === 1); }), 'singing at all 3 houses counts for the day'); check((HI ? /तामाक/ : /tamak/).test(await page.$eval('#objText', e => e.textContent)), 'objective moves on to the tamak'); await shot('10-after');
