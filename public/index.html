@@ -838,7 +838,9 @@ const villageProps = [], market = { people: [] }; // market: the backyard pork s
     const at = (lx, lb, y, geo, hex, ry = 0, rx = 0, rz = 0) => { const [x, z] = B(lx, lb); return put(geo, hex, x, y, z, h.rot + ry, rx, rz); };
     market.spot = B(0, 2.6); market.rot = h.rot; market.B = B; const LB = 2.6;
     at(0, LB, 0.3, new THREE.CylinderGeometry(0.34, 0.38, 0.6, 12), 0x6e5238); at(0, LB, 0.605, new THREE.CylinderGeometry(0.33, 0.33, 0.012, 12), 0x8a3a2a); // block, stained top
-    at(0.12, LB - 0.05, 0.64, new THREE.BoxGeometry(0.26, 0.02, 0.13), 0x8a8e92, 0.4); at(-0.06, LB + 0.04, 0.64, new THREE.CylinderGeometry(0.018, 0.018, 0.16, 5).rotateZ(Math.PI / 2), 0x5e4630, 0.4); // cleaver
+    at(0.02, LB + 0.05, 0.645, new THREE.BoxGeometry(0.34, 0.06, 0.22), 0xb0564a, 0.2); at(0.02, LB + 0.05, 0.68, new THREE.BoxGeometry(0.32, 0.018, 0.2), 0xe2c6ad, 0.2); // a slab of pork on the block, fat on top
+    for (let k = 0; k < 4; k++) at(-0.2 + rand(-0.04, 0.04), LB - 0.12 + k * 0.05, 0.63, new THREE.BoxGeometry(0.07, 0.04, 0.06), k % 2 ? 0xe2c6ad : 0xb0564a, rand(0, 3)); // pieces already cut
+    at(0.2, LB - 0.12, 0.64, new THREE.BoxGeometry(0.26, 0.02, 0.13), 0x8a8e92, 0.4); at(-0.06, LB + 0.04, 0.64, new THREE.CylinderGeometry(0.018, 0.018, 0.16, 5).rotateZ(Math.PI / 2), 0x5e4630, 0.4); // cleaver
     for (const [dx, db] of [[-0.42, -0.25], [0.42, -0.25], [-0.42, 0.25], [0.42, 0.25]]) at(1.2 + dx, LB + db, 0.25, new THREE.CylinderGeometry(0.03, 0.035, 0.5, 5), 0x8a6a46);
     at(1.2, LB, 0.51, new THREE.BoxGeometry(1.0, 0.04, 0.62), 0xb89a5a); // bamboo table
     for (let k = 0; k < 5; k++) { const lx = 0.85 + (k % 3) * 0.32, lb = LB - 0.15 + (k > 2 ? 0.3 : 0);
@@ -894,26 +896,65 @@ const villageProps = [], market = { people: [] }; // market: the backyard pork s
   }
 }
 scene.updateMatrixWorld(true);
+// paddy fields round half the village (it is harvest time): three wide arcs from the village edge out towards the hills,
+// cut into plots with grass bunds between them; about half the plots stand ripe and golden, the rest are cut to stubble
+// with sheaves lying in rows and a few big stacks. Plots are one textured mesh, standing paddy one instanced mesh,
+// sheaves and stacks go into the houses' shared mesh.
+const paddyFields = { plots: [] };
+{
+  const fieldTex = canvasTex(512, 256, (c, w, h) => {
+    c.fillStyle = '#c69a34'; c.fillRect(0, 0, 256, h); // ripe paddy, from above
+    for (let i = 0; i < 2600; i++) { const x = rand(0, 256), y = rand(0, h); c.strokeStyle = ['#e2b84a', '#a87a22', '#f0cc5c', '#b8892c'][i % 4]; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x, y); c.lineTo(x + rand(-2, 2), y + rand(3, 7)); c.stroke(); }
+    c.fillStyle = '#b39a66'; c.fillRect(256, 0, 256, h); // cut stubble in rows
+    for (let y = 4; y < h; y += 9) for (let x = 258; x < w; x += rand(3, 6)) { c.fillStyle = Math.random() < 0.5 ? '#8a7040' : '#d8c08a'; c.fillRect(x, y + rand(-1, 1), 1.5, 3); }
+    for (let i = 0; i < 160; i++) { c.strokeStyle = '#e6cf8c'; c.lineWidth = 1; const x = rand(258, w), y = rand(0, h); c.beginPath(); c.moveTo(x, y); c.lineTo(x + rand(-6, 6), y + rand(-3, 3)); c.stroke(); } });
+  const pos = [], uv = [], idx = [], gA = (g) => 0.35 + (2 * Math.PI / 9) * g, BUND = 0.5;
+  for (const gc of [1.0, 4.0, 7.0]) { const a0 = gA(gc) - 0.54, a1 = gA(gc) + 0.54;
+    for (let r = 36; r < 99; r += 9) { const n = Math.max(3, Math.round((r + 4.5) * (a1 - a0) / 11)), da = (a1 - a0) / n;
+      for (let k = 0; k < n; k++) { const gold = Math.random() < 0.55, u0 = gold ? 0 : 0.5, rb = r + 9, aa = a0 + k * da, ab = aa + da, ga = BUND / r, gb = BUND / rb;
+        const corners = [[r + BUND, aa + ga], [r + BUND, ab - ga], [rb - BUND, ab - gb], [rb - BUND, aa + gb]], base = pos.length / 3;
+        corners.forEach(([rr, a], i) => { pos.push(Math.cos(a) * rr, 0.04, Math.sin(a) * rr); uv.push(u0 + (i === 1 || i === 2 ? 0.5 : 0), i >= 2 ? 1 : 0); });
+        idx.push(base, base + 1, base + 2, base, base + 2, base + 3); /* counter-clockwise from above: facing up */ paddyFields.plots.push({ r0: r, r1: rb, a0: aa, a1: ab, gold }); } } }
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); fg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); fg.setIndex(idx); fg.computeVertexNormals();
+  const fields = new THREE.Mesh(fg, Mat({ map: fieldTex, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1 })); fields.receiveShadow = true; scene.add(fields); paddyFields.mesh = fields;
+  const inPlot = (pl, pad = 0.6) => { const rr = rand(pl.r0 + pad, pl.r1 - pad), a = rand(pl.a0 + pad / rr, pl.a1 - pad / rr); return [Math.cos(a) * rr, Math.sin(a) * rr, a]; };
+  // standing paddy near the village edge, where you see it up close: golden stalks with drooping heads (one draw)
+  const tuftTex = canvasTex(64, 64, (c, w, h) => { for (let i = 0; i < 26; i++) { const x = rand(8, 56), lean = rand(-10, 10); c.strokeStyle = ['#c9a23a', '#a8822a', '#dcb850'][i % 3]; c.lineWidth = 2; c.beginPath(); c.moveTo(x, h); c.quadraticCurveTo(x + lean * 0.3, h * 0.45, x + lean, rand(10, 22)); c.stroke();
+    c.fillStyle = '#e8c45a'; c.beginPath(); c.ellipse(x + lean * 1.1, rand(12, 24), 2.2, 5, lean * 0.04, 0, 6.28); c.fill(); } });
+  const tg1 = new THREE.PlaneGeometry(0.9, 0.85); tg1.translate(0, 0.42, 0); const tg = mergeGeometries([tg1, tg1.clone().rotateY(Math.PI / 2)]); { const nr = tg.attributes.normal; for (let i = 0; i < nr.count; i++) nr.setXYZ(i, 0, 1, 0); } /* lit like the ground: side-on cards came out dull brown */
+  const near = paddyFields.plots.filter(pl => pl.gold && pl.r0 < 50), N = near.length ? [500, 1000, 1800][QUALITY] : 0;
+  if (N) { const im = new THREE.InstancedMesh(tg, Mat({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1 }), N), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
+    for (let i = 0; i < N; i++) { const pl = near[(Math.random() * near.length) | 0], [x, z] = inPlot(pl); ps.set(x, 0.02, z); q.setFromAxisAngle(UPV, rand(0, 6.28)); sc.set(rand(1.0, 1.5), rand(1.1, 1.7), rand(1.0, 1.5)); im.setMatrixAt(i, m4.compose(ps, q, sc)); }
+    scene.add(im); paddyFields.tufts = im; }
+  // cut plots: sheaves lying in rows, a few standing in shocks, and a big stack here and there (houses' shared mesh)
+  const add = (geo, hex, x, y, z, ry = 0, rx = 0, rz = 0) => { const m = new THREE.Mesh(vc(geo, hex), houseVC); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); scene.add(m); houseWood.push(m); };
+  let stacks = 0; paddyFields.plots.filter(pl => !pl.gold && pl.r0 < 64).forEach((pl, i) => {
+    const [x0, z0, a] = inPlot(pl, 1.2), n = 3 + (i % 3);
+    for (let k = 0; k < n; k++) { const off = (k - n / 2) * 0.9, x = x0 - Math.sin(a) * off, z = z0 + Math.cos(a) * off; // a row of sheaves lying across the plot
+      add(new THREE.CylinderGeometry(0.11, 0.14, 0.75, 6).rotateZ(Math.PI / 2), 0xc9a24a, x, 0.12, z, -a + rand(-0.3, 0.3)); add(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 6).rotateZ(Math.PI / 2), 0x8a6a30, x, 0.12, z, -a); }
+    if (i % 4 === 1) { const [x, z] = inPlot(pl, 1.5); add(new THREE.ConeGeometry(0.45, 1.0, 6), 0xd2ac52, x, 0.5, z, rand(0, 3)); } // a shock of sheaves leaning together
+    if (i % 6 === 3 && stacks < 6) { stacks++; const [x, z] = inPlot(pl, 2); add(new THREE.CylinderGeometry(1.1, 1.2, 1.4, 9), 0xcaa858, x, 0.7, z); add(new THREE.ConeGeometry(1.3, 1.3, 9), 0xc09c4c, x, 2.05, z); } }); // a big paddy stack
+}
 for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoors, houseRoofs]) if (l.length) bakeStatic(l);
 // trees
 {
-  const trunkM = Mat({ color: 0x4a3f33, roughness: 1 });
-  const leafMs = [0x3e6b2c, 0x4f7d35, 0x355a26].map(c => Mat({ color: c, roughness: 0.85, flatShading: true }));
-  const trunks = [], leaves = [[], [], []];
+  // trunks and leaves in three greens share one vertex-coloured mesh: one draw for every tree (it was four)
+  const treeM = Mat({ vertexColors: true, roughness: 0.9, flatShading: true }), LEAF = [0x3e6b2c, 0x4f7d35, 0x355a26];
+  const trunks = [], leaves = [[], [], []], trunkG = (r0, r1, h, s) => vc(new THREE.CylinderGeometry(r0, r1, h, s).toNonIndexed(), 0x4a3f33), leafG = (r, k) => vc(new THREE.IcosahedronGeometry(r, 1), LEAF[k % 3]);
   for (let i = 0; i < 24; i++) {
     const a = rand(0, Math.PI * 2), r = rand(31, 55), g = new THREE.Group();
     const h = rand(3, 5);
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.3, h, 6), trunkM); t.position.y = h / 2; t.castShadow = QUALITY === 2; g.add(t); trunks.push(t);
-    for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(1.3, 2.2), 1), leafMs[k % 3]); f.position.set(rand(-1, 1), h + rand(0, 1.6), rand(-1, 1)); f.castShadow = QUALITY === 2; g.add(f); leaves[k % 3].push(f); }
+    const t = new THREE.Mesh(trunkG(0.18, 0.3, h, 6), treeM); t.position.y = h / 2; t.castShadow = QUALITY === 2; g.add(t); trunks.push(t);
+    for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(leafG(rand(1.3, 2.2), k), treeM); f.position.set(rand(-1, 1), h + rand(0, 1.6), rand(-1, 1)); f.castShadow = QUALITY === 2; g.add(f); leaves[k % 3].push(f); }
     g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g);
   }
   // a few big trees inside the village, between houses at its edge (same meshes, no extra draws)
   for (const gi of [0.5, 2.5, 5.5, 8.5]) { const a = 0.35 + (2 * Math.PI / 9) * gi, r = gi === 2.5 || gi === 5.5 ? 29.4 : 28.6, g = new THREE.Group(), h = rand(4.2, 5.4);
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.42, h, 7), trunkM); t.position.y = h / 2; g.add(t); trunks.push(t);
-    for (let k = 0; k < 7; k++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(1.5, 2.4), 1), leafMs[k % 3]); f.position.set(rand(-1.3, 1.3), h + rand(-0.2, 1.8), rand(-1.3, 1.3)); g.add(f); leaves[k % 3].push(f); }
+    const t = new THREE.Mesh(trunkG(0.24, 0.42, h, 7), treeM); t.position.y = h / 2; g.add(t); trunks.push(t);
+    for (let k = 0; k < 7; k++) { const f = new THREE.Mesh(leafG(rand(1.5, 2.4), k), treeM); f.position.set(rand(-1.3, 1.3), h + rand(-0.2, 1.8), rand(-1.3, 1.3)); g.add(f); leaves[k % 3].push(f); }
     g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g); villageProps.push({ x: g.position.x, z: g.position.z, r: 0.6, top: 9, cr: 2.6, cy: h - 0.6 }); } // trunk and canopy: the camera keeps clear of both
   scene.updateMatrixWorld(true);
-  bakeStatic(trunks); leaves.forEach(l => bakeStatic(l));
+  bakeStatic(trunks.concat(...leaves));
 }
 // diyas ring: clay cups with a pinched spout and an oil-soaked wick, and a teardrop flame that flickers and leans
 // in the breeze. Cups in one instanced draw, all 30 flames in one billboard draw (they were 30 sprites, 30 draws).
@@ -946,9 +987,9 @@ const flames = billboards(flameTex, 30, THREE.AdditiveBlending);
   });
   const m = Mat({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1 });
   const g1 = new THREE.PlaneGeometry(0.7, 0.45); g1.translate(0, 0.22, 0);
-  const g2 = g1.clone().rotateY(Math.PI / 2);
+  const g2 = mergeGeometries([g1, g1.clone().rotateY(Math.PI / 2)]); // crossed, one draw (it was two meshes)
   const n = [110, 260, 520][QUALITY], m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
-  for (const g of [g1, g2]) {
+  for (const g of [g2]) {
     const im = new THREE.InstancedMesh(g, m, n);
     for (let i = 0; i < n; i++) {
       const a = rand(0, Math.PI * 2), r = Math.sqrt(rand(0, 1)) * 30 + 16;
@@ -1074,7 +1115,7 @@ function noise(t, dur, vol, ftype, freq, q = 1, out = audio.master) {
   s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
 }
 /* recorded music (yours) and sound effects (Openverse / Freesound) */
-const music = { intro: new Audio('audio/intro.mp3'), game: new Audio('audio/gameplay.mp3'), cur: null };
+const music = { intro: new Audio('audio/intro.mp3'), game: new Audio('audio/khuntau.mp3'), cur: null };
 for (const el of [music.intro, music.game]) { el.loop = true; el.preload = 'auto'; el.playsInline = true; }
 const MUSIC_VOL = { intro: 0.8, game: 0.5 };
 // while the mic is live, music is off so friends hear each other (and the mic doesn't pick the music up); sound effects stay
@@ -1542,12 +1583,10 @@ function flapHide(a, dt) {
 }
 const garland = new THREE.Group();
 {
-  const marigold = [0xff8a1c, 0xffc21c].map(c => Mat({ color: c, roughness: 0.6, emissive: c, emissiveIntensity: 0.12 }));
+  const marigold = [0xff8a1c, 0xffc21c], garlandParts = [];
   const g = new THREE.IcosahedronGeometry(0.075, 0);
   // 22 flowers in two colours, merged into one mesh per colour: 2 draw calls instead of 22, wherever the animal is seen
-  const parts = [[], []];
-  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; parts[i % 2].push(g.clone().translate(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.3)); }
-  parts.forEach((p, k) => { garland.add(new THREE.Mesh(mergeGeometries(p, false), marigold[k])); p.forEach(x => x.dispose()); });
+  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; garlandParts.push(vc(g.clone().translate(Math.cos(a) * 0.36, 0, Math.sin(a) * 0.3), marigold[i % 2])); }
   // a brass bell hanging from the garland, swinging with the animal
   const brass = Mat({ color: 0xc9962e, roughness: 0.35, metalness: 0.6, emissive: 0x3a2400 });
   const bell = new THREE.Group(); bell.position.set(0, -0.02, 0.3); garland.add(bell); garland.userData.bell = bell;
@@ -1557,7 +1596,8 @@ const garland = new THREE.Group();
   { const sh = []; for (const sx of [-1, 1]) { for (let k = 0; k < 7; k++) sh.push(vc(new THREE.CylinderGeometry(0.006, 0.008, 0.26, 3).translate(sx * 0.31 + (k - 3) * 0.012, -0.13, 0.08 + ((k * 37) % 5 - 2) * 0.01), 0xc9a24a));
       for (let k = 0; k < 7; k++) sh.push(vc(new THREE.SphereGeometry(0.014, 4, 3).scale(1, 2.2, 1).translate(sx * 0.31 + (k - 3) * 0.013, -0.27 - (k % 3) * 0.015, 0.08 + ((k * 37) % 5 - 2) * 0.01), 0xe2c060));
       sh.push(vc(new THREE.TorusGeometry(0.03, 0.008, 4, 8).rotateX(Math.PI / 2).translate(sx * 0.31, -0.03, 0.08), 0x8a2a22)); }
-    const sheaves = new THREE.Mesh(mergeGeometries(sh), Mat({ vertexColors: true, roughness: 0.8 })); sheaves.rotation.x = 1.0; garland.add(sheaves); garland.userData.sheaves = sheaves; }
+    const sg = mergeGeometries(sh).applyMatrix4(new THREE.Matrix4().makeRotationX(1.0)).toNonIndexed(); garlandParts.push(sg); }
+  { const gm = new THREE.Mesh(mergeGeometries(garlandParts), Mat({ vertexColors: true, roughness: 0.6, emissive: 0x2a1600 })); garland.add(gm); garland.userData.flowers = gm; } // marigolds + sheaves: one draw (was three)
   scene.add(garland);
 }
 
@@ -1708,7 +1748,7 @@ function onCrowdLoaded() {
   import('./story.js').then(m => {
     story = m.initStory({ props: villageProps, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
-      musicLevel: v => { MUSIC_VOL.intro = v; refreshMusicVol(); },
+      musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: () => { track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
       track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
       toMenu: () => { game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
@@ -2087,7 +2127,7 @@ function ringLabels() { game.ringLang = !!(game.storyRun || game.villageRun); fo
 function startGame() {
   game.menuOpen = false; $('pauseScreen').hidden = true;
   ringLabels();
-  initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
+  initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; MUSIC_VOL.game = 0.5; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hudScore').hidden = false;
   $('bestChip').hidden = best === 0 || innerWidth < 560; $('best').textContent = best; renderRival();
   let played = false; try { played = !!localStorage.getItem('khuntau-played'); localStorage.setItem('khuntau-played', '1'); } catch (e) {}
@@ -2620,8 +2660,8 @@ function marketPeople(dt, v) {
   const T = market.table, buying = market.people.some(a => a.st === 'toTable' || a.st === 'take' || a.st === 'back');
   for (const a of market.people) { a.tm -= dt; const p = a.wrap.position;
     if (a.role === 'butcher') { if (a.tm > 0) continue;
-      if (a.chops > 0) { a.chops--; a.play('SwordSlash', { once: true, fade: 0.08, ts: rand(1.0, 1.3) }); a.tm = rand(0.55, 0.85); if (v > 0) setTimeout(() => sfx.chop(v), 230); }
-      else { a.play('Idle', { fade: 0.25 }); a.chops = 2 + (Math.random() * 4 | 0); a.tm = rand(1.6, 3.8); } continue; }
+      if (a.chops > 0) { a.chops--; a.play('SwordSlash', { once: true, fade: 0.12, ts: rand(0.6, 0.72) }); a.tm = rand(1.2, 1.7); if (v > 0) setTimeout(() => sfx.chop(v), 420); } /* slow, heavy chops into the meat (it was too fast: like beating a drum) */
+      else { a.play('Idle', { fade: 0.3 }); a.chops = 2 + (Math.random() * 3 | 0); a.tm = rand(2.2, 4.5); } continue; }
     if (a.role === 'weigher') { if (a.tm < 0) { a.tm = rand(4, 8); if (Math.random() < 0.5) a.play('PickUp', { once: true, fade: 0.2, ts: 0.8 }); else a.play('Idle', { fade: 0.3 }); } continue; }
     const walkTo = (x, z, sp) => { const dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz); if (d < 0.08) return true; const st = Math.min(d, sp * dt); p.x += dx / d * st; p.z += dz / d * st; a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(dx, dz), 6, dt); if (a.curName !== 'Walk') a.play('Walk', { fade: 0.2, ts: 0.7 }); return false; };
     const face = (x, z) => { a.wrap.rotation.y = turnTo(a.wrap.rotation.y, Math.atan2(x - p.x, z - p.z), 3, dt); };
@@ -2863,7 +2903,7 @@ function onNet(m) {
 function onNetEvent(m) {
   switch (m.e) {
     case 'start': { track('online.play'); game.storyRun = game.villageRun = false; ringLabels();
-      resetGame(); game.mode = 'play'; game.online = true; setMusic('game'); setTimeout(() => sfx.bellow(), 300);
+      resetGame(); game.mode = 'play'; game.online = true; MUSIC_VOL.game = 0.5; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
       const sp = m.spawn.find(s => s[0] === net.id);
       const inRound = !!sp;
       if (sp) { game.p.pos.set(sp[1], 0, sp[2]); game.p.yaw = Math.atan2(-sp[1], -sp[2]); }
@@ -3137,7 +3177,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

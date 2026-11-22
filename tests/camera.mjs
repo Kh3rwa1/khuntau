@@ -74,6 +74,13 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   await page.evaluate(() => { const W = __k.market.carrier; W.wait = 0; __k.game.p.pos.set(W.a.wrap.position.x + 4, 0, W.a.wrap.position.z + 4); __k.story.debug.snapCam(); });
   const a = await pos(); await sleep(2500); const b = await pos();
   check(Math.hypot(b.x - a.x, b.z - a.z) > 0.5 && b.pot < 0.45, `a woman carries a water pot on her head between the pump and a house (walked ${Math.hypot(b.x - a.x, b.z - a.z).toFixed(1)} m, pot ${b.pot.toFixed(2)} m above her head)`); }
+// paddy fields round half the village: plots with bunds, about half ripe and standing, the rest cut with sheaves
+{ const f = await page.evaluate(() => { const P = __k.paddyFields.plots; let arc = 0; const seen = new Set(); for (const p of P) { const k = p.a0.toFixed(3); if (p.r0 === 36 && !seen.has(k)) { seen.add(k); arc += p.a1 - p.a0; } }
+    return { n: P.length, gold: P.filter(p => p.gold).length / P.length, share: arc / (Math.PI * 2), tufts: __k.paddyFields.tufts ? __k.paddyFields.tufts.count : 0, outside: P.every(p => p.r0 >= 36) }; });
+  check(f.n > 60 && f.share > 0.45 && f.share < 0.6 && f.outside, `paddy fields cover half the land round the village (${Math.round(f.share * 100)}%, ${f.n} plots, all outside the walkable village)`);
+  check(f.gold > 0.35 && f.gold < 0.75 && f.tufts > 300, `some plots stand ripe and golden, the rest are cut (${Math.round(f.gold * 100)}% golden, ${f.tufts} standing clumps)`); }
+// the music: Dulor's Khuntau BGM plays in the village (and the ring); the old ring track is gone
+check(await page.evaluate(() => /khuntau\.mp3$/.test(__k.music.game.src) && __k.music.cur === 'game'), 'the village plays the Khuntau BGM');
 // reduced motion: no cinematic shots at all
 { const pg2 = await browser.newPage(); await pg2.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
   await pg2.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); await pg2.evaluateOnNewDocument(() => localStorage.setItem('khuntau-played', '1'));

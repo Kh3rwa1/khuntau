@@ -912,7 +912,7 @@ export function initStory(C) {
     const pl = C.player(); pl.wrap.visible = true; if (pl.hide) pl.hide.visible = false; pl.play('Idle');
     C.pitha.visible = save.ch >= 4; C.handi.visible = false;
     castCrowd(); placeAnimal(); applyPaint(true);
-    C.setMusic('intro'); C.musicLevel(0.3);
+    C.setMusic('game'); C.musicLevel(0.3); /* the Khuntau BGM */
     if (fromRing) return;
     setTimeout(() => { if (S.on && !S.dlg) hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys. Press E or click the orange button to do things.'), 4500); }, 600);
     S.hintAfterDlg = true;
