@@ -82,6 +82,7 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   await page.evaluate(() => { for (let i = 0; i < 4; i++) window.dispatchEvent(new WheelEvent('wheel', { deltaY: 120 })); }); await sleep(200); /* dispatched directly: an emulated touch phone may not route mouse.wheel */
   check(await page.evaluate(() => __k.story.debug.S.camZoom > 1.05), 'village: the wheel (pinch on phones) zooms out');
   { const g = await page.evaluate(() => { let r = null; __k.scene.traverse(o => { if (o.isInstancedMesh && o.userData.grass) r = { n: o.count, bump: !!__k.scene.children.find(c => c.isMesh && c.material && c.material.bumpMap) }; }); return r; });
+    check(await page.evaluate(() => { let n = 0, c = 0; __k.scene.traverse(o => { if (o.isInstancedMesh && o.userData.leaves) { n++; c += o.count; } }); return n >= 1 && c > 1500; }), 'tree canopies wear leaf sprays (instanced cards), not bare green balls');
     check(g && g.n > 1800 && g.bump, `the village green has real grass blades (${g && g.n} clumps, one draw) and the ground has relief for the low sun`); }
   check(!logs.some(l => /Shader Error|Program Info Log|VALIDATE_STATUS/i.test(l)), 'every shader compiles (contact shading, rim, screen effects)');
   check(!realErrors(logs).length, 'mid: no page errors ' + realErrors(logs).join(' | ')); await page.close(); }

@@ -391,11 +391,12 @@ export function initStory(C) {
       const tree = [[3.9, -1.2], [3.4, -1.7], [4.4, -0.8], [3.0, -2.2], [-4.4, -1.8], [-3.8, -2.4]].map(([a, b]) => AC.clone().addScaledVector(W.aR, a).addScaledVector(W.aIn, b)).reduce((best, q) => pathGap(q) > pathGap(best) + 0.01 ? q : best);
       put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
       for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); const cg = new THREE.SphereGeometry(rand(1.4, 2.1), 16, 11).scale(1, 0.86, 1), cm = put(cg, [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)), cc = cg.attributes.color, cn = cg.attributes.normal;
-        for (let i = 0; i < cc.count; i++) { const f = 0.5 + 0.5 * (cn.getY(i) * 0.5 + 0.5); cc.setXYZ(i, cc.getX(i) * f, cc.getY(i) * f, cc.getZ(i) * f); } cm.userData.smooth = true; } /* soft canopy, darker underneath */
+        for (let i = 0; i < cc.count; i++) { const f = 0.5 + 0.5 * (cn.getY(i) * 0.5 + 0.5); cc.setXYZ(i, cc.getX(i) * f, cc.getY(i) * f, cc.getZ(i) * f); } cm.userData.smooth = true; (W.akhraBalls = W.akhraBalls || []).push({ x: o.x, y: cm.position.y, z: o.z, r: cg.parameters.radius }); } /* soft canopy, darker underneath */
       for (let k = 0; k < 5; k++) { const side = k % 2 ? 1 : -1, q = AC.clone().addScaledVector(W.aIn, 2.2 + rand(-0.4, 0.4)).addScaledVector(W.aR, side * (3.3 + k * 0.25)), yw = rand(0, 6.28), col = [0x2e241a, 0x5a3a22, 0x7a2a22][k % 3];
         for (const o of [-0.065, 0.065]) put(new THREE.BoxGeometry(0.1, 0.02, 0.26), col, q.clone().add(V(Math.cos(yw) * o, 0, -Math.sin(yw) * o)), 0.012, yw); } /* sandals left at the edge: people dance barefoot */
       for (const o of props) { if (o.geometry.index) o.geometry = o.geometry.toNonIndexed(); if (!o.userData.smooth) o.geometry.computeVertexNormals(); scene.add(o); } /* faceted props keep their look through face normals; the canopy is smooth */
       scene.updateMatrixWorld(true); C.bakeStatic(props, Mat({ vertexColors: true, roughness: 0.95 }));
+      if (C.leafCoat && W.akhraBalls) C.leafCoat(W.akhraBalls); /* the shade tree gets its leaves too */
       // what you can bump into
       if (C.props) C.props.push({ x: bench.x + W.aIn.x * 0.6, z: bench.z + W.aIn.z * 0.6, r: 0.4 }, { x: bench.x - W.aIn.x * 0.6, z: bench.z - W.aIn.z * 0.6, r: 0.4 }, { x: cot.x, z: cot.z, r: 0.9 }, { x: tree.x, z: tree.z, r: 0.55, top: 9, cr: 2.4, cy: 4.2 });
       W.akhraProps = { bench, cot, tree };
