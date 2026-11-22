@@ -782,7 +782,7 @@ for (let i = 0; i < 9; i++) {
 // village props, all in the houses' shared vertex-coloured mesh (no extra draw calls): worn paths to every door, a hand
 // pump, a bullock cart, a clothesline, fenced kitchen gardens behind some houses, rocks. Things you could walk into are in
 // villageProps, which the story's collision and the animals' wandering both respect.
-const villageProps = [];
+const villageProps = [], market = { people: [] }; // market: the backyard pork stall (props here, people once the villagers load)
 {
   const gapA = (i) => 0.35 + (2 * Math.PI / 9) * i, P = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
   const put = (geo, hex, x, y, z, ry = 0, rx = 0, rz = 0) => { const m = new THREE.Mesh(vc(geo, hex), houseVC); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); scene.add(m); houseWood.push(m); return m; };
@@ -832,6 +832,29 @@ const villageProps = [];
     if (i % 4 === 0) { at(-2.3, 0.3, 0.75, new THREE.CylinderGeometry(0.045, 0.05, 1.7, 6), 0x6a5541, 0, -0.35, 0); at(-2.3, 0.62, 0.08, new THREE.BoxGeometry(0.08, 0.12, 0.42), 0x4e3c2c, 0, 0, 0); at(-2.3, 0.05, 1.45, new THREE.BoxGeometry(0.38, 0.05, 0.05), 0x5e4630); } // plough against the wall
   });
   if (groundGeos.length) { const gm = new THREE.Mesh(mergeGeometries(groundGeos), Mat({ map: groundTex, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 })); gm.receiveShadow = true; scene.add(gm); }
+  // a pork stall in the backyard of house 7 (no garden or big tree there): a log chopping block with a cleaver, meat
+  // on sal-leaf plates on a low bamboo table, a bamboo tripod with a hanging balance scale. Meat only, no carcass.
+  { const h = houses[7], c = Math.cos(h.rot), sn = Math.sin(h.rot), B = (lx, lb) => { const z = h.d / 2 + lb; return [h.x + lx * c - z * sn, h.z - lx * sn - z * c]; };
+    const at = (lx, lb, y, geo, hex, ry = 0, rx = 0, rz = 0) => { const [x, z] = B(lx, lb); return put(geo, hex, x, y, z, h.rot + ry, rx, rz); };
+    market.spot = B(0, 2.6); market.rot = h.rot; market.B = B; const LB = 2.6;
+    at(0, LB, 0.3, new THREE.CylinderGeometry(0.34, 0.38, 0.6, 12), 0x6e5238); at(0, LB, 0.605, new THREE.CylinderGeometry(0.33, 0.33, 0.012, 12), 0x8a3a2a); // block, stained top
+    at(0.12, LB - 0.05, 0.64, new THREE.BoxGeometry(0.26, 0.02, 0.13), 0x8a8e92, 0.4); at(-0.06, LB + 0.04, 0.64, new THREE.CylinderGeometry(0.018, 0.018, 0.16, 5).rotateZ(Math.PI / 2), 0x5e4630, 0.4); // cleaver
+    for (const [dx, db] of [[-0.42, -0.25], [0.42, -0.25], [-0.42, 0.25], [0.42, 0.25]]) at(1.2 + dx, LB + db, 0.25, new THREE.CylinderGeometry(0.03, 0.035, 0.5, 5), 0x8a6a46);
+    at(1.2, LB, 0.51, new THREE.BoxGeometry(1.0, 0.04, 0.62), 0xb89a5a); // bamboo table
+    for (let k = 0; k < 5; k++) { const lx = 0.85 + (k % 3) * 0.32, lb = LB - 0.15 + (k > 2 ? 0.3 : 0);
+      at(lx, lb, 0.535, new THREE.CylinderGeometry(0.14, 0.14, 0.01, 10), 0x4f7d35); // sal-leaf plate
+      for (let m = 0; m < 3; m++) at(lx + rand(-0.06, 0.06), lb + rand(-0.06, 0.06), 0.57 + m * 0.025, new THREE.BoxGeometry(rand(0.08, 0.12), 0.05, rand(0.07, 0.1)), m % 2 ? 0xe2c6ad : 0xb0564a, rand(0, 3)); } // meat with fat
+    at(-1.0, LB - 0.55, 0.16, new THREE.CylinderGeometry(0.2, 0.16, 0.32, 10), 0x7a7470); // a bucket of water
+    { const [ax, az] = B(-1.5, LB + 0.4), A = new THREE.Vector3(ax, 1.9, az); // tripod: three legs from the ground up to one top point
+      for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + 0.3, [fx, fz] = B(-1.5 + Math.cos(a) * 0.6, LB + 0.4 + Math.sin(a) * 0.6), F = new THREE.Vector3(fx, 0, fz), L = F.distanceTo(A);
+        const g = new THREE.CylinderGeometry(0.028, 0.035, L, 5).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), A.clone().sub(F).normalize())).translate((F.x + A.x) / 2, (F.y + A.y) / 2, (F.z + A.z) / 2);
+        put(g, 0x9c7f45, 0, 0, 0); } }
+    { const [x, z] = B(0, LB); villageProps.push({ x, z, r: 0.45, top: 0.7 }); } { const [x, z] = B(1.2, LB); villageProps.push({ x, z, r: 0.7, top: 0.7 }); } { const [x, z] = B(-1.5, LB + 0.4); villageProps.push({ x, z, r: 0.6, top: 2 }); }
+    // the balance scale hangs from the tripod top and tips as things are weighed (its own small mesh, it moves)
+    const parts2 = [vc(new THREE.CylinderGeometry(0.015, 0.015, 0.8, 5).rotateZ(Math.PI / 2), 0x5e4630), vc(new THREE.CylinderGeometry(0.006, 0.006, 0.3, 3).translate(0, 0.15, 0), 0xd8c494)];
+    for (const sx of [-1, 1]) { parts2.push(vc(new THREE.CylinderGeometry(0.004, 0.004, 0.42, 3).translate(sx * 0.38, -0.21, 0), 0xd8c494)); parts2.push(vc(new THREE.CylinderGeometry(0.14, 0.11, 0.04, 10, 1, true).translate(sx * 0.38, -0.44, 0), 0xb08a3a)); }
+    parts2.push(vc(new THREE.BoxGeometry(0.12, 0.06, 0.1).translate(-0.38, -0.39, 0), 0xb0564a)); // meat in one pan
+    const sc = new THREE.Mesh(mergeGeometries(parts2), houseVC); const [x, z] = B(-1.5, LB + 0.4); sc.position.set(x, 1.62, z); sc.rotation.y = h.rot; scene.add(sc); market.scale = sc; }
   // the square: two log seats at its edge where people sit to watch
   for (const gi of [0.5, 4.0]) { const a = gapA(gi), [x, z] = P(a, 17.4); put(new THREE.CylinderGeometry(0.2, 0.23, 1.9, 9).rotateZ(Math.PI / 2), 0x6e5238, x, 0.21, z, -a, 0, 0);
     for (const s4 of [-0.6, 0.6]) villageProps.push({ x: x - Math.sin(a) * s4, z: z + Math.cos(a) * s4, r: 0.45, top: 0.5 }); }
@@ -1174,6 +1197,8 @@ Object.assign(sfx, {
   splash() { const t = AT(); if (t < 0) return; noise(t, 0.45, 0.32, 'highpass', 900, 0.7, SB()); noise(t + 0.03, 0.3, 0.14, 'bandpass', 2600, 1, SB()); tone(t, 'sine', 700, 200, 0.12, 0.15, SB()); },
   clink(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 2350, 2300, 0.5, 0.07 * v, SB()); tone(t, 'sine', 3720, 3680, 0.32, 0.04 * v, SB()); },
   crackle(v = 1) { const t = AT(); if (t < 0) return; for (let i = 0; i < 5; i++) noise(t + rand(0, 0.4), rand(0.008, 0.02), 0.07 * v, 'highpass', 3500, 1, SB()); },
+  chop(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 60, 0.12, 0.25 * v, SB()); noise(t, 0.04, 0.16 * v, 'bandpass', 1300, 1.5, SB()); }, // cleaver into the block
+  chatter(v = 1) { const t = AT(); if (t < 0) return; const f = rand(150, 280); voiced(t, 'sawtooth', f, f * rand(0.85, 1.15), rand(0.12, 0.22), 0.035 * v, rand(700, 1100), 2, 0, 6, 0.02); }, // a murmur of voices
   slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
   near(pos, R) { const p = game.p.pos, d = Math.hypot(pos.x - p.x, pos.z - p.z); return d >= R ? 0 : 1 - d / R; }, // loudness by distance from you
   gate,
@@ -1647,6 +1672,16 @@ function onCrowdLoaded() {
     scene.add(c.wrap); crowd.push(c);
   }
   crowdBudget();
+  // the pork stall's people: a butcher chopping at the block, a seller weighing at the scale, villagers gathered to buy
+  if (market.spot) { const B = market.B, LB = 2.6, faceTo = (a, x, z) => { a.wrap.rotation.y = Math.atan2(x - a.wrap.position.x, z - a.wrap.position.z); };
+    const who = [['man', { Skin: 0x5a3720, Shirt: 0x8a2a22, Pants: 0x3b3a36, Hair: 0x1a120c }, 0, LB + 0.55, 'butcher'], ['woman', { Skin: 0x6a4026, Shirt: 0x2f7a46, Pants: 0xe8c547, Hair: 0x120c08 }, -1.5, LB + 1.15, 'weigher'],
+      ['woman', { Skin: 0x704428, Shirt: 0xc0562a, Pants: 0x1f5e8a, Hair: 0x120c08 }, 0.9, LB - 0.95, 'buyer'], ['man', { Skin: 0x5e3a22, Shirt: 0xf1ead9, Pants: 0x8a5a2b, Hair: 0x1a120c }, 0.1, LB - 1.05, 'buyer'],
+      ['worker', { Skin: 0x5f3b23, Shirt: 0x8a3b6e, Vest: 0xe8c547, Pants: 0x8a3b6e, Hair: 0x120c08 }, 1.75, LB - 0.7, 'buyer'], ['man', { Skin: 0x6e4630, Shirt: 0x2f6f8a, Pants: 0x3b3a36, Hair: 0x15100c }, -0.6, LB - 0.95, 'buyer']].slice(0, [4, 5, 6][QUALITY]);
+    for (const [kind, colors, lx, lb, role] of who) { const a = actor(loaded[kind], rand(1.58, 1.74), true); tint(a, colors);
+      if (kind !== 'man') { const edge = colors.Pants !== colors.Shirt ? colors.Pants : colors.Vest; tint(a, { Sari: colors.Shirt, SariBorder: edge, Pallu: colors.Shirt, Shirt: edge, Vest: edge, Pants: colors.Shirt }); }
+      const [x, z] = B(lx, lb); a.wrap.position.set(x, 0, z); a.role = role; scene.add(a.wrap); market.people.push(a); villageProps.push({ x, z, r: 0.35, top: 1.8 }); }
+    const [bx, bz] = B(0, LB), [sx2, sz2] = B(-1.5, LB + 0.4), [tx, tz] = B(1.2, LB);
+    for (const a of market.people) { if (a.role === 'butcher') { faceTo(a, bx, bz); a.play('SwordSlash', { ts: 0.75 }); } else if (a.role === 'weigher') { faceTo(a, sx2, sz2); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } else { faceTo(a, tx + rand(-0.4, 0.4), tz); a.play('Idle'); a.actions.Idle.time = rand(0, 2); } } }
   setTimeout(registerSW, 1500);
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
@@ -3058,7 +3093,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; } };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3160,6 +3195,12 @@ function frame() {
     const seen = (a) => { _sp.center.copy(a.wrap.position); _sp.center.y += 0.9; return _fr.intersectsSphere(_sp); };
     for (const c of crowd) c.root.visible = (!inStory && (c.busy || c.goingHome)) || seen(c);
     for (const d of drummers) d.root.visible = seen(d);
+    if (market.people.length) { let any = false; const close = Math.hypot(game.p.pos.x - market.spot[0], game.p.pos.z - market.spot[1]) < 18; if (market.scale) market.scale.visible = close; /* behind a house: from further away the house hides them anyway, so do not draw them */
+      for (const a of market.people) { a.root.visible = close && seen(a); if (a.root.visible) { any = true; if (perf.odd) a.mixer.update(perf.cdt); } }
+      if (market.scale) market.scale.rotation.z = Math.sin(game.t * 0.9) * 0.1 * (0.6 + 0.4 * Math.sin(game.t * 0.23)); /* weighing: the beam dips and settles */
+      const sp = { x: market.spot[0], z: market.spot[1] }, v = sfx.near(sp, 12);
+      if (v > 0) { const bt = market.people[0], ac = bt.actions.SwordSlash, ph = ac ? (ac.time / ac.getClip().duration) % 1 : 0; if (ac && market.lastPh !== undefined && market.lastPh < 0.45 && ph >= 0.45) sfx.chop(v); market.lastPh = ph;
+        if (Math.random() < 0.016 * 60 * (1 / 60) * 3 && gate('chatter', 0.35)) sfx.chatter(v); } }
     if (!inStory) crowdWatch(dt);
     if (QUALITY === 2 && perf.stage < 3) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(dt); }
     else if (perf.odd) { for (const c of crowd) if (c.wrap.visible && c.root.visible) c.mixer.update(perf.cdt); perf.cdt = 0; } // villagers animate at half rate on phones and tablets

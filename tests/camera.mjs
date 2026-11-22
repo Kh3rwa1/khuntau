@@ -53,6 +53,14 @@ check(await page.evaluate(() => { let n = 0; __k.scene.traverse(o => { if (o.isM
 check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o => o.top === 0.6).length >= 2 && v.filter(o => o.top === 1.6).length >= 2 && v.filter(o => o.top === 0.5).length >= 6; }), 'yard stoves and mortars, log seats and the dogs are solid');
 { const sy = () => page.evaluate(() => { let y = null; __k.scene.traverse(o => { if (o.isInstancedMesh && o.count === 2 && y === null) { const m = new __k.THREE.Matrix4(); o.getMatrixAt(0, m); y = new __k.THREE.Vector3().setFromMatrixScale(m).y; } }); return y; });
   const a = await sy(); await sleep(900); const b = await sy(); check(a && b && Math.abs(a - b) > 0.005, `the dogs asleep in the square breathe (${a && a.toFixed(3)} -> ${b && b.toFixed(3)})`); }
+// the pork stall behind house 7: people gathered, the butcher chopping, the scale tipping, the cleaver heard near it
+{ const m = await page.evaluate(() => { const M = __k.market, h = __k.houses[7], f = [Math.sin(h.rot), Math.cos(h.rot)], behind = (x, z) => (x - h.x) * f[0] + (z - h.z) * f[1] < 0;
+    return { n: M.people.length, behind: M.people.every(a => behind(a.wrap.position.x, a.wrap.position.z)), butcher: M.people.some(a => a.role === 'butcher' && a.curName === 'SwordSlash'), z0: M.scale.rotation.z }; });
+  check(m.n >= 4 && m.behind, `a pork stall in house 7's backyard with people gathered (${m.n})`);
+  check(m.butcher, 'the butcher chops at the block');
+  await page.evaluate(() => { window.__sfxLog.length = 0; const M = __k.market, d = __k.story.debug; __k.game.p.pos.set(M.spot[0] + 2.5, 0, M.spot[1] + 2.5); d.snapCam(); }); await sleep(3500);
+  check(await page.evaluate((z0) => Math.abs(__k.market.scale.rotation.z - z0) > 0.005, m.z0), 'the balance scale tips as things are weighed');
+  check(await page.evaluate(() => window.__sfxLog.includes('chop') && window.__sfxLog.includes('chatter')), 'near the stall you hear the cleaver and people talking'); }
 // reduced motion: no cinematic shots at all
 { const pg2 = await browser.newPage(); await pg2.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
   await pg2.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); await pg2.evaluateOnNewDocument(() => localStorage.setItem('khuntau-played', '1'));

@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs'; import { check, finish } from './check.mjs';
 // Draw-call budget per view at q=low (a budget phone dies on draw calls, not triangles). Raise only on purpose.
-const BUDGET = { ring: 58, yard: 38, akhra: 92, edge: 68, gohal: 52, pond: 64 };
+const BUDGET = { ring: 58, yard: 38, akhra: 92, edge: 68, gohal: 52, pond: 64, stall: 44 };
 const within = (name, i) => check(i.calls <= BUDGET[name], `${name}: ${i.calls} draw calls (budget ${BUDGET[name]}), ${i.tris} triangles`); fs.mkdirSync('tests/out', { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...(process.env.SWGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), '--no-sandbox', '--mute-audio'] });
@@ -31,4 +31,5 @@ await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.d
 await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(0, 0, 13); d.S.camYaw = 0; d.snapCam(); }); await sleep(1500); within('edge', await info());
 await page.evaluate(() => { const d = __k.story.debug, g = d.W.gStand; __k.game.p.pos.copy(g); d.S.camYaw = Math.atan2(g.x, g.z); d.snapCam(); }); await sleep(1500); within('gohal', await info()); await page.screenshot({ path: 'tests/out/c-gohal.jpg', type: 'jpeg', quality: 70 });
 await page.evaluate(() => { const d = __k.story.debug, a = 0.35 + 0.698132 * 4.5; __k.game.p.pos.set(Math.cos(a) * 20.7, 0, Math.sin(a) * 20.7); d.S.camYaw = a; d.snapCam(); }); await sleep(1500); within('pond', await info()); await page.screenshot({ path: 'tests/out/c-pond.jpg', type: 'jpeg', quality: 70 });
+await page.evaluate(() => { const d = __k.story.debug, M = __k.market, [x, z] = M.B(0.4, 2.6 - 4.2); __k.game.p.pos.set(x, 0, z); d.S.camYaw = M.rot; d.snapCam(); }); await sleep(1500); within('stall', await info()); await page.screenshot({ path: 'tests/out/c-stall.jpg', type: 'jpeg', quality: 70 });
 check(!logs.length, 'no page errors ' + logs.join(' | ')); await finish(browser);
