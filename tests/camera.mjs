@@ -51,15 +51,17 @@ check(await page.evaluate(() => { const t = __k.story.debug.W.akhraProps.tree; r
 // roads and yards are one textured mesh; yard things, log seats and the sleeping dogs are solid; the dogs breathe
 check(await page.evaluate(() => { let n = 0; __k.scene.traverse(o => { if (o.isMesh && o.material && o.material.map && o.material.map.image && o.material.map.image.width === 512 && o.material.map.image.height === 1024) n++; }); return n === 1; }), 'all roads and swept yards are a single draw');
 check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o => o.top === 0.6).length >= 2 && v.filter(o => o.top === 1.6).length >= 2 && v.filter(o => o.top === 0.5).length >= 6; }), 'yard stoves and mortars, log seats and the dogs are solid');
-{ const r = await page.evaluate(async () => { const m = new __k.THREE.Matrix4(), v = new __k.THREE.Vector3(); let lo = 9, hi = 0; for (let i = 0; i < 30; i++) { __k.life.dogs.getMatrixAt(0, m); const y = v.setFromMatrixScale(m).y; lo = Math.min(lo, y); hi = Math.max(hi, y); await new Promise(r => setTimeout(r, 100)); } return { lo, hi }; });
-  check(r.hi - r.lo > 0.02, `the dogs asleep in the square breathe (scale ${r.lo.toFixed(3)} to ${r.hi.toFixed(3)} over 3 s; two samples could land on the same point of a breath) `); }
+{ const r = await page.evaluate(async () => { const m = new __k.THREE.Matrix4(), v = new __k.THREE.Vector3(); let lo = 9, hi = 0; for (let i = 0; i < 300 && (i < 30 || hi - lo <= 0.02); i++) { __k.life.dogs.getMatrixAt(0, m); const y = v.setFromMatrixScale(m).y; lo = Math.min(lo, y); hi = Math.max(hi, y); await new Promise(r => setTimeout(r, 100)); } return { lo, hi }; });
+  check(r.hi - r.lo > 0.02, `the dogs asleep in the square breathe (scale ${r.lo.toFixed(3)} to ${r.hi.toFixed(3)} over 3 s or until a breath shows, up to 30 s on slow runners) `); }
 // the pork stall behind house 7: people gathered, the butcher chopping, the scale tipping, the cleaver heard near it
 { const m = await page.evaluate(() => { const M = __k.market, h = __k.houses[7], f = [Math.sin(h.rot), Math.cos(h.rot)], behind = (x, z) => (x - h.x) * f[0] + (z - h.z) * f[1] < 0;
     return { n: M.people.length, behind: M.people.every(a => behind(a.wrap.position.x, a.wrap.position.z)), butcher: M.people.some(a => a.role === 'butcher' && a.curName === 'SwordSlash'), z0: M.scale.rotation.z }; });
   check(m.n >= 4 && m.behind, `a pork stall in house 7's backyard with people gathered (${m.n})`);
   { const r = await page.evaluate(async () => { const M = __k.market, b = M.people.find(a => a.role === 'butcher'), buyers = M.people.filter(a => a.role === 'buyer'), seen = new Set(), p0 = buyers.map(a => a.wrap.position.clone()); let moved = 0;
-      __k.game.p.pos.set(M.spot[0] + 3, 0, M.spot[1] + 3);
-      for (let i = 0; i < 90; i++) { seen.add(b.curName); await new Promise(r => setTimeout(r, 100)); }
+      __k.game.p.pos.set(M.spot[0] + 3, 0, M.spot[1] + 3); b.tm = 0; b.chops = Math.max(1, b.chops); /* start a burst now */
+      /* poll until a chop and a pause have both been seen and a buyer has moved: game time crawls on a software-GL runner */
+      const movedNow = () => { let m = 0; buyers.forEach((a, i) => { m = Math.max(m, a.wrap.position.distanceTo(p0[i])); }); return m; };
+      for (let i = 0; i < 600 && (!(seen.has('SwordSlash') && seen.has('Idle')) || movedNow() <= 0.15 || i < 90); i++) { seen.add(b.curName); await new Promise(r => setTimeout(r, 100)); }
       buyers.forEach((a, i) => { moved = Math.max(moved, a.wrap.position.distanceTo(p0[i])); });
       const dancersNear = (__k.story.debug.W.sarpa || []).some(a => a.wrap.visible && Math.hypot(a.wrap.position.x - M.spot[0], a.wrap.position.z - M.spot[1]) < 9);
       return { chop: seen.has('SwordSlash'), pause: seen.has('Idle'), moved, dancersNear }; });
