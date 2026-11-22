@@ -72,6 +72,15 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   await page.evaluate(() => __k.setAnimal('redcow')); await page.waitForFunction(() => __k.loaded.cow, { timeout: 30000 }).catch(() => {});
   const cow = await page.evaluate(() => { const g = __k.loaded.cow; return { has: !!g, z: !!(g && g.userData.zebu) }; });
   check(cow.has && cow.z, 'the cow is reshaped too (small hump)');
+  // the camera is yours: drag the right side to swing and tilt (village), pinch/wheel to zoom
+  const drag = async (x0, y0, dx, dy) => { await page.mouse.move(x0, y0); await page.mouse.down(); for (let i = 1; i <= 8; i++) await page.mouse.move(x0 + dx * i / 8, y0 + dy * i / 8); await page.mouse.up(); await sleep(400); };
+  await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(0, 0, 13); d.S.camYaw = 0; d.S.camPitch = undefined; d.snapCam(); }); await sleep(800);
+  const v0 = await page.evaluate(() => ({ yaw: __k.story.debug.S.camYaw, cy: __k.camera.position.y }));
+  await drag(320, 380, -90, 0); await drag(320, 300, 0, -120);
+  const v1 = await page.evaluate(() => ({ yaw: __k.story.debug.S.camYaw, pitch: __k.story.debug.S.camPitch, cy: __k.camera.position.y }));
+  check(Math.abs(v1.yaw - v0.yaw) > 0.4 && v1.pitch < 0.2 && v1.cy < v0.cy - 0.3, `village: dragging the right side swings the camera round (${(v1.yaw - v0.yaw).toFixed(2)} rad) and tilts it down to eye level (height ${v0.cy.toFixed(1)} -> ${v1.cy.toFixed(1)} m)`);
+  await page.mouse.move(320, 380); await page.mouse.wheel({ deltaY: 400 }); await sleep(300);
+  check(await page.evaluate(() => __k.story.debug.S.camZoom > 1.05), 'village: the wheel (pinch on phones) zooms out');
   check(!logs.some(l => /Shader Error|Program Info Log|VALIDATE_STATUS/i.test(l)), 'every shader compiles (contact shading, rim, screen effects)');
   check(!realErrors(logs).length, 'mid: no page errors ' + realErrors(logs).join(' | ')); await page.close(); }
 // ?nofx turns the screen effects off on a phone where they cause trouble
@@ -88,5 +97,20 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   check(b.zebu && b.hump > b.back + 0.1, `budget phones get the same zebu bull (${b.zebu}, hump ${b.hump.toFixed(2)} vs ${b.back.toFixed(2)})`);
   await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(3000);
   await page.screenshot({ path: 'tests/out/look-ring-low.jpg', type: 'jpeg', quality: 70 });
+  // ring: drag the right side to look round; the stick still moves you camera-relative
+  { await page.evaluate(() => { __k.hs.next = 999; const g = __k.game; g.p.pos.set(0, 0, 4); g.p.state = 'free'; g.b.state = 'watch'; }); await sleep(600);
+    const drag = async (x0, y0, dx, dy) => { await page.mouse.move(x0, y0); await page.mouse.down(); for (let i = 1; i <= 8; i++) await page.mouse.move(x0 + dx * i / 8, y0 + dy * i / 8); await page.mouse.up(); await sleep(500); };
+    await drag(330, 250, -110, 60);
+    const r = await page.evaluate(() => ({ yaw: __k.view.yaw, pitch: __k.view.pitch }));
+    check(Math.abs(r.yaw) > 0.5 && r.pitch > 0.5, `ring: dragging the right side swings (${r.yaw.toFixed(2)} rad) and tilts (${r.pitch.toFixed(2)}) the camera`);
+    await sleep(1200);
+    const mv = await page.evaluate(async () => { const g = __k.game, f = new __k.THREE.Vector3(); __k.camera.getWorldDirection(f); f.y = 0; f.normalize(); const p0 = g.p.pos.clone();
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' })); await new Promise(r => setTimeout(r, 700)); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+      const d = g.p.pos.clone().sub(p0); d.y = 0; return { along: d.dot(f), len: d.length() }; });
+    check(mv.len > 0.3 && mv.along > mv.len * 0.7, `ring: forward on the stick still goes the way the camera looks (${mv.along.toFixed(2)} of ${mv.len.toFixed(2)} m)`); }
+  // quality comes back: a phone that holds full speed climbs a stage; old saves (no v2) are ignored at launch
+  { const q = await page.evaluate(() => { __k.applyStage(2); __k.stepUp(); const a = __k.perf.stage, saved = JSON.parse(localStorage.getItem('khuntau-perf')); __k.stepDown(); return { a, saved, noUp: __k.perf.noUp }; });
+    check(q.a === 1 && q.saved.v === 2 && q.saved.stage === 1, `a phone at full speed gets a stage back and remembers it (${JSON.stringify(q.saved)})`);
+    check(q.noUp, 'if it cannot hold the better stage it drops back and stays put for the session'); }
   check(!realErrors(logs).length, 'low: no page errors ' + realErrors(logs).join(' | ')); await page.close(); }
 await finish(browser);

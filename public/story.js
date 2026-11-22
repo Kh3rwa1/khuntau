@@ -525,7 +525,7 @@ export function initStory(C) {
     const d = S.dlg; if (!d || now() - d.t < 0.25) return;
     if (++d.i < d.lines.length) { showLine(); return; }
     S.dlg = null; $('dlg').hidden = true;
-    if (S.hintAfterDlg) { S.hintAfterDlg = false; hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys. Press E or click the orange button to do things.'), 4500); }
+    if (S.hintAfterDlg) { S.hintAfterDlg = false; hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.'), 4500); }
     if (d.then) d.then();
   }
   $('dlg').addEventListener('pointerdown', (e) => { e.preventDefault(); nextLine(); });
@@ -918,7 +918,7 @@ export function initStory(C) {
     castCrowd(); placeAnimal(); applyPaint(true);
     C.setMusic('game'); C.musicLevel(0.3); /* the Khuntau BGM */
     if (fromRing) return;
-    setTimeout(() => { if (S.on && !S.dlg) hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys. Press E or click the orange button to do things.'), 4500); }, 600);
+    setTimeout(() => { if (S.on && !S.dlg) hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.'), 4500); }, 600);
     S.hintAfterDlg = true;
     if (save.ch === 0) { S.inside = true; W.room.visible = true; game.p.pos.copy(W.inside.bedSide); game.p.yaw = 0.4; setTimeout(() => { if (S.on && save.ch === 0) say(T.wake); }, 700); }
     else { S.inside = false; W.room.visible = false; game.p.pos.copy(YARD); game.p.yaw = H.rot; S.camYaw = H.rot; }
@@ -1146,7 +1146,10 @@ export function initStory(C) {
       t3.set(IN.x + lx * (portrait ? 0.9 : 0.6), IN.y + 0.9, IN.z - 0.9); return;
     }
     const drumming = S.mode === 'drum';
-    const back = (portrait ? 7.4 : 6.2) * (drumming ? 0.9 : 1), up = (portrait ? 4.6 : 3.3) + (drumming ? 0.6 : 0);
+    // a third-person camera you can swing (yaw), tilt (pitch) and zoom: lower and closer by default than the old high
+    // view, so the village is seen from about head height with the horizon in frame
+    const dist = (portrait ? 6.8 : 5.9) * (drumming ? 1 : S.camZoom || 1), el = clamp(drumming ? 0.42 : (S.camPitch ?? camPitchDef(portrait)), 0.08, 1.05);
+    const back = dist * Math.cos(el), up = 1.25 + dist * Math.sin(el);
     // pull the camera in until nothing stands between it and you: a house (walls and roof), a straw stack, a tree trunk
     // or canopy. Checking only the camera's own spot let it land beyond a house with the whole house in the way.
     // if even close in it is blocked (walking out of a door, the camera trails straight into the house), swing round to
@@ -1184,6 +1187,7 @@ export function initStory(C) {
     const fov = baseFov() * (r.zoom ?? 1); cine.fov = cine.fov ? cine.fov + (fov - cine.fov) * Math.min(1, rdt * 6) : camera.fov; camera.fov = cine.fov; camera.updateProjectionMatrix();
     return true;
   }
+  function camPitchDef(portrait) { return portrait ? 0.3 : 0.26; }
   function snapCam() { camTarget(camera.aspect < 1); camera.position.copy(camPos); camLook.copy(t3); camera.lookAt(camLook); }
   function cam(dt, portrait) {
     const p = game.p, moving = p.vel.lengthSq() > 1;
@@ -1197,14 +1201,24 @@ export function initStory(C) {
     if (S.tipsy > 0 && !C.reduceMotion) camera.rotateZ(Math.sin(now() * 2.1) * 0.035 * Math.min(1, S.tipsy / 2));
   }
   // drag anywhere that is not a control to look around
-  const look = { id: null, x: 0 };
+  // drag sideways to swing round, up and down to tilt; a second finger pinches to zoom (mouse wheel on laptops)
+  const look = { id: null, x: 0, y: 0, id2: null, x2: 0, y2: 0, d0: 0, z0: 1 };
   addEventListener('pointerdown', (e) => {
-    if (!S.on || game.mode !== 'story' || S.inside || S.mode !== 'walk' || look.id !== null) return;
+    if (!S.on || game.mode !== 'story' || S.inside || S.mode !== 'walk') return;
     if (e.target.closest && e.target.closest('#joyzone, button, .overlay, #dlg, #pick, #pads')) return;
-    look.id = e.pointerId; look.x = e.clientX;
+    if (look.id === null) { look.id = e.pointerId; look.x = e.clientX; look.y = e.clientY; }
+    else if (look.id2 === null) { look.id2 = e.pointerId; look.x2 = e.clientX; look.y2 = e.clientY; look.d0 = Math.hypot(look.x2 - look.x, look.y2 - look.y) || 1; look.z0 = S.camZoom || 1; }
   });
-  addEventListener('pointermove', (e) => { if (e.pointerId !== look.id) return; S.camYaw -= (e.clientX - look.x) * 0.0075; look.x = e.clientX; S.lookT = now(); });
-  const lookEnd = (e) => { if (e.pointerId === look.id) look.id = null; };
+  addEventListener('pointermove', (e) => {
+    if (e.pointerId === look.id2) { look.x2 = e.clientX; look.y2 = e.clientY; }
+    else if (e.pointerId === look.id) {
+      if (look.id2 === null) { S.camYaw -= (e.clientX - look.x) * 0.0075; S.camPitch = clamp((S.camPitch ?? camPitchDef(camera.aspect < 1)) + (e.clientY - look.y) * 0.005, 0.08, 1.05); }
+      look.x = e.clientX; look.y = e.clientY; }
+    else return;
+    if (look.id2 !== null) S.camZoom = clamp(look.z0 * look.d0 / (Math.hypot(look.x2 - look.x, look.y2 - look.y) || 1), 0.6, 1.5);
+    S.lookT = now(); });
+  addEventListener('wheel', (e) => { if (!S.on || game.mode !== 'story' || S.inside) return; S.camZoom = clamp((S.camZoom || 1) * (e.deltaY > 0 ? 1.08 : 0.93), 0.6, 1.5); }, { passive: true });
+  const lookEnd = (e) => { if (e.pointerId === look.id) { look.id = look.id2; look.x = look.x2; look.y = look.y2; look.id2 = null; } else if (e.pointerId === look.id2) look.id2 = null; };
   addEventListener('pointerup', lookEnd); addEventListener('pointercancel', lookEnd);
 
   $('actBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); if (S.on && S.label) S.act = true; });

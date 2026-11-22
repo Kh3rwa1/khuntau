@@ -477,7 +477,7 @@ const QUALITY = (() => {
 })();
 const QFORCED = new URLSearchParams(location.search).has('q');
 // what the game has already learned about this device (how far it had to turn things down last time)
-let savedStage = 0; try { const v = JSON.parse(localStorage.getItem('khuntau-perf') || 'null'); if (v && v.q === QUALITY && !QFORCED) savedStage = v.stage | 0; } catch (e) {}
+let savedStage = 0; try { const v = JSON.parse(localStorage.getItem('khuntau-perf') || 'null'); if (v && v.v === 2 && v.q === QUALITY && !QFORCED) savedStage = v.stage | 0; } catch (e) {} // v2: saves from before step-up existed are dropped once (many were stuck low after a loading hitch)
 // start one step better than last time when it had to go far down, so one bad day (hot phone, busy phone) isn't permanent
 const START_STAGE = Math.max(savedStage >= 4 ? savedStage - 1 : savedStage, QUALITY === 0 ? 3 : 0);
 // cheap mode: simple lighting and no real-time shadows. Chosen before anything is built so every material is made cheap.
@@ -515,8 +515,8 @@ function shade(m, o) {
   m.customProgramCacheKey = () => key; m.needsUpdate = true; return m;
 }
 // cap the number of pixels drawn: tablets have huge screens at 2x, which is what made them slow
-const MAX_PIX = [0.6e6, 1.5e6, 3.2e6][QUALITY], PR_CAP = [1, 1.5, 2][QUALITY];
-const perf = { scale: 1, acc: 0, n: 0, t: 0, shadowsCut: false, stage: 0, bad: 0, longs: 0, hold: 2.5, hist: [] };
+const MAX_PIX = [0.6e6, 2.2e6, 3.2e6][QUALITY], PR_CAP = [1, 2, 2][QUALITY]; // mid phones near native (1.5 MP at 1.5x looked like a soft video on a 1080p screen)
+const perf = { good: 0, np: 0, upAt: 0, noUp: false, scale: 1, acc: 0, n: 0, t: 0, shadowsCut: false, stage: 0, bad: 0, longs: 0, hold: 2.5, hist: [] };
 const targetPR = () => Math.max(0.5, Math.min(devicePixelRatio, PR_CAP, Math.sqrt(MAX_PIX / (innerWidth * innerHeight))) * perf.scale);
 // edge smoothing (MSAA) on mid phones too: on their tile-based GPUs it is resolved on chip and nearly free; jagged
 // edges were the first thing that made the game look cheap. Budget phones (QUALITY 0) still go without.
@@ -2300,6 +2300,7 @@ function resetGame() {
 // ring buttons speak the story's language only during the story finale (online and normal rounds stay English)
 function ringLabels() { game.ringLang = !!(game.storyRun || game.villageRun); for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w); }
 function startGame() {
+  view.yaw = 0; /* each round starts looking at the post; your tilt and zoom are kept */
   game.menuOpen = false; $('pauseScreen').hidden = true;
   ringLabels();
   initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; MUSIC_VOL.game = 0.5; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
@@ -2858,6 +2859,25 @@ function audioFrame() {
   if (audio.wind) { const inside = game.mode === 'story' && story && story.debug && story.debug.S.inside; audio.wind.gain.setTargetAtTime(game.mode === 'story' ? (inside ? 0.008 : 0.045) : 0.018, c.currentTime, 0.6); audio.windF.frequency.setTargetAtTime(380 + Math.sin(game.t * 0.3) * 120, c.currentTime, 0.6); }
   if (garland.visible && game.b.state === 'charge' && game.mode !== 'story' && gate('clink', 0.26)) sfx.clink(0.8);
 }
+// ring camera control: drag the free right side of the screen (not the stick, not a button) to look around, pinch or
+// mouse-wheel to zoom. The village has its own (story.js), with the same feel.
+const view = { yaw: 0, pitch: null, zoom: 1, id: null, x: 0, y: 0, id2: null, x2: 0, y2: 0, d0: 1, z0: 1 };
+addEventListener('pointerdown', e => {
+  if (game.mode !== 'play' || cineR.shot || (e.target.closest && e.target.closest('#joyzone, button, .overlay, #pads, input, a'))) return;
+  if (view.id === null) { view.id = e.pointerId; view.x = e.clientX; view.y = e.clientY; }
+  else if (view.id2 === null) { view.id2 = e.pointerId; view.x2 = e.clientX; view.y2 = e.clientY; view.d0 = Math.hypot(view.x2 - view.x, view.y2 - view.y) || 1; view.z0 = view.zoom; }
+});
+addEventListener('pointermove', e => {
+  if (e.pointerId === view.id2) { view.x2 = e.clientX; view.y2 = e.clientY; }
+  else if (e.pointerId === view.id) {
+    if (view.id2 === null) { view.yaw -= (e.clientX - view.x) * 0.0075; view.pitch = clamp((view.pitch ?? (camera.aspect < 1 ? 0.46 : 0.38)) + (e.clientY - view.y) * 0.005, 0.12, 1.1); }
+    view.x = e.clientX; view.y = e.clientY; }
+  else return;
+  if (view.id2 !== null) view.zoom = clamp(view.z0 * view.d0 / (Math.hypot(view.x2 - view.x, view.y2 - view.y) || 1), 0.65, 1.4);
+});
+{ const end = e => { if (e.pointerId === view.id) { view.id = view.id2; view.x = view.x2; view.y = view.y2; view.id2 = null; } else if (e.pointerId === view.id2) view.id2 = null; };
+  addEventListener('pointerup', end); addEventListener('pointercancel', end); }
+addEventListener('wheel', e => { if (game.mode === 'play') view.zoom = clamp(view.zoom * (e.deltaY > 0 ? 1.08 : 0.93), 0.65, 1.4); }, { passive: true });
 function updateCamera(dt) {
   const portrait = camera.aspect < 1;
   if (game.mode === 'story' && story) { if (cineR.shot) ringShotEnd(); story.cam(dt, portrait); return; }
@@ -2876,8 +2896,11 @@ function updateCamera(dt) {
   const p = game.p.pos;
   const fromPost = tmpV.set(p.x, 0, p.z);
   if (fromPost.length() > 1.2) game.camDir.lerp(fromPost.normalize(), 1 - Math.pow(0.02, dt)).normalize();
-  const back = portrait ? 8.6 : 7.2, up = portrait ? 6.2 : 4.6;
-  const target = tmpV2.copy(p).addScaledVector(game.camDir, back).setY(up);
+  // the player can swing (yaw), tilt (pitch) and zoom the ring camera by dragging the right side / pinching; it keeps
+  // following you round the post. Movement is camera-relative, so the controls stay right whichever way it faces.
+  const el = clamp(view.pitch ?? (portrait ? 0.46 : 0.38), 0.12, 1.1), dist = (portrait ? 9.6 : 8.0) * view.zoom;
+  const dirC = tmpV3.copy(game.camDir).applyAxisAngle(UPV, view.yaw);
+  const target = tmpV2.copy(p).addScaledVector(dirC, dist * Math.cos(el)).setY(1.1 + dist * Math.sin(el));
   camera.position.lerp(target, 1 - Math.pow(0.003, dt));
   const look = new THREE.Vector3().copy(p).lerp(new THREE.Vector3(0, 0, 0), 0.4).setY(1.1);
   camLook.lerp(look, 1 - Math.pow(0.002, dt));
@@ -3352,7 +3375,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3514,6 +3537,7 @@ function applyStage(n) {
 function adaptQuality(now) {
   if ((game.mode !== 'play' && game.mode !== 'menu' && game.mode !== 'story') || document.hidden || !bull) { perf.t = now; perf.n = 0; perf.acc = 0; perf.hold = Math.max(perf.hold, 1); return; }
   const d = now - perf.t; perf.t = now; if (d <= 0) return;
+  { const np = renderer.info.programs ? renderer.info.programs.length : 0; if (np !== perf.np) { perf.np = np; perf.hold = Math.max(perf.hold, 1.5); } } // new shaders compiling (first look at a place) stall a frame or two: not slowness
   if (perf.hold > 0) { perf.hold -= Math.min(d, 0.5); perf.n = 0; perf.acc = 0; perf.longs = 0; return; } // let loading, a new stage or a tab switch settle first
   if (d > 0.5) { // frames taking over half a second: far too slow to measure normally, so step down at once
     if (++perf.longs >= 3 && perf.stage < 6 && !QFORCED) { perf.longs = 0; stepDown(); }
@@ -3523,6 +3547,7 @@ function adaptQuality(now) {
   perf.acc += d; perf.n++;
   if (perf.acc < 1.2) return;
   const fps = perf.n / perf.acc; perf.acc = 0; perf.n = 0; perf.fps = fps;
+  if (fps >= 56 && perf.stage > 0 && !perf.noUp && !perf.capped && !QFORCED) { if (++perf.good >= 10) stepUp(); } else perf.good = 0;
   if (fps >= 45 || perf.stage >= 6 || perf.capped || QFORCED) { perf.bad = 0; return; }
   if (++perf.bad < 2) return; // two slow readings in a row, so one hiccup doesn't cost quality
   perf.bad = 0; perf.hist.push(fps);
@@ -3530,7 +3555,11 @@ function adaptQuality(now) {
   if (perf.hist.length >= 3 && fps < perf.hist[perf.hist.length - 3] * 1.08 && Math.abs(fps - 30) < 4) { perf.capped = true; return; }
   stepDown();
 }
-function stepDown() { applyStage(perf.stage + 1); perf.hold = 2; perf.bad = 0; try { localStorage.setItem('khuntau-perf', JSON.stringify({ q: QUALITY, stage: perf.stage })); } catch (e) {} }
+function savePerf() { try { localStorage.setItem('khuntau-perf', JSON.stringify({ v: 2, q: QUALITY, stage: perf.stage })); } catch (e) {} }
+function stepDown() { if (perf.upAt && performance.now() / 1000 - perf.upAt < 20) perf.noUp = true; /* it could not hold the better stage: stay put this session */ applyStage(perf.stage + 1); perf.hold = 2; perf.bad = 0; perf.good = 0; savePerf(); }
+// a phone that holds a full frame rate for ~12 s gets one stage back (shadows, sharpness, screen effects). The cheap
+// materials (stage 3+) are chosen at launch, so leaving stage 3 takes effect from the next launch.
+function stepUp() { applyStage(perf.stage - 1); perf.upAt = performance.now() / 1000; perf.hold = 2; perf.good = 0; savePerf(); }
 document.addEventListener('visibilitychange', () => { perf.hold = Math.max(perf.hold, 1.5); perf.longs = 0; });
 function uiScale() {
   const w = innerWidth, h = innerHeight, short = Math.min(w, h);
