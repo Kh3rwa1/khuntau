@@ -1553,6 +1553,11 @@ const garland = new THREE.Group();
   const bell = new THREE.Group(); bell.position.set(0, -0.02, 0.3); garland.add(bell); garland.userData.bell = bell;
   const bb = new THREE.Mesh(mergeGeometries([new THREE.CylinderGeometry(0.035, 0.07, 0.11, 8).translate(0, -0.1, 0), new THREE.SphereGeometry(0.035, 6, 4).translate(0, -0.04, 0), new THREE.SphereGeometry(0.018, 5, 4).translate(0, -0.165, 0)], false), brass);
   bell.add(bb);
+  // paddy sheaves tied on with the marigolds, hanging at both sides of the neck (one draw)
+  { const sh = []; for (const sx of [-1, 1]) { for (let k = 0; k < 7; k++) sh.push(vc(new THREE.CylinderGeometry(0.006, 0.008, 0.26, 3).translate(sx * 0.31 + (k - 3) * 0.012, -0.13, 0.08 + ((k * 37) % 5 - 2) * 0.01), 0xc9a24a));
+      for (let k = 0; k < 7; k++) sh.push(vc(new THREE.SphereGeometry(0.014, 4, 3).scale(1, 2.2, 1).translate(sx * 0.31 + (k - 3) * 0.013, -0.27 - (k % 3) * 0.015, 0.08 + ((k * 37) % 5 - 2) * 0.01), 0xe2c060));
+      sh.push(vc(new THREE.TorusGeometry(0.03, 0.008, 4, 8).rotateX(Math.PI / 2).translate(sx * 0.31, -0.03, 0.08), 0x8a2a22)); }
+    const sheaves = new THREE.Mesh(mergeGeometries(sh), Mat({ vertexColors: true, roughness: 0.8 })); sheaves.rotation.x = 1.0; garland.add(sheaves); garland.userData.sheaves = sheaves; }
   scene.add(garland);
 }
 

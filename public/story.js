@@ -22,48 +22,48 @@ export function initStory(C) {
   /* ---------- words (one table, ready to translate) ---------- */
   const T_EN = {
     wake: [['Gogo', 'Johar! Wake up, the sun is already over the sal trees. Today is Khuntau, the big day of Sohrai.'], ['Gogo', 'First a sip of handi for strength. The pot is by the back wall.']],
-    drank: [['Gogo', 'Good. Now go out and finish the wall. A house without its Sohrai painting is not ready for the festival.']],
+    drank: [['Gogo', 'Good. Now go out and finish the wall. We painted it on the first day of Sohrai, but three motifs are still waiting for you.']],
     gogoIdle: [['Gogo', 'Eat a pitha if you are hungry. And do not let that animal horn you today.']],
-    painted: [['Gogo', 'Now that is a Sohrai wall. Go to the cattle shed, the Majhi is waiting for you.']],
+    painted: [['Gogo', 'Now that is a Sohrai wall. Go to the goda, the Majhi is waiting for you.']],
     majhi1: [['Majhi', 'Johar! The cattle ploughed for us all year. Today we thank them.'], ['Majhi', 'Choose which one we tie to the khunt.']],
-    majhi2: [['Majhi', 'Now oil the horns and put the garland on. Gently.']],
-    majhi3: [['Majhi', 'A fine animal. I will walk it to the khunt.'], ['Majhi', 'You wake the village. The tamak is waiting at the akhra.']],
+    majhi2: [['Majhi', 'Now oil the horns, then put on the garland and the paddy sheaves. Gently.']],
+    majhi3: [['Majhi', 'A fine animal. The godet and I will lead it to the khunt.'], ['Majhi', 'You wake the village. The tamak is waiting at the akhra.']],
     majhiIdle: [['Majhi', 'When the tamak speaks, nobody in this village can stand still.']],
     drumHow: [['Majhi', 'Hit when the note lands on the drum. Tamak on the left, tumdak on the right.']],
     drumWin: [['Majhi', 'Listen to that! The whole village is dancing.'], ['Majhi', 'Now the khunt. Snatch three pitha, and mind the horns.']],
     ringLose: [['Majhi', 'It got you this time. Dust yourself off and go again.']],
     ringWin: [['Gogo', 'Three pitha! And you can still walk. I am proud of you.'], ['Majhi', 'Sohrai is blessed this year. Johar!']],
-    obj: ['Drink the handi', 'Paint the house wall', 'Go to the cattle shed', 'Beat the tamak', 'Go to the khunt', 'Sohrai Day done. Roam freely'],
+    obj: ['Drink the handi', 'Paint the house wall', 'Go to the goda (cattle shed)', 'Beat the tamak', 'Go to the khunt', 'Sohrai Day done. Roam freely'],
   };
   const T_HI = {
     wake: [['गोगो', 'जोहार! उठो, सूरज साल के पेड़ों के ऊपर आ गया है। आज खुंटाउ है, सोहराय का बड़ा दिन।'], ['गोगो', 'पहले ताक़त के लिए हँड़िया का एक घूँट। घड़ा पीछे की दीवार के पास है।']],
-    drank: [['गोगो', 'शाबाश। अब बाहर जाकर दीवार पूरी करो। सोहराय की चित्रकारी के बिना घर त्योहार के लिए तैयार नहीं होता।']],
+    drank: [['गोगो', 'शाबाश। अब बाहर जाकर दीवार पूरी करो। सोहराय के पहले दिन हमने इसे रंगा था, पर तीन चित्र अभी तुम्हारा इंतज़ार कर रहे हैं।']],
     gogoIdle: [['गोगो', 'भूख लगे तो पीठा खा लेना। और आज उस जानवर के सींग से बचकर रहना।']],
-    painted: [['गोगो', 'अब हुई न सोहराय की दीवार। गोहाल जाओ, माझी तुम्हारा इंतज़ार कर रहे हैं।']],
+    painted: [['गोगो', 'अब हुई न सोहराय की दीवार। गोड़ा जाओ, माझी तुम्हारा इंतज़ार कर रहे हैं।']],
     majhi1: [['माझी', 'जोहार! मवेशियों ने साल भर हमारे लिए हल जोता। आज हम उनका धन्यवाद करते हैं।'], ['माझी', 'चुनो, खूँटे से किसे बाँधें।']],
-    majhi2: [['माझी', 'अब सींगों पर तेल लगाओ और माला पहनाओ। आराम से।']],
-    majhi3: [['माझी', 'बढ़िया जानवर है। मैं इसे खूँटे तक ले जाता हूँ।'], ['माझी', 'तुम गाँव को जगाओ। अखड़ा में तामाक तुम्हारा इंतज़ार कर रहा है।']],
+    majhi2: [['माझी', 'अब सींगों पर तेल लगाओ, फिर माला और धान की बालियाँ पहनाओ। आराम से।']],
+    majhi3: [['माझी', 'बढ़िया जानवर है। गोडेत और मैं इसे खूँटे तक ले चलेंगे।'], ['माझी', 'तुम गाँव को जगाओ। अखड़ा में तामाक तुम्हारा इंतज़ार कर रहा है।']],
     majhiIdle: [['माझी', 'जब तामाक बोलता है, तो इस गाँव में कोई चुप नहीं बैठ सकता।']],
     drumHow: [['माझी', 'जब गोला ढोल पर पहुँचे, तभी मारो। बाएँ तामाक, दाएँ तुमदाक।']],
     drumWin: [['माझी', 'सुनो! पूरा गाँव नाच रहा है।'], ['माझी', 'अब खूँटा। तीन पीठा छीनो, और सींगों से बचना।']],
     ringLose: [['माझी', 'इस बार उसने तुम्हें पकड़ लिया। धूल झाड़ो और फिर जाओ।']],
     ringWin: [['गोगो', 'तीन पीठा! और तुम अब भी चल पा रहे हो। मुझे तुम पर गर्व है।'], ['माझी', 'इस साल सोहराय शुभ है। जोहार!']],
-    obj: ['हँड़िया पियो', 'घर की दीवार रंगो', 'गोहाल जाओ', 'तामाक बजाओ', 'खूँटे पर जाओ', 'सोहराय का दिन पूरा। घूमो'],
+    obj: ['हँड़िया पियो', 'घर की दीवार रंगो', 'गोड़ा जाओ', 'तामाक बजाओ', 'खूँटे पर जाओ', 'सोहराय का दिन पूरा। घूमो'],
   };
   // every other on-screen line, English → Hindi. # stands for a number.
   const HI = {
     'ENTER': 'अंदर', 'DRINK': 'पियो', 'EAT': 'खाओ', 'REST': 'आराम', 'TALK': 'बात', 'GO OUT': 'बाहर', 'RING': 'खेलो', 'Play a round at the khunt': 'खूँटे पर एक दौर खेलो', 'PAINT': 'रंगो', 'CHOOSE': 'चुनो', 'OIL': 'तेल', 'GARLAND': 'माला', 'BEAT': 'बजाओ', 'START': 'शुरू', 'SHOOT': 'तीर', 'FISH': 'मछली', 'SING': 'गाओ',
     'Go into the house': 'घर के अंदर जाओ', 'Drink the handi': 'हँड़िया पियो', 'Eat a pitha': 'पीठा खाओ', 'Rest on the khatia': 'खटिया पर आराम करो', 'Talk to Gogo': 'गोगो से बात करो', 'Go outside': 'बाहर जाओ', 'Paint the wall': 'दीवार रंगो', 'Talk to the Majhi': 'माझी से बात करो',
-    'Choose the animal': 'जानवर चुनो', 'Oil the horns': 'सींगों पर तेल लगाओ', 'Put on the garland': 'माला पहनाओ', 'Beat the tamak': 'तामाक बजाओ', 'Drum freely': 'मन से बजाओ', 'Start the Khuntau': 'खुंटाउ शुरू करो',
-    'Shoot at the target': 'निशाने पर तीर चलाओ', 'Fish in the pond': 'तालाब में मछली पकड़ो', 'Sing at this house': 'इस घर पर गाओ',
+    'Choose the animal': 'जानवर चुनो', 'Oil the horns': 'सींगों पर तेल लगाओ', 'Garland and paddy sheaves': 'माला और धान की बालियाँ पहनाओ', 'Beat the tamak': 'तामाक बजाओ', 'Drum freely': 'मन से बजाओ', 'Start the Khuntau': 'खुंटाउ शुरू करो',
+    'Shoot at the target': 'निशाने पर तीर चलाओ', 'Fish in the pond': 'तालाब में मछली पकड़ो', 'Join the Sarpa enej': 'सरपा एनेज में शामिल हो',
     'Handi!': 'हँड़िया!', 'You feel strong': 'ताक़त आ गई', 'The plate is empty. Gogo will make more tomorrow.': 'थाली खाली है। गोगो कल और बनाएगी।', 'Pitha!': 'पीठा!', 'Sweet rice cake': 'चावल की मीठी रोटी', 'You rest a while': 'थोड़ा आराम किया',
-    'One more to paint': 'एक और रंगना है', '# more to paint': '# और रंगने हैं', 'Oiled': 'तेल लग गया', 'The horns shine': 'सींग चमक रहे हैं', 'Garlanded': 'माला पहना दी', 'Marigolds for the day': 'आज के लिए गेंदे के फूल',
+    'One more to paint': 'एक और रंगना है', '# more to paint': '# और रंगने हैं', 'Oiled': 'तेल लग गया', 'The horns shine': 'सींग चमक रहे हैं', 'Garlanded': 'माला पहना दी', 'Marigolds and paddy sheaves': 'गेंदे के फूल और धान की बालियाँ',
     'Play anything. The village follows your hands.': 'कुछ भी बजाओ। गाँव तुम्हारे हाथों के पीछे चलता है।', 'The village is dancing!': 'गाँव नाच रहा है!', 'The beat is yours': 'ताल तुम्हारी है', 'Need #. Try again': '# चाहिए। फिर कोशिश करो',
     'Sohrai Day complete': 'सोहराय का दिन पूरा', 'Johar!': 'जोहार!', 'Three more pitha': 'तीन और पीठा', 'Perfect': 'वाह', 'Good': 'ठीक', 'Early': 'जल्दी', 'Miss': 'चूक', 'Again': 'फिर से',
     'Tap on the green': 'हरे पर दबाओ', 'Drag to aim, let go to shoot': 'खींचकर निशाना लगाओ, छोड़कर तीर चलाओ', 'Drag to aim, let go to shoot. Or arrow keys and Space': 'खींचकर निशाना लगाओ, छोड़कर तीर चलाओ। या तीर वाली कुंजियाँ और Space', 'Hit!': 'लगा!', 'Bullseye!': 'बीचोंबीच!', 'Missed': 'चूक गया', 'Sharp eye': 'पक्की नज़र', 'Archery contest': 'तीरंदाज़ी',
     'Tap to cast': 'काँटा डालने के लिए दबाओ', 'Wait for the bite…': 'मछली का इंतज़ार…', 'PULL!': 'खींचो!', 'Too early': 'बहुत जल्दी', 'It got away': 'निकल गई', 'Got one!': 'पकड़ ली!', '# fish': '# मछली', 'A good catch': 'अच्छा शिकार', 'Fishing': 'मछली पकड़ना',
-    'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'They give you pitha': 'उन्होंने पीठा दिया', 'They give you rice': 'उन्होंने चावल दिया', 'They give you handi': 'उन्होंने हँड़िया दी', 'Three houses sung': 'तीन घरों पर गा लिया', 'Tamak played': 'तामाक बजा लिया',
-    'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: sing at three houses (#/#)': 'आज: तीन घरों पर गाओ (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
+    'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'The women sing it back': 'औरतें गीत दोहराती हैं', 'The road dances with you': 'पूरी सड़क तुम्हारे साथ नाचती है', 'The song goes down the road': 'गीत सड़क पर आगे बढ़ता है', 'Sarpa enej sung': 'सरपा एनेज गा लिया', 'Tamak played': 'तामाक बजा लिया',
+    'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: Sarpa enej on the village road (#/#)': 'आज: गाँव की सड़क पर सरपा एनेज (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
     'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
     // the ring finale (lines that live in index.html, translated while the story's ring runs)
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
@@ -339,6 +339,8 @@ export function initStory(C) {
       const tree = [[3.9, -1.2], [3.4, -1.7], [4.4, -0.8], [3.0, -2.2], [-4.4, -1.8], [-3.8, -2.4]].map(([a, b]) => AC.clone().addScaledVector(W.aR, a).addScaledVector(W.aIn, b)).reduce((best, q) => pathGap(q) > pathGap(best) + 0.01 ? q : best);
       put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
       for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); put(new THREE.SphereGeometry(rand(1.4, 2.1), 7, 5), [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)); }
+      for (let k = 0; k < 5; k++) { const side = k % 2 ? 1 : -1, q = AC.clone().addScaledVector(W.aIn, 2.2 + rand(-0.4, 0.4)).addScaledVector(W.aR, side * (3.3 + k * 0.25)), yw = rand(0, 6.28), col = [0x2e241a, 0x5a3a22, 0x7a2a22][k % 3];
+        for (const o of [-0.065, 0.065]) put(new THREE.BoxGeometry(0.1, 0.02, 0.26), col, q.clone().add(V(Math.cos(yw) * o, 0, -Math.sin(yw) * o)), 0.012, yw); } /* sandals left at the edge: people dance barefoot */
       for (const o of props) scene.add(o);
       scene.updateMatrixWorld(true); C.bakeStatic(props, Mat({ vertexColors: true, flatShading: true, roughness: 0.95 }));
       // what you can bump into
@@ -448,6 +450,9 @@ export function initStory(C) {
     W.float = new THREE.Group(); mesh(new THREE.SphereGeometry(0.09, 8, 6), red, 0, 0.05, 0, W.float); mesh(new THREE.SphereGeometry(0.07, 8, 6), paste, 0, 0.13, 0, W.float); W.float.visible = false; scene.add(W.float);
     W.floatHome = POND.clone().addScaledVector(W.fIn, 1.3).setY(0.03);
     W.fishM = new THREE.Group(); { const fm = Mat({ color: 0xc9d3d8, roughness: 0.35 }); const b = mesh(new THREE.SphereGeometry(0.2, 10, 8), fm, 0, 0, 0, W.fishM); b.scale.set(0.45, 0.6, 1.3); const tl = mesh(new THREE.ConeGeometry(0.13, 0.22, 4).rotateX(-Math.PI / 2), fm, 0, 0, -0.33, W.fishM); tl.scale.x = 0.3; } W.fishM.visible = false; scene.add(W.fishM);
+    // Sarpa enej: a line of women who sing and dance on the village road at the next stop (in saris, holding the line)
+    W.sarpa = [['woman', 0xc0562a, 0x1f5e8a], ['worker', 0xe8c547, 0x8a2a22], ['woman', 0x2f7a46, 0xf1ead9]].map(([kind, sari, edge]) => { const a = C.actor(C.loaded[kind], rand(1.55, 1.68), true);
+      C.tint(a, { Skin: [0x704428, 0x5f3b23, 0x6a4026][(Math.random() * 3) | 0], Hair: 0x120c08, Sari: sari, SariBorder: edge, Pallu: sari, Shirt: edge, Vest: edge, Pants: sari }); a.play('Walk', { ts: 0.6 }); a.wrap.visible = false; scene.add(a.wrap); return a; });
     // a marigold string over each door that still wants a song today
     W.jale = JALE.map(j => { const s2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: C.glowTex, color: 0xffc21c, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending })); s2.scale.setScalar(1.1); s2.position.copy(j.stand).setY(2.3); scene.add(s2); return s2; });
 
@@ -544,13 +549,13 @@ export function initStory(C) {
       if (!atRing() && save.ch >= 2) {
         if (!save.chosen) add(W.gStand, 2.4, 'CHOOSE', 'Choose the animal', openPicker);
         else if (!save.oiled) add(W.gStand, 2.4, 'OIL', 'Oil the horns', oilHorns);
-        else if (!save.garland) add(W.gStand, 2.4, 'GARLAND', 'Put on the garland', putGarland);
+        else if (!save.garland) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', putGarland);
       }
       if (save.ch >= 3) { const chart = save.ch === 3 || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => drumStart(!chart)); }
       if (save.ch >= 1) {
         add(ARCH, 1.7, 'SHOOT', 'Shoot at the target', archStart);
         add(FSTAND, 1.7, 'FISH', 'Fish in the pond', fishStart);
-        JALE.forEach((j, i) => { if (!today().jv[i]) add(j.stand, 1.5, 'SING', 'Sing at this house', () => echoStart(i)); });
+        JALE.forEach((j, i) => { if (!today().jv[i]) add(j.stand, 1.5, 'SING', 'Join the Sarpa enej', () => echoStart(i)); });
       }
       { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: startRing } // the story's finale: 3 pitha
         : { d: 0.5, label: 'RING', text: 'Play a round at the khunt', go: villageRound }); } // any other time: a normal scored round
@@ -640,7 +645,7 @@ export function initStory(C) {
   function putGarland() {
     const pl = C.player(); pl.play('PickUp', { once: true, fade: 0.1, ts: 1.1 }); S.lock = 1.1;
     setTimeout(() => {
-      save.garland = 1; persist(); C.garland.visible = true; C.sfx.grab(); pop('Garlanded', 'Marigolds for the day');
+      save.garland = 1; persist(); C.garland.visible = true; C.sfx.grab(); pop('Garlanded', 'Marigolds and paddy sheaves');
       cinema({ dur: 2.2, at(t, P, L) { const n = C.garland.position, k = Math.min(1, t / 2.0), e = k * k * (3 - 2 * k);
         P.copy(n).addScaledVector(W.gF, 1.5 + e * 2.3).addScaledVector(W.gR, 1.3 + e * 1.1).setY(n.y + 0.1 + e * 0.8); L.copy(n).lerp(game.b.pos.clone().setY(0.9), e * 0.6); return { snap: 0.002, zoom: 0.75 + e * 0.2 }; } });
       setTimeout(() => say(T.majhi3, () => fade(() => { setChapter(3); placeAnimal(); C.sfx.bellow(); }, 450)), 1000);
@@ -853,7 +858,7 @@ export function initStory(C) {
 
   /* ---------- going house to house: hear the beat, give it back ---------- */
   const echo = { seq: [], ph: 'show', k: 0, t: 0, i: 0, house: 0 };
-  const GIFTS = ['They give you pitha', 'They give you rice', 'They give you handi'];
+  const GIFTS = ['The women sing it back', 'The road dances with you', 'The song goes down the road'];
   function echoStart(i) {
     const p = game.p, j = JALE[i]; p.pos.copy(j.stand); p.yaw = j.yaw; p.vel.set(0, 0, 0); S.camYaw = j.yaw + Math.PI; S.lookT = now() + 999;
     const n = 3 + today().jv.filter(Boolean).length; echo.seq = Array.from({ length: n }, () => Math.random() < 0.5 ? 'T' : 'U');
@@ -873,7 +878,7 @@ export function initStory(C) {
     judge(lane, 'Good');
     if (++echo.i >= echo.seq.length) {
       echo.ph = 'done'; const td = today(); td.jv[echo.house] = 1; persist(); S.objKey = ''; C.crowdCheer(0.5); C.play('bells', { vol: 0.6 }); C.buzz([20, 30, 40]);
-      if (td.jv.every(Boolean)) daily('jale', 'Three houses sung');
+      if (td.jv.every(Boolean)) daily('jale', 'Sarpa enej sung');
       setTimeout(() => { echoStop(); toast(GIFTS[echo.house % 3], 1500); }, 700);
     }
   }
@@ -1052,6 +1057,11 @@ export function initStory(C) {
     else if (S.mode === 'aim') archUpdate(dt); else if (S.mode === 'fish') fishUpdate(dt, tn); else if (S.mode === 'echo') echoUpdate(dt);
     if (W.flags) for (const f of W.flags) f.children[1].rotation.y = Math.sin(tn * 2.4 + f.position.x) * 0.35;
     if (!S.inside) pondUpdate(dt, tn);
+    if (W.sarpa) { const td = today(), k = save.ch >= 1 ? td.jv.indexOf(0) : -1, j = k >= 0 ? JALE[k] : null; /* the Sarpa enej line at the next stop */
+      const show = !!j && !S.inside && Math.hypot(game.p.pos.x - j.stand.x, game.p.pos.z - j.stand.z) < 24, hot = S.mode === 'echo' && echo.house === k;
+      W.sarpa.forEach((a, i) => { a.wrap.visible = show; if (!show) return; const toRing = V(-j.stand.x, 0, -j.stand.z).normalize(), tan = V(toRing.z, 0, -toRing.x), sw = Math.sin(tn * (hot ? 3.2 : 1.8) + i * 0.6);
+        a.wrap.position.copy(j.stand).addScaledVector(toRing, 2.0).addScaledVector(tan, (i - 1) * 0.75 + sw * (hot ? 0.18 : 0.1)); a.wrap.position.y = Math.max(0, Math.sin(tn * (hot ? 6.4 : 3.6) + i)) * (hot ? 0.06 : 0.03);
+        a.wrap.rotation.set(0, Math.atan2(j.stand.x - a.wrap.position.x, j.stand.z - a.wrap.position.z) + sw * 0.25, Math.cos(tn * 1.8 + i) * 0.06); a.mixer.update(dt * (hot ? 1.5 : 1)); }); }
     if (!S.inside && S.mode !== 'drum') { const sf = C.sfx, p2 = game.p.pos;
       if (Math.random() < dt * 0.22) sf.chirp(rand(0.4, 1)); /* birdsong in the trees */
       { const v = sf.near(POND, 11); if (v > 0 && Math.random() < dt * 0.18) sf.quack(v); }
@@ -1106,7 +1116,7 @@ export function initStory(C) {
     let text = T.obj[ch] || '';
     if (ch >= 5) { const td = today(), jn = td.jv.filter(Boolean).length;
       if (!td.arch) { target = ARCH; text = tr('Today: archery contest'); } else if (!td.fish) { target = FSTAND; text = tr('Today: catch fish at the pond'); }
-      else if (!td.jale && jn < 3) { target = JALE[td.jv.indexOf(0)].stand; text = tr('Today: sing at three houses (' + jn + '/3)'); }
+      else if (!td.jale && jn < 3) { target = JALE[td.jv.indexOf(0)].stand; text = tr('Today: Sarpa enej on the village road (' + jn + '/3)'); }
       else if (!td.drum) { target = W.drumStand; text = tr('Today: beat the tamak'); } else text = tr('All done today. Come back tomorrow'); }
     if (text !== S.objKey) { S.objKey = text; $('objText').textContent = text; }
     const show = !!target && S.mode === 'walk';

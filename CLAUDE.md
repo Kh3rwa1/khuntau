@@ -65,8 +65,8 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 - Story mode (`story.js`), progress in `khuntau-story`, language in `khuntau-lang`:
   1. Wake in the mud house; drink handi (also eat pitha, rest, talk to Gogo). 2. Paint 3 wall motifs.
   3. Cattle shed: choose animal, oil horns, garland. 4. Tamak/tumdak rhythm game; dancers, Majhi and the animal
-  react to every hit. 5. Ring finale: 3 pitha. Then a daily round: archery, fishing, singing at 3 houses
-  (drum call-and-response), tamak; +15 XP each once a day.
+  react to every hit. 5. Ring finale: 3 pitha. Then a daily round: archery, fishing, the Sarpa enej (women singing and
+  dancing on the village road; drum call-and-response at 3 stops), tamak; +15 XP each once a day. The cattle shed is the goda (Dulor).
   One context button (`#actBtn`, E on laptops) does whatever is nearest. Hindi for all story text (pause menu).
 - The interior of the house lives under the ground at y = -40 and is shown only while inside.
 
@@ -106,7 +106,7 @@ Every row ends as **fixed + test** or **blocked + what Dulor must do**. Keep it 
 | Slow-phone safety net | tested | `tests/slowphone.mjs`: CPU throttled 6x, auto quality on: steps itself down, remembers it, story still walks |
 | Real-phone feel on the A34 | needs Dulor's phone | open `https://khuntau.dulalkisku0.workers.dev/?fps` on the A34 after the next deploy: read the meter in the village and at the akhra (green 45+, yellow 28+, red below); play the drum chart twice and say early/late/fine; try archery and say if the crosshair moves too fast/slow for your drag and if the sway feels fair |
 | Santali story text | plumbing ready, needs a Santali speaker | `design/santali-strings.csv` (183 lines, English + Hindi, empty Santali column); `node tools/santali-import.mjs` puts it in the game; the language button offers Santali once text exists, in Ol Chiki font; `tests/santali.mjs` proves the path with marker text. Never machine-translate it |
-| Customs order and details | needs Dulor | `design/customs-check.md`: 10 questions, one per custom shown; answer OK / wrong / in my village |
+| Customs order and details | answered + applied | Dulor answered all 13 in `design/customs-check.md` (22 Nov): wall painted on the first day of Sohrai (Gogo says so), paddy sheaves on the garland, Majhi and godet lead the animal, no dancing at the khunt, singing became the Sarpa enej on the village road with women dancing, goda not gohal, sandals at the akhra (barefoot), pork sold by any villager. English, Hindi and `santali-strings.csv` updated |
 | Story mode multiplayer | design choice | single-player by design; the ring is the online mode |
 | Play Store (TWA, `com.tumdah.khuntau`) | ready to build, needs Dulor's account | manifest has id, description, maskable icon; Chrome says installable (`offline.mjs`). `twa/twa-manifest.json` + `twa/README.md` (build, signing, assetlinks). Dulor: Play developer account type + creation date (personal accounts after Nov 2023 need a 12-tester, 14-day closed test), then build once on the Mac |
 | Know what players do | built + tested | anonymous step counts (no ids/cookies): `track()` in index.html, `/api/ev` + `/api/stats` in the Worker (whitelisted names, per-IP limit), funnel page `/stats.html`. `online.mjs` + `ring.mjs` (against wrangler) prove the game reports its steps |
