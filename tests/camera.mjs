@@ -66,13 +66,19 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
     check(r.chop && r.pause, 'the butcher chops in bursts with pauses (not a steady drum beat)');
     check(r.moved > 0.15, `buyers wait like people: shifting, wandering a step, stepping up to the table (moved ${r.moved.toFixed(2)} m)`);
     check(!r.dancersNear, 'nobody dances at the meat sale (the Sarpa enej stop moved off house 7)'); }
-  await page.evaluate(() => { window.__sfxLog.length = 0; const M = __k.market, d = __k.story.debug; __k.game.p.pos.set(M.spot[0] + 2.5, 0, M.spot[1] + 2.5); d.snapCam(); }); await sleep(3500);
-  check(await page.evaluate((z0) => Math.abs(__k.market.scale.rotation.z - z0) > 0.005, m.z0), 'the balance scale tips as things are weighed');
-  check(await page.evaluate(() => window.__sfxLog.includes('chop') && window.__sfxLog.includes('chatter')), 'near the stall you hear the cleaver and people talking'); }
+  /* game time crawls on a software-GL runner (1-3 fps, dt capped): poll with a long timeout instead of one sample after a fixed sleep */
+  await page.evaluate(() => { window.__sfxLog.length = 0; const M = __k.market, d = __k.story.debug, b = M.people.find(a => a.role === 'butcher'); __k.game.p.pos.set(M.spot[0] + 2.5, 0, M.spot[1] + 2.5); d.snapCam(); b.tm = 0; b.chops = Math.max(1, b.chops); window.__zr = [9, -9]; });
+  const until = (fn) => page.waitForFunction(fn, { timeout: 40000, polling: 150 }).then(() => true, () => false);
+  const tips = await until(() => { const z = __k.market.scale.rotation.z, r = window.__zr; r[0] = Math.min(r[0], z); r[1] = Math.max(r[1], z); return r[1] - r[0] > 0.005; });
+  check(tips, `the balance scale tips as things are weighed (beam ${(await page.evaluate(() => window.__zr[0])).toFixed(3)} to ${(await page.evaluate(() => window.__zr[1])).toFixed(3)})`);
+  const heard = await until(() => window.__sfxLog.includes('chop') && window.__sfxLog.includes('chatter'));
+  check(heard, `near the stall you hear the cleaver and people talking (${await page.evaluate(() => [...new Set(window.__sfxLog)].join(' '))})`); }
 // the water carrier walks her route between the pump and house 3, the pot riding on her head
 { const pos = () => page.evaluate(() => { const W = __k.market.carrier, p = W.a.wrap.position, h = W.head.getWorldPosition(new __k.THREE.Vector3()); return { x: p.x, z: p.z, pot: W.pot.position.distanceTo(h) }; });
   await page.evaluate(() => { const W = __k.market.carrier; W.wait = 0; __k.game.p.pos.set(W.a.wrap.position.x + 4, 0, W.a.wrap.position.z + 4); __k.story.debug.snapCam(); });
-  const a = await pos(); await sleep(2500); const b = await pos();
+  const a = await pos();
+  await page.waitForFunction((x, z) => { const p = __k.market.carrier.a.wrap.position; return Math.hypot(p.x - x, p.z - z) > 0.5; }, { timeout: 40000, polling: 200 }, a.x, a.z).catch(() => {}); /* slow runners: wait for her to cover the distance */
+  const b = await pos();
   check(Math.hypot(b.x - a.x, b.z - a.z) > 0.5 && b.pot < 0.45, `a woman carries a water pot on her head between the pump and a house (walked ${Math.hypot(b.x - a.x, b.z - a.z).toFixed(1)} m, pot ${b.pot.toFixed(2)} m above her head)`); }
 // paddy fields round half the village: plots with bunds, about half ripe and standing, the rest cut with sheaves
 { const f = await page.evaluate(() => { const P = __k.paddyFields.plots; let arc = 0; const seen = new Set(); for (const p of P) { const k = p.a0.toFixed(3); if (p.r0 === 36 && !seen.has(k)) { seen.add(k); arc += p.a1 - p.a0; } }
