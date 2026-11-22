@@ -164,9 +164,22 @@ export function initLife(C) {
   const threats = () => [game.p.pos, game.b.pos];
   function step(a, speed, dt) { const dx = a.t.x - a.p.x, dz = a.t.z - a.p.z, d = Math.hypot(dx, dz); if (d < 0.08) return true; const k = Math.min(1, speed * dt / d); const nx = a.p.x + dx * k, nz = a.p.z + dz * k; if (free(nx, nz, 0.6)) { a.p.x = nx; a.p.z = nz; } else a.t = near(a.p, 2, 1.0); a.yaw = Math.atan2(dx, dz); return false; }
   let t = 0;
+  /* ---------- two village dogs asleep in the square: breathing, and one lifts a little when you come close ---------- */
+  const DOG_GAPS = [[0.78, 17.6, 0.6], [5.2, 16.6, -1.2]], dogPos = [];
+  const dogs = (() => { const sand = 0xb08a55;
+    const g = build([part(new THREE.SphereGeometry(0.32, 8, 6).scale(0.75, 0.5, 1.35).translate(0, 0.17, 0), sand), part(new THREE.SphereGeometry(0.15, 8, 6).scale(1, 0.85, 1.25).translate(0.08, 0.13, 0.44), sand),
+      part(new THREE.ConeGeometry(0.05, 0.1, 4).translate(0.02, 0.24, 0.42), 0x6a4a2c), part(new THREE.ConeGeometry(0.05, 0.1, 4).translate(0.16, 0.24, 0.42), 0x6a4a2c), part(new THREE.SphereGeometry(0.04, 5, 4).translate(0.1, 0.12, 0.6), 0x1a1410),
+      part(new THREE.TorusGeometry(0.18, 0.035, 4, 10, Math.PI * 1.1).rotateX(Math.PI / 2).translate(-0.05, 0.08, -0.32), sand), part(new THREE.BoxGeometry(0.1, 0.06, 0.32).translate(0.12, 0.04, 0.42), sand)]);
+    const m = herd(g, 2, [0xffffff, 0x8a7a68]);
+    DOG_GAPS.forEach(([gi, r, ry], i) => { const a = 0.35 + (2 * Math.PI / 9) * gi; dogPos.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, ry, lift: 0 }); if (C.props) C.props.push({ x: dogPos[i].x, z: dogPos[i].z, r: 0.5, top: 0.5 }); });
+    return m; })();
+  function dogsUpdate(dt) { const p = game.p.pos;
+    dogPos.forEach((d, i) => { const near = Math.hypot(p.x - d.x, p.z - d.z) < 2.6; d.lift += ((near ? 1 : 0) - d.lift) * Math.min(1, dt * 3);
+      const br = 1 + Math.sin(t * 1.6 + i * 2) * 0.035; E.set(0, d.ry, 0); Q.setFromEuler(E); M.compose(P3.set(d.x, 0, d.z), Q, S3.set(1.2, (br + d.lift * 0.35) * 1.2, 1.2)); dogs.setMatrixAt(i, M); });
+    dogs.instanceMatrix.needsUpdate = true; }
   function update(dt) {
     dt = Math.min(dt, 0.1); t += dt; const thin = perf.thin;
-    fxUpdate(dt);
+    fxUpdate(dt); dogsUpdate(dt);
     // chickens
     const th = threats();
     flock.forEach((c, i) => {

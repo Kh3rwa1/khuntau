@@ -48,6 +48,11 @@ if (stacks.length) { const s = stacks[0];
 // 3. the akhra tree no longer hangs over the path to the next house
 check(await page.evaluate(() => { const t = __k.story.debug.W.akhraProps.tree; return __k.houses.every(h => { const dx = Math.sin(h.rot), dz = Math.cos(h.rot), door = [h.x + dx * (h.d / 2 + 0.8), h.z + dz * (h.d / 2 + 0.8)], L = Math.hypot(...door), ux = door[0] / L, uz = door[1] / L;
   const along = t.x * ux + t.z * uz; if (along < 13 || along > L) return true; return Math.abs(t.x * uz - t.z * ux) > 2.6; }); }), 'the akhra tree stands clear of every path to a door');
+// roads and yards are one textured mesh; yard things, log seats and the sleeping dogs are solid; the dogs breathe
+check(await page.evaluate(() => { let n = 0; __k.scene.traverse(o => { if (o.isMesh && o.material && o.material.map && o.material.map.image && o.material.map.image.width === 512 && o.material.map.image.height === 1024) n++; }); return n === 1; }), 'all roads and swept yards are a single draw');
+check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o => o.top === 0.6).length >= 2 && v.filter(o => o.top === 1.6).length >= 2 && v.filter(o => o.top === 0.5).length >= 6; }), 'yard stoves and mortars, log seats and the dogs are solid');
+{ const sy = () => page.evaluate(() => { let y = null; __k.scene.traverse(o => { if (o.isInstancedMesh && o.count === 2 && y === null) { const m = new __k.THREE.Matrix4(); o.getMatrixAt(0, m); y = new __k.THREE.Vector3().setFromMatrixScale(m).y; } }); return y; });
+  const a = await sy(); await sleep(900); const b = await sy(); check(a && b && Math.abs(a - b) > 0.005, `the dogs asleep in the square breathe (${a && a.toFixed(3)} -> ${b && b.toFixed(3)})`); }
 // reduced motion: no cinematic shots at all
 { const pg2 = await browser.newPage(); await pg2.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
   await pg2.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); await pg2.evaluateOnNewDocument(() => localStorage.setItem('khuntau-played', '1'));
