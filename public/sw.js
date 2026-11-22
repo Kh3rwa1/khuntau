@@ -1,6 +1,6 @@
 // Khuntau service worker: keeps the game on the phone so solo play works offline, and sends the daily reminder.
 // The page itself is always fetched fresh when there is a connection, so updates show at once.
-const VERSION = '502da554ac';
+const VERSION = '2207238299';
 const CACHE = 'khuntau-' + VERSION;
 const FILES = [ "/audio/bellow.mp3", "/audio/bells.mp3", "/audio/bonk.mp3", "/audio/cheer1.mp3", "/audio/cheer2.mp3", "/audio/clap.mp3", "/audio/gallop.mp3", "/audio/gameplay.mp3", "/audio/highfive.mp3", "/audio/hit.mp3", "/audio/intro.mp3", "/audio/punch.mp3", "/audio/snap.mp3", "/audio/snort.mp3", "/audio/whoosh.mp3", "/fonts/baloo-2-latin-ext.woff2", "/fonts/baloo-2-latin.woff2", "/fonts/fonts.css", "/fonts/noto-sans-ol-chiki-latin-ext.woff2", "/fonts/noto-sans-ol-chiki-latin.woff2", "/fonts/noto-sans-ol-chiki-ol-chiki.woff2", "/fonts/rubik-dirt-latin-ext.woff2", "/fonts/rubik-dirt-latin.woff2", "/icon-192.png", "/icon-512.png", "/index.html", "/manifest.webmanifest", "/story.js", "/life.js", "/models/bull.json", "/models/casual_female.json", "/models/cow.json", "/models/casual_male.json", "/models/worker_female.json", "/vendor/three/build/three.module.min.js", "/vendor/three/examples/jsm/loaders/GLTFLoader.js", "/vendor/three/examples/jsm/utils/BufferGeometryUtils.js", "/vendor/three/examples/jsm/utils/SkeletonUtils.js" ];
 
