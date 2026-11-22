@@ -14,7 +14,8 @@ await page.waitForFunction(() => document.getElementById('startBtn').dataset.vil
 const ev = (f, ...a) => page.evaluate(f, ...a);
 const until = (f, ms = 20000, ...a) => page.waitForFunction(f, { timeout: ms, polling: 50 }, ...a).then(() => true, () => false);
 const obj = () => page.$eval('#objText', e => e.textContent);
-const nearLabels = async (x, z) => { await ev((x, z) => { __k.game.p.pos.set(x, 0, z); }, x, z); await sleep(500); return ev(() => { const n = __k.story.debug.S.near; return n ? n.label : ''; }); };
+const nearLabels = async (x, z, want) => { await ev((x, z) => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; __k.game.p.pos.set(x, 0, z); }, x, z); /* slow runners draw a frame or two a second: wait for the button, do not sleep */
+  if (want) await page.waitForFunction((w) => { const n = __k.story.debug.S.near; return !!n && n.label === w; }, { timeout: 20000, polling: 100 }, want).catch(() => {}); else await sleep(1500); return ev(() => { const n = __k.story.debug.S.near; return n ? n.label : ''; }); };
 const tomorrow = () => ev(() => { const d = __k.story.debug; d.fest.on = '2000-1-1'; d.festDay(); d.S.objKey = ''; });
 check(/Day 1 of 5: Um Hilok/.test(await page.$eval('#startBtn', e => e.textContent + ' ' + (document.getElementById('playSub') || {}).textContent)), 'home: a new player starts on Sohrai Day 1 of 5 (Um Hilok)');
 await ev(() => document.getElementById('startBtn').click()); await until(() => __k.game.mode === 'story');
@@ -24,14 +25,14 @@ check(await ev(() => __k.story.debug.GATED && __k.story.debug.fest.day === 1 && 
 await ev(() => { const d = __k.story.debug; d.S.inside = false; d.W.room.visible = false; d.save.painted = [1, 1, 1]; d.setChapter(2); });
 check(await ev(() => !__k.story.debug.festWaiting()), 'painting the wall does not end day 1: the cattle are still to be oiled');
 const g = await ev(() => { const s = __k.story.debug.W.gStand; return [s.x, s.z]; });
-check((await nearLabels(g[0], g[1])) === 'CHOOSE', 'day 1: the cattle shed offers CHOOSE');
+check((await nearLabels(g[0], g[1], 'CHOOSE')) === 'CHOOSE', 'day 1: the cattle shed offers CHOOSE');
 await ev(() => { const d = __k.story.debug; d.save.chosen = 1; d.save.oiled = 1; d.persist(); d.festCheck(); });
 check(await ev(() => __k.story.debug.festWaiting() && __k.story.debug.fest.day === 1), 'day 1 ends when the horns are oiled');
 check(await until(() => /Day 1 done/.test(document.getElementById('stageBanner').textContent) && document.getElementById('stageBanner').classList.contains('show'), 8000), 'a banner says Day 1 is done and Dakay Din opens tomorrow');
 await page.screenshot({ path: 'tests/out/fest-1-done.jpg', type: 'jpeg', quality: 70 });
 check(/Day 2 \(Dakay Din\) opens tomorrow/.test(await obj()), `the objective says so (${await obj()})`);
 // free world: the garland (a day 3 thing) is offered today, but the Majhi or an elder scolds you first, then lets you
-check((await nearLabels(g[0], g[1])) === 'GARLAND', 'nothing is locked: the garland is offered on day 1');
+check((await nearLabels(g[0], g[1], 'GARLAND')) === 'GARLAND', 'nothing is locked: the garland is offered on day 1');
 await ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
 check(await until(() => !document.getElementById('dlg').hidden && /^(Majhi|Elder)$/.test(document.getElementById('dlgWho').textContent) && /Today is Um Hilok/.test(document.getElementById('dlgText').textContent) && /belongs to Khuntau, day 3/.test(document.getElementById('dlgText').textContent), 8000), `doing it on the wrong day gets you scolded (${await page.$eval('#dlgWho', e => e.textContent)}: ${await page.$eval('#dlgText', e => e.textContent)})`);
 await page.screenshot({ path: 'tests/out/fest-scold.jpg', type: 'jpeg', quality: 70 });
@@ -40,7 +41,7 @@ for (let i = 0; i < 3 && !(await ev(() => document.getElementById('dlg').hidden)
 check(await until(() => __k.story.debug.save.garland === 1, 8000), 'then you may do it anyway');
 check(await ev(() => { let ran = 0; __k.story.debug.rebuke(3, 'the garland', () => { ran = 1; }); return ran === 1 && document.getElementById('dlg').hidden; }), 'the same thing is not scolded twice in a day');
 check(await ev(() => { const d = __k.story.debug; return d.fest.day === 1 && d.festWaiting() && d.fest.reb === 1; }), 'and it does not move the festival on: still day 1');
-check(['RING'].includes(await nearLabels(0, 6)), 'the khunt is still open for a scored round while you wait');
+check(['RING'].includes(await nearLabels(0, 6, 'RING')), 'the khunt is still open for a scored round while you wait');
 // day 2 (Dakay Din): the alpana before the door
 await sleep(6000); await ev(() => { const d = __k.story.debug; d.S.dlg = null; d.S.focus = null; document.getElementById('dlg').hidden = true; }); /* let the garland's shot and the Majhi's words finish */
 await tomorrow(); await sleep(400);
@@ -56,9 +57,9 @@ await tomorrow();
 check(await ev(() => { let ran = 0; __k.story.debug.rebuke(3, 'the Khuntau drumming', () => { ran = 1; }); return ran === 1 && document.getElementById('dlg').hidden; }), 'Day 3: Khuntau things are not scolded on Khuntau day');
 await ev(() => { const d = __k.story.debug; d.setChapter(3); });
 const dr = await ev(() => { const s = __k.story.debug.W.drumStand; return [s.x, s.z]; });
-await nearLabels(dr[0], dr[1]); check(await ev(() => { const n = __k.story.debug.S.near; return !!n && n.label === 'BEAT' && !/freely/i.test(n.text); }), 'Day 3: the tamak plays the story chart');
+await nearLabels(dr[0], dr[1], 'BEAT'); check(await ev(() => { const n = __k.story.debug.S.near; return !!n && n.label === 'BEAT' && !/freely/i.test(n.text); }), 'Day 3: the tamak plays the story chart');
 await ev(() => { const d = __k.story.debug; d.setChapter(4); });
-check((await nearLabels(0, 6)) === 'START', 'Day 3: the khunt offers the Khuntau finale');
+check((await nearLabels(0, 6, 'START')) === 'START', 'Day 3: the khunt offers the Khuntau finale');
 await ev(() => { const d = __k.story.debug; d.save.done = 1; d.setChapter(5); });
 check(await ev(() => __k.story.debug.festWaiting() && __k.story.debug.fest.day === 3), 'day 3 ends with the Khuntau won');
 await tomorrow(); await sleep(400);
