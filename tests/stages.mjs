@@ -35,7 +35,7 @@ check(await until(() => __k.game.b.state === 'charge', 8000) && await ev(() => _
 await ev(() => { Math.random = window.__rnd; __k.award(5, 'test'); }); await until(() => __k.game.stage === 3, 8000);
 await safe(); await ev(() => { Math.random = () => 0.01; const g = __k.game; g.doubles = 0; g.p.pos.set(4, 0, 3); g.b.pos.set(-3, 0, -3); g.b.state = 'watch'; g.b.t = 9; g.b.feinted = true; g.b.again = false; });
 check(await until(() => __k.game.doubles === 1), 'stage 3: after a missed charge he wheels round and comes straight back');
-check(await until(() => __k.game.b.state === 'charge', 8000) && await until(() => ['stunned', 'recover', 'watch'].includes(__k.game.b.state) && !__k.game.b.again, 10000) && await ev(() => __k.game.doubles === 1), 'only once: the second charge ends normally');
+check(await ev(async () => { const g = __k.game; for (let i = 0; i < 800 && (g.b.state === 'windup' || g.b.state === 'charge'); i++) await new Promise(r => setTimeout(r, 15)); return g.doubles === 1 && ['stunned', 'recover', 'watch'].includes(g.b.state); }), 'only once: the second charge ends normally');
 // stage 4: the hunter bends his charge toward you
 await ev(() => { Math.random = window.__rnd; __k.award(6, 'test'); }); await until(() => __k.game.stage === 4, 8000);
 await safe(); const bend = await ev(async () => { Math.random = () => 0.99; const g = __k.game; g.p.pos.set(0, 0, 5.5); g.b.pos.set(0, 0, -5.5); g.b.state = 'watch'; g.b.t = 9; g.b.feinted = true; g.b.again = true;

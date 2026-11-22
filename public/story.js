@@ -22,23 +22,26 @@ export function initStory(C) {
   // ---------- the five days of Sohrai ----------
   // The festival is lived over five real days: each day has its own part of the story, and the next day opens on the next
   // calendar day (a reason to come back tomorrow). The khunt, the drums and the other activities stay open for free play
-  // every day. Day names and what belongs to each day are in FEST: DULOR TO CONFIRM (names and order of the customs).
-  //   1 Um: wake, handi, paint the wall     2 Dakay: the cattle (choose, oil, garland)     3 Khuntau: tamak, then the bull
-  //   4 Jale: the Sarpa enej at three houses     5 Sakrat: fish at the pond and shoot at the banana trunk
+  // every day. The five days are Dulor's (22 Nov):
+  //   1 Um Hilok: cleaning, ritual bathing, oiling the cattle  -> wake, handi, paint the wall, choose your animal, oil its horns
+  //   2 Dakay Din: floor art (alpana), ancestors, offerings    -> draw the alpana before your door
+  //   3 Khuntau: tying and honouring the decorated cattle      -> garland the animal, beat the tamak, face the bull
+  //   4 Jale: door-to-door songs and dances                    -> the Sarpa enej at three houses
+  //   5 Hako Katkom: communal fishing and a shared feast       -> catch fish at the pond
   // save.fest = { day, on, fin, seen }: `on` is the date key on which this day's part was finished (empty while it is open).
   // Off under ?debug (the older tests play the whole story in one sitting); ?debug&fest turns it on.
-  const FEST = [['Um', 'Wake, drink the handi and paint the wall'], ['Dakay', 'Honour the cattle: choose, oil the horns, garland'], ['Khuntau', 'Beat the tamak, then face the bull at the khunt'],
-    ['Jale', 'Join the Sarpa enej at three houses'], ['Sakrat', 'Fish at the pond and shoot at the target']];
+  const FEST = [['Um Hilok', 'Wake, paint the wall, choose your animal and oil its horns'], ['Dakay Din', 'Draw the alpana before your door'], ['Khuntau', 'Garland the animal, beat the tamak, face the bull'],
+    ['Jale', 'Join the Sarpa enej at three houses'], ['Hako Katkom', 'Catch fish at the pond for the feast']];
   const GATED = !/[?&]debug\b/.test(location.search) || /[?&]fest\b/.test(location.search);
   const dateKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
-  if (!save.fest) save.fest = { day: save.ch >= 5 ? 4 : save.ch >= 3 ? 3 : save.ch >= 2 ? 2 : 1, on: '', fin: 0, seen: 0 }; /* players from before the festival keep what they did */
+  if (!save.fest) { save.fest = { day: save.ch >= 5 ? 4 : save.ch >= 3 || save.garland ? 3 : save.oiled ? 2 : 1, on: '', fin: 0, seen: 0 }; if (save.fest.day >= 3) save.alpana = 1; } /* players from before the festival keep what they did */
   const F = save.fest;
   function festDay() { if (GATED && !F.fin && F.on && F.on !== dateKey() && F.day < 5) { F.day++; F.on = ''; persist(); S.objKey = ''; } return F.day; }
   const festWaiting = () => GATED && !F.fin && !!F.on && F.on === dateKey();   /* today's part is done; the next day opens tomorrow */
   const allowed = (day) => !GATED || F.fin || festDay() > day || (festDay() === day && !festWaiting());
   function banner(a, b) { const el = $('stageBanner'); if (!el) return; el.firstElementChild.textContent = a; el.lastElementChild.textContent = b; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
   function festCheck() { if (!GATED || F.fin || F.on) return; const d = festDay(), td = today();
-    const ok = d === 1 ? save.ch >= 2 : d === 2 ? save.ch >= 3 : d === 3 ? save.ch >= 5 : d === 4 ? !!td.jale : !!(td.fish && td.arch); if (!ok) return;
+    const ok = d === 1 ? !!save.oiled : d === 2 ? !!save.alpana : d === 3 ? save.ch >= 5 : d === 4 ? !!td.jale : !!td.fish; if (!ok) return;
     F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday();
     setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!')); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
       else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow')); } }, d === 3 ? 6500 : 2600); }
@@ -94,13 +97,14 @@ export function initStory(C) {
     'Stage 2: The Feint': 'चरण 2: झाँसा', 'He fakes now. Wait for the real charge!': 'अब वह झाँसा देता है। असली हमले का इंतज़ार करो!', 'Stage 3: Twice': 'चरण 3: दो बार', 'He can charge twice in a row!': 'वह लगातार दो बार दौड़ सकता है!',
     'Stage 4: The Hunter': 'चरण 4: शिकारी', 'His charge bends toward you. Roll late!': 'उसकी दौड़ तुम्हारी ओर मुड़ती है। देर से लुढ़को!', 'Stage 5: Sohrai Legend': 'चरण 5: सोहराय वीर', 'Everything he has. Hold on!': 'उसकी पूरी ताक़त। डटे रहो!',
     'A feint! Wait for the real one': 'झाँसा! असली का इंतज़ार करो', 'He is coming back!': 'वह लौट रहा है!', 'stage': 'चरण',
-    'Day # of Sohrai: Um': 'सोहराय का दिन #: उम', 'Day # of Sohrai: Dakay': 'सोहराय का दिन #: दाकाय', 'Day # of Sohrai: Khuntau': 'सोहराय का दिन #: खुंटाउ', 'Day # of Sohrai: Jale': 'सोहराय का दिन #: जाले', 'Day # of Sohrai: Sakrat': 'सोहराय का दिन #: सकरात',
-    'Wake, drink the handi and paint the wall': 'उठो, हँड़िया पियो और दीवार रँगो', 'Honour the cattle: choose, oil the horns, garland': 'मवेशियों का मान: चुनो, सींगों पर तेल, माला', 'Beat the tamak, then face the bull at the khunt': 'तामाक बजाओ, फिर खूँटे पर बैल का सामना करो',
-    'Join the Sarpa enej at three houses': 'तीन घरों पर सरपा एनेज में शामिल हो', 'Fish at the pond and shoot at the target': 'तालाब में मछली पकड़ो और निशाना लगाओ',
-    'Day # done: Um': 'दिन # पूरा: उम', 'Day # done: Dakay': 'दिन # पूरा: दाकाय', 'Day # done: Khuntau': 'दिन # पूरा: खुंटाउ', 'Day # done: Jale': 'दिन # पूरा: जाले',
-    'Day # (Dakay) opens tomorrow': 'दिन # (दाकाय) कल खुलेगा', 'Day # (Khuntau) opens tomorrow': 'दिन # (खुंटाउ) कल खुलेगा', 'Day # (Jale) opens tomorrow': 'दिन # (जाले) कल खुलेगा', 'Day # (Sakrat) opens tomorrow': 'दिन # (सकरात) कल खुलेगा',
-    'Day # done. Day # (Dakay) opens tomorrow': 'दिन # पूरा। दिन # (दाकाय) कल खुलेगा', 'Day # done. Day # (Khuntau) opens tomorrow': 'दिन # पूरा। दिन # (खुंटाउ) कल खुलेगा', 'Day # done. Day # (Jale) opens tomorrow': 'दिन # पूरा। दिन # (जाले) कल खुलेगा', 'Day # done. Day # (Sakrat) opens tomorrow': 'दिन # पूरा। दिन # (सकरात) कल खुलेगा',
-    'Day #, Jale: Sarpa enej on the village road (#/#)': 'दिन #, जाले: गाँव की सड़क पर सरपा एनेज (#/#)', 'Day #, Sakrat: catch fish at the pond': 'दिन #, सकरात: तालाब में मछली पकड़ो', 'Day #, Sakrat: archery contest': 'दिन #, सकरात: तीरंदाज़ी',
+    'Day # of Sohrai: Um Hilok': 'सोहराय का दिन #: उम हिलोक', 'Day # of Sohrai: Dakay Din': 'सोहराय का दिन #: दाकाय दिन', 'Day # of Sohrai: Khuntau': 'सोहराय का दिन #: खुंटाउ', 'Day # of Sohrai: Jale': 'सोहराय का दिन #: जाले', 'Day # of Sohrai: Hako Katkom': 'सोहराय का दिन #: हाको काटकोम',
+    'Wake, paint the wall, choose your animal and oil its horns': 'उठो, दीवार रँगो, अपना जानवर चुनो और उसके सींगों पर तेल लगाओ', 'Draw the alpana before your door': 'अपने दरवाज़े के आगे अल्पना बनाओ', 'Garland the animal, beat the tamak, face the bull': 'जानवर को माला पहनाओ, तामाक बजाओ, बैल का सामना करो',
+    'Join the Sarpa enej at three houses': 'तीन घरों पर सरपा एनेज में शामिल हो', 'Catch fish at the pond for the feast': 'भोज के लिए तालाब में मछली पकड़ो',
+    'Day # done: Um Hilok': 'दिन # पूरा: उम हिलोक', 'Day # done: Dakay Din': 'दिन # पूरा: दाकाय दिन', 'Day # done: Khuntau': 'दिन # पूरा: खुंटाउ', 'Day # done: Jale': 'दिन # पूरा: जाले',
+    'Day # (Dakay Din) opens tomorrow': 'दिन # (दाकाय दिन) कल खुलेगा', 'Day # (Khuntau) opens tomorrow': 'दिन # (खुंटाउ) कल खुलेगा', 'Day # (Jale) opens tomorrow': 'दिन # (जाले) कल खुलेगा', 'Day # (Hako Katkom) opens tomorrow': 'दिन # (हाको काटकोम) कल खुलेगा',
+    'Day # done. Day # (Dakay Din) opens tomorrow': 'दिन # पूरा। दिन # (दाकाय दिन) कल खुलेगा', 'Day # done. Day # (Khuntau) opens tomorrow': 'दिन # पूरा। दिन # (खुंटाउ) कल खुलेगा', 'Day # done. Day # (Jale) opens tomorrow': 'दिन # पूरा। दिन # (जाले) कल खुलेगा', 'Day # done. Day # (Hako Katkom) opens tomorrow': 'दिन # पूरा। दिन # (हाको काटकोम) कल खुलेगा',
+    'Day #, Jale: Sarpa enej on the village road (#/#)': 'दिन #, जाले: गाँव की सड़क पर सरपा एनेज (#/#)', 'Day #, Hako Katkom: catch fish at the pond': 'दिन #, हाको काटकोम: तालाब में मछली पकड़ो', 'Day #, Dakay Din: draw the alpana before your door': 'दिन #, दाकाय दिन: अपने दरवाज़े के आगे अल्पना बनाओ',
+    'Draw the alpana': 'अल्पना बनाओ', 'DRAW': 'बनाओ', 'Alpana drawn': 'अल्पना बन गई', 'White rice paste before the door': 'दरवाज़े के आगे सफ़ेद चावल का लेप',
     'Sohrai complete!': 'सोहराय पूरा!', 'You lived all five days. Johar!': 'तुमने पाँचों दिन जिए। जोहार!', 'Sohrai complete': 'सोहराय पूरा',
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
     '×# combo · Hoy!': '×# कॉम्बो · होय!', '×# combo · Johar!': '×# कॉम्बो · जोहार!', '×# combo · Got it!': '×# कॉम्बो · मिल गया!', '×# combo · Snatched!': '×# कॉम्बो · झपट लिया!',
@@ -583,10 +587,11 @@ export function initStory(C) {
       add(DOOR_OUT, 1.5, 'ENTER', 'Go into the house', enterHouse);
       if (save.ch >= 1) W.spots.forEach((s, i) => { if (!save.painted[i]) add(s.stand, 1.3, 'PAINT', 'Paint the wall', () => paint(i)); });
       add(majhi.wrap.position, 1.5, 'TALK', 'Talk to the Majhi', talkMajhi);
-      if (!atRing() && save.ch >= 2 && allowed(2)) {
+      if (GATED && !F.fin && festDay() === 2 && !festWaiting() && !save.alpana) add(STEP_OUT, 1.6, 'DRAW', 'Draw the alpana', drawAlpana);
+      if (!atRing() && save.ch >= 2) {
         if (!save.chosen) add(W.gStand, 2.4, 'CHOOSE', 'Choose the animal', openPicker);
         else if (!save.oiled) add(W.gStand, 2.4, 'OIL', 'Oil the horns', oilHorns);
-        else if (!save.garland) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', putGarland);
+        else if (!save.garland && allowed(3)) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', putGarland);
       }
       if (save.ch >= 3) { const chart = (save.ch === 3 && allowed(3)) || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => drumStart(!chart)); }
       if (save.ch >= 1) {
@@ -679,6 +684,16 @@ export function initStory(C) {
       cinema({ dur: 1.6, at(t, P, L) { const h = bull.head ? bull.head.getWorldPosition(t4) : game.b.pos.clone().setY(1.5); P.copy(h).addScaledVector(W.gF, 1.1).addScaledVector(W.gR, 1.35 - t * 0.25).setY(h.y + 0.15); L.copy(h); /* to the side: you stand right in front of him */ return { snap: 0.001, zoom: 0.72 }; } });
     }, 550);
   }
+  // Day 2, Dakay Din: the alpana, floor art in white rice paste before the door. It stays on the ground from then on.
+  function alpanaMesh() { if (W.alpana) return W.alpana; const tex = C.canvasTex(256, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.translate(w / 2, h / 2); c.strokeStyle = c.fillStyle = 'rgba(246,240,225,.95)'; c.lineCap = 'round';
+      c.lineWidth = 5; c.beginPath(); c.arc(0, 0, 112, 0, 6.3); c.stroke(); c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 96, 0, 6.3); c.stroke(); c.beginPath(); c.arc(0, 0, 30, 0, 6.3); c.stroke();
+      for (let i = 0; i < 12; i++) { c.save(); c.rotate(i / 12 * 6.283); c.beginPath(); c.ellipse(63, 0, 30, 11, 0, 0, 6.3); c.stroke(); c.beginPath(); c.arc(104, 0, 3.5, 0, 6.3); c.fill(); c.restore(); }
+      for (let i = 0; i < 8; i++) { c.save(); c.rotate(i / 8 * 6.283 + 0.39); c.beginPath(); c.arc(18, 0, 3, 0, 6.3); c.fill(); c.restore(); } c.beginPath(); c.arc(0, 0, 6, 0, 6.3); c.fill(); });
+    const m = new THREE.Mesh(new THREE.CircleGeometry(1.15, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, opacity: 0 }));
+    m.position.set(STEP_OUT.x, 0.03, STEP_OUT.z); scene.add(m); return (W.alpana = m); }
+  function drawAlpana() { const pl = C.player(); pl.play('PickUp', { once: true, fade: 0.1, ts: 0.8 }); S.lock = 2.2; C.sfx.brush(); setTimeout(() => C.sfx.brush(), 900);
+    const m = alpanaMesh(); m.visible = true; W.alpanaT = 0; /* painted in over two seconds (see the frame update) */
+    setTimeout(() => { save.alpana = 1; persist(); pop('Alpana drawn', 'White rice paste before the door'); festCheck(); }, 2100); }
   function putGarland() {
     const pl = C.player(); pl.play('PickUp', { once: true, fade: 0.1, ts: 1.1 }); S.lock = 1.1;
     setTimeout(() => {
@@ -1097,6 +1112,7 @@ export function initStory(C) {
     else if (S.mode === 'aim') archUpdate(dt); else if (S.mode === 'fish') fishUpdate(dt, tn); else if (S.mode === 'echo') echoUpdate(dt);
     if (W.flags) for (const f of W.flags) f.children[1].rotation.y = Math.sin(tn * 2.4 + f.position.x) * 0.35;
     if (!S.inside) pondUpdate(dt, tn);
+    if (save.alpana || W.alpanaT != null) { const m = alpanaMesh(); if (W.alpanaT != null) { W.alpanaT += dt; if (W.alpanaT >= 2) W.alpanaT = null; } m.material.opacity = W.alpanaT != null ? Math.min(1, W.alpanaT / 2) : 1; m.visible = !S.inside; }
     if (W.sarpa) { const td = today(), k = save.ch >= 1 ? td.jv.indexOf(0) : -1, j = k >= 0 ? JALE[k] : null; /* the Sarpa enej line at the next stop */
       const show = !!j && !S.inside && Math.hypot(game.p.pos.x - j.stand.x, game.p.pos.z - j.stand.z) < 24, hot = S.mode === 'echo' && echo.house === k;
       // the Sarpa enej as Dulor described it: the women walk bent forward, clapping all the time, toward the village road
@@ -1165,9 +1181,10 @@ export function initStory(C) {
     else if (ch === 4) target = t3.set(p.x, 0, p.z).setLength(10).clone();
     let text = T.obj[ch] || '';
     if (festWaiting()) { target = null; text = tr('Day ' + F.day + ' done. Day ' + (F.day + 1) + ' (' + FEST[F.day][0] + ') opens tomorrow'); }
+    else if (GATED && !F.fin && festDay() === 2 && !save.alpana && !S.inside) { target = STEP_OUT; text = tr('Day 2, Dakay Din: draw the alpana before your door'); }
     else if (GATED && !F.fin && ch >= 5) { const td = today(), jn = td.jv.filter(Boolean).length, d = festDay();
       if (d <= 4) { if (jn < 3) { target = JALE[td.jv.indexOf(0)].stand; text = tr('Day 4, Jale: Sarpa enej on the village road (' + jn + '/3)'); } else text = ''; }
-      else if (!td.fish) { target = FSTAND; text = tr('Day 5, Sakrat: catch fish at the pond'); } else if (!td.arch) { target = ARCH; text = tr('Day 5, Sakrat: archery contest'); } else text = ''; }
+      else if (!td.fish) { target = FSTAND; text = tr('Day 5, Hako Katkom: catch fish at the pond'); } else text = ''; }
     else if (ch >= 5) { const td = today(), jn = td.jv.filter(Boolean).length;
       if (!td.arch) { target = ARCH; text = tr('Today: archery contest'); } else if (!td.fish) { target = FSTAND; text = tr('Today: catch fish at the pond'); }
       else if (!td.jale && jn < 3) { target = JALE[td.jv.indexOf(0)].stand; text = tr('Today: Sarpa enej on the village road (' + jn + '/3)'); }

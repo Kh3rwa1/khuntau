@@ -2553,7 +2553,7 @@ function updateBull(dt) {
         if (playing && b.t > wait) {
           const gentle = game.charges < 2; // first charges of a round are slow and readable
           setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0)); sfx.snort(); crowdReact('flinch');
-          b.provoked = provoked;
+          b.provoked = provoked; b.again = false; /* a fresh attack: he may double again (a bonk on the post used to leave this set) */
         }
       }
       break;
