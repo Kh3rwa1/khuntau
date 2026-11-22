@@ -56,6 +56,13 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 .icon-btn { pointer-events: auto; background: var(--glass); border: 1px solid rgba(246, 238, 221, .14); color: var(--paste); width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; }
 .icon-btn:focus-visible, .btn:focus-visible, .act:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
 
+#stageBanner { position: fixed; z-index: 6; left: 0; right: 0; top: 15%; text-align: center; pointer-events: none; opacity: 0; padding: 14px 10px; background: linear-gradient(90deg, rgba(42,20,12,0), rgba(42,20,12,.82) 25%, rgba(42,20,12,.82) 75%, rgba(42,20,12,0)); }
+#stageBanner b { display: block; font-family: var(--font-display); font-size: clamp(30px, 8.5vw, 58px); color: #ffb347; text-shadow: 0 3px 0 #7a2a14; line-height: 1.1; }
+#stageBanner span { display: block; margin-top: 4px; font-size: clamp(14px, 4vw, 19px); color: #f6eedd; font-weight: 700; }
+#stageBanner.show { animation: stageIn 2.6s ease-out both; }
+@keyframes stageIn { 0% { opacity: 0; transform: scale(1.5); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(.96); } }
+@keyframes stageFade { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #stageBanner.show { animation-name: stageFade; } }
 #toast { position: fixed; z-index: 6; left: 50%; top: calc(18% + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: none; font-family: var(--font-display); font-size: clamp(26px, 6vw, 44px); color: var(--paste); text-shadow: 0 3px 0 var(--ochre), 0 8px 24px rgba(0, 0, 0, .55); white-space: nowrap; opacity: 0; transition: opacity .25s, transform .25s; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
 #hint { position: fixed; z-index: 5; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); pointer-events: none; font-size: 15px; background: var(--glass); padding: 6px 14px; border-radius: 999px; opacity: 0; transition: opacity .3s; width: max-content; max-width: min(88vw, 520px); text-align: center; box-sizing: border-box; }
@@ -303,6 +310,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 </div>
 <div id="tapzone" hidden><div id="tapScore" class="chip"></div><div id="tapHint"></div><button class="btn small ghost" id="tapQuit" type="button">Leave</button></div>
 <div id="toast"></div>
+<div id="stageBanner"><b></b><span></span></div>
 <div id="pop"><b id="popBig"></b><span id="popSmall"></span></div>
 <div id="hint"></div>
 
@@ -2304,14 +2312,27 @@ function renderRival() {
   else if (boardData.top.some(r => !r.me)) { chip.hidden = false; $('rivalName').textContent = 'today'; $('rivalPts').textContent = '#1'; }
   else chip.hidden = true;
 }
-const FURY = [[10, 'The bull is angry!'], [20, 'The bull is furious!'], [35, 'The bull is raging!']];
+// Ring stages (solo rounds): every few pitha the bull learns a new move, announced big, with the crowd roaring and a handi
+// thrown in as a reward to risk a life for. Round 10 no longer plays like round 1.
+//   2 Feint: he lowers his head, stops, then really comes (rolling early is punished)
+//   3 Twice: after a charge he may wheel round and come straight back
+//   4 Hunter: he bends his charge toward you, so the roll has to be late
+//   5 Legend: all of it, more often
+const STAGES = [[0, 'Stage 1', ''], [5, 'Stage 2: The Feint', 'He fakes now. Wait for the real charge!'], [10, 'Stage 3: Twice', 'He can charge twice in a row!'],
+  [16, 'Stage 4: The Hunter', 'His charge bends toward you. Roll late!'], [24, 'Stage 5: Sohrai Legend', 'Everything he has. Hold on!']];
+const stageOf = (score) => { let n = 1; for (let i = 1; i < STAGES.length; i++) if (score >= STAGES[i][0]) n = i + 1; return n; };
+const stage = () => (game.online || game.storyRun ? 1 : game.stage || 1);
+function stageUp(n) { game.stage = n; const st = STAGES[n - 1];
+  setTimeout(() => { if (game.mode !== 'play') return; const el = $('stageBanner'); el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    sfx.bellow(); crowdCheer(1, 1.05); game.shake = Math.max(game.shake || 0, 0.6); cineR.kick = 1; buzz([30, 40, 30, 40, 60]); track('stage.' + n);
+    if (!hs.on) hs.next = Math.min(hs.next, 1.2); /* a handi for the brave */ }, 1900); }
 function award(pts, label) {
   const before = game.score;
   game.score += pts; $('score').textContent = game.score; pop('+' + pts, label);
   if (!game.online) {
     if (boardData && boardData.top) for (const r of boardData.top) if (!r.me && r.p >= before && r.p < game.score && !rival.passed.has(r.n)) { rival.passed.add(r.n); setTimeout(() => { toast(`You passed ${r.n}!`, 1500); crowdCheer(0.6); buzz([20, 30, 20]); }, 650); }
     if (best > 0 && before <= best && game.score > best && !rival.bestSaid) { rival.bestSaid = true; setTimeout(() => { toast('New personal best! Keep going', 1700); }, 1300); }
-    const f = FURY[game.fury || 0]; if (f && game.score >= f[0]) { game.fury = (game.fury || 0) + 1; setTimeout(() => { if (game.mode === 'play') { hint(f[1], 1800); sfx.bellow(); game.shake = Math.max(game.shake || 0, 0.5); } }, 1900); }
+    if (!game.storyRun) { const n = stageOf(game.score); if (n > (game.stage || 1)) stageUp(n); }
     renderRival();
   }
   if (challenge && !game.beaten && game.score > challenge.beat) { game.beaten = true; setTimeout(() => { toast(`You beat ${challenge.from || 'your friend'}!`, 1500); sfx.cheer(); }, 700); }
@@ -2328,7 +2349,7 @@ let hintTimer;
 function hint(text, ms = 2600) { const h = $('hint'); h.textContent = L(text); h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
 
 function resetGame() {
-  if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.fury = 0; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = 12; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = 3; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
+  if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.stage = 1; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = 12; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = 3; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
   tipTimers.forEach(clearTimeout); tipTimers = [];
   Object.assign(game.p, { state: 'free', t: 0, invuln: 0, rollCd: 0, teaseCd: 0, teaseT: -9 }); game.p.pos.set(0, 0, 7.5); game.p.yaw = Math.PI; game.p.vel.set(0, 0, 0);
   Object.assign(game.b, { state: 'watch', t: 0, dur: 2.2 }); game.b.pos.set(0, 0, -3.5); game.b.yaw = 0;
@@ -2368,7 +2389,7 @@ function gameOver() {
     const beat = challenge && pts > challenge.beat;
     $('overTitle').textContent = beat ? `You beat ${challenge.from || 'them'}!` : isBest && pts > 0 ? 'New best!' : 'Horned!';
     $('overScore').textContent = pts;
-    $('overLine').textContent = `points · ${game.pitha} pitha` + (!isBest && best ? ` · best ${best}` : '');
+    $('overLine').textContent = `points · ${game.pitha} pitha` + (!game.online && !game.storyRun && (game.stage || 1) > 1 ? ` · ${L('stage')} ${game.stage}` : '') + (!isBest && best ? ` · best ${best}` : '');
     $('overRank').hidden = false; $('overRank').textContent = rankOf(pts);
     const nx = nextRank(pts); $('overNext').hidden = false;
     $('overNext').textContent = nx ? `${nx[0] - pts} more to ${nx[1]}` : 'Top rank. Legend of the ring.';
@@ -2492,6 +2513,10 @@ function turnTo(cur, target, rate, dt) {
   return cur + clamp(d, -rate * dt, rate * dt);
 }
 
+// stage 3: after a charge that missed, he may wheel round and come straight back (once; never after hitting the post or you)
+function againMaybe() { const b = game.b; if (stage() < 3 || b.again || b.hitDone || game.p.state === 'dead' || Math.random() > (stage() >= 5 ? 0.6 : 0.45)) { b.again = false; return; }
+  b.again = true; b.feinted = true; game.doubles = (game.doubles || 0) + 1; setBull('windup', 0.55); sfx.snort(); crowdReact('flinch');
+  if (!game.hintsShown.twice) { game.hintsShown.twice = true; hint('He is coming back!', 1400); } }
 function setBull(state, dur) { const b = game.b; b.state = state; b.t = 0; b.dur = dur; }
 
 function updateBull(dt) {
@@ -2542,7 +2567,14 @@ function updateBull(dt) {
       }
       b.yaw = turnTo(b.yaw, yawToP, 4.5, dt);
       arrow.material.opacity = 0.35 + 0.45 * Math.abs(Math.sin(b.t * 14));
-      if (b.t > b.dur) {
+      if (b.t > b.dur && !b.feinted && stage() >= 2 && game.charges >= 1 && Math.random() < (stage() >= 5 ? 0.5 : 0.35)) {
+        // the feint: a half-lunge and a stop, then a short second windup before the real charge
+        b.feinted = true; b.pos.addScaledVector(tmpV2.set(Math.sin(b.yaw), 0, Math.cos(b.yaw)), 0.7); sfx.snort(); game.shake = Math.max(game.shake || 0, 0.15); crowdReact('flinch');
+        for (let i = 0; i < 4; i++) emit(dustPool, tmpV2.copy(b.pos).setY(0.2), { life: 0.6, vel: new THREE.Vector3(rand(-1, 1), rand(0.4, 1), rand(-1, 1)), size: 0.5, grow: 1.2 });
+        if (!game.hintsShown.feint) { game.hintsShown.feint = true; hint('A feint! Wait for the real one', 1600); }
+        game.feints = (game.feints || 0) + 1; setBull('windup', rand(0.45, 0.7));
+      } else if (b.t > b.dur) {
+        b.feinted = false;
         // aim with a small lead on the player's motion
         const lead = tmpV2.copy(p.pos).addScaledVector(p.vel, 0.25 * d); lead.y = 0;
         b.dir.subVectors(lead, b.pos).setY(0).normalize();
@@ -2557,6 +2589,8 @@ function updateBull(dt) {
     case 'charge': {
       bull.play('Gallop', { fade: 0.1, ts: b.speed / 9 });
       const step = b.speed * dt;
+      if (stage() >= 4 && !b.hitDone && distP > 1.6) { // the hunter: he bends his line toward you (not at the last moment, so a late roll still beats him)
+        const want = Math.atan2(toP.x, toP.z), cur = Math.atan2(b.dir.x, b.dir.z), ny = turnTo(cur, want, stage() >= 5 ? 1.0 : 0.75, dt); b.dir.set(Math.sin(ny), 0, Math.cos(ny)); b.yaw = ny; }
       b.pos.addScaledVector(b.dir, step); b.dist -= step;
       b.hoof -= dt; if (b.hoof <= 0) { b.hoof = 0.16; sfx.hoof(); if (life) life.fx('hoof', b.pos, b.dir); emit(dustPool, tmpV2.copy(b.pos).setY(0.25).addScaledVector(b.dir, -0.6), { life: 0.8, vel: new THREE.Vector3(rand(-0.6, 0.6), rand(0.6, 1.2), rand(-0.6, 0.6)), size: 0.6, grow: 1.4 }); }
       // horns hit
@@ -2570,10 +2604,10 @@ function updateBull(dt) {
         b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; cineR.kick = 1; postWob = { t: 0, x: b.dir.z, z: -b.dir.x }; crowdReact('flinch');
         toast('Bonk!', 700);
       } else if (r > ROPE_L) { // rope goes taut
-        b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
+        b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); againMaybe(); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
         for (let i = 0; i < 6; i++) emit(dustPool, tmpV2.copy(b.pos).setY(0.2), { life: 0.9, vel: new THREE.Vector3(rand(-1.5, 1.5), rand(0.4, 1.4), rand(-1.5, 1.5)), size: 0.7, grow: 1.6 });
       } else if (b.dist <= 0) {
-        setBull('recover', lerp(1.7, 0.85, d));
+        setBull('recover', lerp(1.7, 0.85, d)); againMaybe();
       }
       break;
     }
@@ -3437,7 +3471,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, MUSIC_VOL };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, MUSIC_VOL, STAGES, stageOf };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
