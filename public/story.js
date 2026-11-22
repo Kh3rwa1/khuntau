@@ -332,7 +332,11 @@ export function initStory(C) {
       put(new THREE.BoxGeometry(0.82, 0.04, 1.75), 0xc9b07a, cot, 0.4, yawIn);
       for (const sx of [-1, 1]) { put(new THREE.BoxGeometry(0.06, 0.07, 1.85), 0x5e4630, cot.clone().addScaledVector(W.aR, sx * 0.44), 0.4, yawIn); put(new THREE.BoxGeometry(0.94, 0.07, 0.06), 0x5e4630, cot.clone().addScaledVector(W.aIn, sx * 0.9), 0.4, yawIn);
         for (const sz of [-1, 1]) put(new THREE.CylinderGeometry(0.04, 0.035, 0.4, 5), 0x5e4630, cot.clone().addScaledVector(W.aR, sx * 0.44).addScaledVector(W.aIn, sz * 0.9), 0.2); }
-      const tree = AC.clone().addScaledVector(W.aR, 3.9).addScaledVector(W.aIn, -1.2); // 2.8 m off the path to the next house (it overhung it)
+      // the shade tree takes the spot furthest from every path to a door (the houses are placed a little differently on
+      // every load, so a fixed spot overhung a path on some layouts)
+      const pathGap = (q) => Math.min(...C.houses.map(h => { const dx = h.x + Math.sin(h.rot) * (h.d / 2 + 0.8), dz = h.z + Math.cos(h.rot) * (h.d / 2 + 0.8), L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, al = q.x * ux + q.z * uz;
+        return al < 12.5 ? Math.hypot(q.x - ux * 12.5, q.z - uz * 12.5) : al > L ? Math.hypot(q.x - dx, q.z - dz) : Math.abs(q.x * uz - q.z * ux); }));
+      const tree = [[3.9, -1.2], [3.4, -1.7], [4.4, -0.8], [3.0, -2.2], [-4.4, -1.8], [-3.8, -2.4]].map(([a, b]) => AC.clone().addScaledVector(W.aR, a).addScaledVector(W.aIn, b)).reduce((best, q) => pathGap(q) > pathGap(best) + 0.01 ? q : best);
       put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
       for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); put(new THREE.SphereGeometry(rand(1.4, 2.1), 7, 5), [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)); }
       for (const o of props) scene.add(o);
