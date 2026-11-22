@@ -81,6 +81,8 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   check(Math.abs(v1.yaw - v0.yaw) > 0.4 && v1.pitch < 0.2 && v1.cy < v0.cy - 0.3, `village: dragging the right side swings the camera round (${(v1.yaw - v0.yaw).toFixed(2)} rad) and tilts it down to eye level (height ${v0.cy.toFixed(1)} -> ${v1.cy.toFixed(1)} m)`);
   await page.evaluate(() => { for (let i = 0; i < 4; i++) window.dispatchEvent(new WheelEvent('wheel', { deltaY: 120 })); }); await sleep(200); /* dispatched directly: an emulated touch phone may not route mouse.wheel */
   check(await page.evaluate(() => __k.story.debug.S.camZoom > 1.05), 'village: the wheel (pinch on phones) zooms out');
+  { const g = await page.evaluate(() => { let r = null; __k.scene.traverse(o => { if (o.isInstancedMesh && o.userData.grass) r = { n: o.count, bump: !!__k.scene.children.find(c => c.isMesh && c.material && c.material.bumpMap) }; }); return r; });
+    check(g && g.n > 1800 && g.bump, `the village green has real grass blades (${g && g.n} clumps, one draw) and the ground has relief for the low sun`); }
   check(!logs.some(l => /Shader Error|Program Info Log|VALIDATE_STATUS/i.test(l)), 'every shader compiles (contact shading, rim, screen effects)');
   check(!realErrors(logs).length, 'mid: no page errors ' + realErrors(logs).join(' | ')); await page.close(); }
 // ?nofx turns the screen effects off on a phone where they cause trouble
@@ -93,6 +95,7 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   const r = await page.evaluate(() => ({ aa: __k.renderer.getContext().getContextAttributes().antialias, shadows: __k.sun.castShadow, lambert: __k.charMat.type }));
   check(!r.aa && !r.shadows && r.lambert === 'MeshLambertMaterial' && await page.evaluate(() => __k.fx === null), `budget phones keep the cheap path (no MSAA, no shadows, no screen effects, ${r.lambert})`);
   check(await page.evaluate(() => __k.wallMat.userData.fx.eave && __k.charMat.userData.fx.ao > 0), 'budget phones still get the contact shading (it needs no shadows)');
+  check(await page.evaluate(() => { let n = -1; __k.scene.traverse(o => { if (o.isInstancedMesh && o.userData.grass) n = o.count; }); return n > 100 && n <= 450; }), 'budget phones get a thin scatter of grass, not the full field');
   const b = await bullShape(page);
   check(b.zebu && b.hump > b.back + 0.1, `budget phones get the same zebu bull (${b.zebu}, hump ${b.hump.toFixed(2)} vs ${b.back.toFixed(2)})`);
   await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(3000);
