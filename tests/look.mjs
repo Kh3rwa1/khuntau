@@ -79,7 +79,7 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   await drag(320, 380, -90, 0); await drag(320, 300, 0, -120);
   const v1 = await page.evaluate(() => ({ yaw: __k.story.debug.S.camYaw, pitch: __k.story.debug.S.camPitch, cy: __k.camera.position.y }));
   check(Math.abs(v1.yaw - v0.yaw) > 0.4 && v1.pitch < 0.2 && v1.cy < v0.cy - 0.3, `village: dragging the right side swings the camera round (${(v1.yaw - v0.yaw).toFixed(2)} rad) and tilts it down to eye level (height ${v0.cy.toFixed(1)} -> ${v1.cy.toFixed(1)} m)`);
-  await page.mouse.move(320, 380); await page.mouse.wheel({ deltaY: 400 }); await sleep(300);
+  await page.evaluate(() => { for (let i = 0; i < 4; i++) window.dispatchEvent(new WheelEvent('wheel', { deltaY: 120 })); }); await sleep(200); /* dispatched directly: an emulated touch phone may not route mouse.wheel */
   check(await page.evaluate(() => __k.story.debug.S.camZoom > 1.05), 'village: the wheel (pinch on phones) zooms out');
   check(!logs.some(l => /Shader Error|Program Info Log|VALIDATE_STATUS/i.test(l)), 'every shader compiles (contact shading, rim, screen effects)');
   check(!realErrors(logs).length, 'mid: no page errors ' + realErrors(logs).join(' | ')); await page.close(); }
