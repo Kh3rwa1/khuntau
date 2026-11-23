@@ -501,7 +501,15 @@ export function initStory(C) {
       for (let k = 0; k < 10; k++) { const a = rand(0, 6.28), r = rand(3.25, 3.75), s = rand(0.1, 0.22); put(new THREE.SphereGeometry(s, 6, 4).scale(1.3, 0.55, 1), [0x8a8478, 0x6f6a60, 0x9a9488][k % 3], Math.cos(a) * r, s * 0.25, Math.sin(a) * r, 0, rand(0, 3)); }
       { const a = fa + 1.75, x = Math.cos(a) * 3.15, z = Math.sin(a) * 3.15; put(new THREE.BoxGeometry(0.95, 0.12, 0.55), 0x7d776c, x, 0.07, z, 0, -a, 0.16);
         put(new THREE.SphereGeometry(0.2, 9, 7).scale(1, 0.95, 1), 0x9a4c2a, x + Math.cos(a) * 0.75, 0.2, z + Math.sin(a) * 0.75); put(new THREE.CylinderGeometry(0.075, 0.1, 0.08, 9), 0x8a4222, x + Math.cos(a) * 0.75, 0.4, z + Math.sin(a) * 0.75); }
+      // a woven bamboo basket on the bank beside where you stand: the fish you land go into it and stay for the day
+      { const bx = W.fIn.x * 3.55 - W.fIn.z * 0.95, bz = W.fIn.z * 3.55 + W.fIn.x * 0.95; W.basket = V(POND.x + bx, 0, POND.z + bz);
+        put(new THREE.CylinderGeometry(0.3, 0.22, 0.3, 12, 1, true), 0xb89454, bx, 0.15, bz); put(new THREE.CylinderGeometry(0.29, 0.21, 0.3, 12, 1, true).scale(-1, 1, 1), 0x7a5c30, bx, 0.15, bz);
+        put(new THREE.CylinderGeometry(0.215, 0.215, 0.03, 12), 0x5a4426, bx, 0.03, bz); put(new THREE.TorusGeometry(0.3, 0.025, 5, 14).rotateX(Math.PI / 2), 0x8a6a3a, bx, 0.3, bz);
+        for (let k = 0; k < 3; k++) put(new THREE.TorusGeometry(0.235 + k * 0.025, 0.008, 4, 14).rotateX(Math.PI / 2), 0x8a6a3a, bx, 0.07 + k * 0.08, bz); }
       scene.updateMatrixWorld(true); C.bakeStatic(parts, Mat({ vertexColors: true, flatShading: true, roughness: 0.9 }));
+      { const fg = new THREE.SphereGeometry(0.2, 10, 8).scale(0.42, 0.6, 1.3), pa = fg.attributes.position; // one fish shape, tail pinched flat and fanned
+        for (let i = 0; i < pa.count; i++) { const k = Math.min(1, Math.max(0, (-pa.getZ(i) - 0.1) / 0.14)); pa.setX(i, pa.getX(i) * (1 - 0.85 * k)); pa.setY(i, pa.getY(i) * (1 + 1.2 * k * k)); } fg.computeVertexNormals();
+        W.catchIM = new THREE.InstancedMesh(fg, Mat({ color: 0xc9d3d8, roughness: 0.35 }), 6); W.catchIM.count = 0; W.catchIM.visible = false; W.catchIM.frustumCulled = false; scene.add(W.catchIM); }
     }
     W.float = new THREE.Group(); mesh(new THREE.SphereGeometry(0.09, 8, 6), red, 0, 0.05, 0, W.float); mesh(new THREE.SphereGeometry(0.07, 8, 6), paste, 0, 0.13, 0, W.float); W.float.visible = false; scene.add(W.float);
     W.floatHome = POND.clone().addScaledVector(W.fIn, 1.3).setY(0.03);
@@ -931,7 +939,7 @@ export function initStory(C) {
       if (fish.n >= 3) { fish.st = 'over'; const ok = fish.got >= 2; pop(fish.got + ' fish', ok ? 'A good catch' : 'Need 2. Try again'); if (ok) daily('fish', 'Fishing'); setTimeout(() => { if (S.mode === 'fish') tapStop(); }, 1600); }
       else { fish.st = 'idle'; tapHint('Tap to cast'); }
     }
-    if (fish.jump > 0) { fish.jump += dt / 0.7; const k = Math.min(1, fish.jump); W.fishM.visible = k < 1; W.fishM.position.lerpVectors(W.floatHome, t3.copy(game.p.pos).setY(1), k); W.fishM.position.y += Math.sin(k * Math.PI) * 1.6; W.fishM.rotation.set(k * 6, 0, 0); if (k >= 1) fish.jump = 0; }
+    if (fish.jump > 0) { fish.jump += dt / 0.7; const k = Math.min(1, fish.jump); W.fishM.visible = k < 1; W.fishM.position.lerpVectors(W.floatHome, t3.copy(W.basket || game.p.pos).setY(0.4), k); W.fishM.position.y += Math.sin(k * Math.PI) * 1.6; W.fishM.rotation.set(k * 6, 0, 0); if (k >= 1) { fish.jump = 0; const td = today(); td.fishN = (td.fishN || 0) + 1; persist(); fish.flop = 1.8; } } /* it lands in the basket */
   }
 
   /* ---------- going house to house: hear the beat, give it back ---------- */
@@ -1056,7 +1064,13 @@ export function initStory(C) {
 
   // the pond moves: wavelets drift, ducks paddle round with small wakes, a fish rises now and then, ripples spread
   const pondM = new THREE.Matrix4(), pondQ = new THREE.Quaternion(), pondS = V(), pondP = V(), pondE = new THREE.Euler(), pondC = new THREE.Color();
+  // the day's catch lies in the basket; the newest fish flops about for a moment (flopT > 0)
+  function basketFish(n, flopT = 0) { if (!W.catchIM) return; n = Math.min(6, n); W.catchIM.count = n; W.catchIM.visible = n > 0;
+    for (let i = 0; i < n; i++) { const a = i * 2.4, f = i === n - 1 && flopT > 0 ? Math.sin(flopT * 30) * Math.min(1, flopT) * 0.5 : 0;
+      pondE.set(0.25 + f, a, 1.45 + f * 0.6); pondQ.setFromEuler(pondE); W.catchIM.setMatrixAt(i, pondM.compose(pondP.set(W.basket.x + Math.cos(a) * 0.08, 0.24 + i * 0.035 + Math.abs(f) * 0.25, W.basket.z + Math.sin(a) * 0.08), pondQ, pondS.setScalar(0.6))); }
+    W.catchIM.instanceMatrix.needsUpdate = true; }
   function pondUpdate(dt, tn) {
+    { const n = save.td && save.td.fishN || 0; if (fish.flop > 0) { fish.flop = Math.max(0, fish.flop - dt); basketFish(n, fish.flop); W.catchN = n; if (fish.flop > 0.3 && C.sfx.flop && C.sfx.gate('flop', 0.3)) C.sfx.flop(0.8); } else if (n !== W.catchN) { W.catchN = n; basketFish(n); } }
     if (W.waves) { W.waves.material.map.offset.set(tn * 0.012, tn * 0.007); }
     if (W.ducks) for (let i = 0; i < 3; i++) { const [r, w, a0] = W.duckS[i], a = a0 + tn * w, x = POND.x + Math.cos(a) * r, z = POND.z + Math.sin(a) * r;
       pondE.set(Math.sin(tn * 2 + i) * 0.05, -a + (w > 0 ? 0 : Math.PI), 0); pondQ.setFromEuler(pondE); W.ducks.setMatrixAt(i, pondM.compose(pondP.set(x, 0.05 + Math.sin(tn * 2.3 + i) * 0.012, z), pondQ, pondS.set(1, 1, 1)));
@@ -1153,6 +1167,11 @@ export function initStory(C) {
         C.pose(a, [['Abdomen', 'x', 0.38], ['Torso', 'x', 0.16], ['UpperArmR', 'z', 0.7 + 0.25 * clap], ['LowerArmR', 'z', 0.25 + 0.4 * clap], ['UpperArmL', 'z', -0.7 - 0.25 * clap], ['LowerArmL', 'z', -0.25 - 0.4 * clap]]); }); }
     if (!S.inside && S.mode !== 'drum') { const sf = C.sfx, p2 = game.p.pos;
       if (Math.random() < dt * 0.22) sf.chirp(rand(0.4, 1)); /* birdsong in the trees */
+      { const amb = (k, v) => sf[k] && sf[k](v), edge = Math.hypot(p2.x, p2.z) > 20 ? 1 : 0.45; // the land around: insects, wind in the paddy, far-off animals
+        if (Math.random() < dt * 0.1) amb('cicada', rand(0.5, 1)); if (Math.random() < dt * 0.14) amb('rustle', edge);
+        if (Math.random() < dt * 0.06 && sf.gate('cowbell', 9)) amb('cowbell', rand(0.5, 1)); if (Math.random() < dt * 0.04 && sf.gate('farDog', 25)) amb('farDog', rand(0.4, 0.8));
+        if (Math.random() < dt * 0.03 && sf.gate('rooster', 40)) amb('rooster', rand(0.4, 0.8));
+        const pv = sf.near(POND, 9); if (pv > 0) { if (Math.random() < dt * 0.3) amb('lap', pv); if (Math.random() < dt * 0.1 && sf.gate('frog', 5)) amb('frog', pv); } }
       { const v = sf.near(POND, 11); if (v > 0 && Math.random() < dt * 0.18) sf.quack(v); }
       { const v = sf.near(AKHRA, 13); if (v > 0 && Math.random() < dt * 0.5 && sf.gate('chatter', 0.8)) { sf.chatter(v * 0.8); if (Math.random() < 0.1) sf.laugh(v * 0.7); } } /* the dancers and elders at the akhra talk among themselves */
       for (const o of C.props || []) if (o.top === 0.6) { const v = sf.near(o, 4); if (v > 0 && sf.gate('crackle', 0.45)) { sf.crackle(v); break; } } }

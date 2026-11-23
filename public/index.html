@@ -1284,18 +1284,23 @@ const music = { intro: new Audio('audio/intro.mp3'), game: new Audio('audio/khun
 for (const el of [music.intro, music.game]) { el.loop = true; el.preload = 'auto'; el.playsInline = true; }
 // The music is a quiet bed, not the star: Dulor wants the game's own sounds (claps, people talking, steps, animals,
 // the cleaver) to carry it. BED: how loud the Khuntau track plays in the village and in the ring.
-const BED = { village: 0.05, ring: 0.09 }, MUSIC_VOL = { intro: 0.4, game: BED.ring };
+const BED = { village: 0.022, ring: 0.04 }, MUSIC_VOL = { intro: 0.22, game: BED.ring };
+// Dulor (23 Nov): a track that never stops is irritating. It plays for a while, then leaves the place to its own
+// sounds, then comes back. bedCycle: seconds on, seconds off, counted from when the track last started.
+const bedCycle = { on: 40, off: 85, t0: 0, open: true };
+setInterval(() => { if (music.cur !== 'game' || !audio.ctx) return; const ph = ((performance.now() - bedCycle.t0) / 1000) % (bedCycle.on + bedCycle.off), open = ph < bedCycle.on; if (open !== bedCycle.open) { bedCycle.open = open; refreshMusicVol(2.5); } }, 1000);
+const CHEER = 0.4; // the recorded crowd cheers were far louder than everything else
 // while the mic is live, music is off so friends hear each other (and the mic doesn't pick the music up); sound effects stay
 const voiceLive = () => { try { return voice.on && !voice.muted; } catch (e) { return false; } };
-const musicVol = k => voiceLive() ? 0 : MUSIC_VOL[k];
-function refreshMusicVol() {
+const musicVol = k => voiceLive() || (k === 'game' && !bedCycle.open) ? 0 : MUSIC_VOL[k];
+function refreshMusicVol(tc = 0.25) {
   if (!audio.ctx || !music.cur) return;
   const el = music.cur === 'intro' ? music.intro : music.game; if (!el._g) return;
-  const t = audio.ctx.currentTime; el._g.gain.cancelScheduledValues(t); el._g.gain.setTargetAtTime(musicVol(music.cur), t, 0.25);
+  const t = audio.ctx.currentTime; el._g.gain.cancelScheduledValues(t); el._g.gain.setTargetAtTime(musicVol(music.cur), t, tc);
 }
 function setMusic(which) {
   if (!audio.ctx || music.cur === which) return;
-  const t = audio.ctx.currentTime; music.cur = which;
+  const t = audio.ctx.currentTime; music.cur = which; if (which === 'game') { bedCycle.t0 = performance.now(); bedCycle.open = true; }
   for (const k of ['intro', 'game']) {
     const el = k === 'intro' ? music.intro : music.game; if (!el._g) continue;
     el._g.gain.cancelScheduledValues(t);
@@ -1401,6 +1406,14 @@ Object.assign(sfx, {
   creak() { const t = AT(); if (t < 0) return; voiced(t, 'sawtooth', 70, 115, 0.6, 0.055, 620, 4, 6, 28, 0.15); },
   twang() { const t = AT(); if (t < 0) return; tone(t, 'triangle', 220, 168, 0.35, 0.24, SB()); tone(t, 'sine', 440, 336, 0.22, 0.09, SB()); noise(t, 0.03, 0.08, 'highpass', 3000, 1, SB()); },
   thud(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 130, 45, 0.18, 0.3 * v, SB()); noise(t, 0.12, 0.22 * v, 'lowpass', 500, 1, SB()); },
+  cicada(v = 1) { const t = AT(); if (t < 0) return; const f = rand(4200, 5200), n = 14 + (Math.random() * 16 | 0); for (let i = 0; i < n; i++) tone(t + i * 0.052, 'square', f, f * 0.98, 0.026, 0.012 * v, SB()); }, /* an insect's dry rattle in the grass */
+  rooster(v = 1) { const t = AT(); if (t < 0) return; [[0, 620, 760, 0.16], [0.2, 760, 900, 0.14], [0.38, 900, 1040, 0.4], [0.8, 1000, 560, 0.45]].forEach(([d, a, b, len]) => voiced(t + d, 'sawtooth', a, b, len, 0.05 * v, 1500, 2, 12, 9, 0.03)); }, /* far off */
+  cowbell(v = 1) { const t = AT(); if (t < 0) return; const n = 1 + (Math.random() * 3 | 0); let d = 0; for (let i = 0; i < n; i++) { tone(t + d, 'square', 587, 580, 0.22, 0.03 * v, SB()); tone(t + d, 'square', 845, 838, 0.16, 0.02 * v, SB()); d += rand(0.28, 0.5); } }, /* cattle grazing beyond the houses */
+  farDog(v = 1) { const t = AT(); if (t < 0) return; const n = 2 + (Math.random() * 2 | 0); for (let i = 0; i < n; i++) { voiced(t + i * 0.3, 'sawtooth', 420, 260, 0.11, 0.04 * v, 700, 1.5, 0, 6, 0.01); noise(t + i * 0.3, 0.09, 0.02 * v, 'bandpass', 900, 1, SB()); } },
+  rustle(v = 1) { const t = AT(); if (t < 0) return; sweep(t, rand(1.2, 2.2), 0.035 * v, 2400, 4200, 0.7, 0.5); }, /* wind through the paddy and the leaves */
+  lap(v = 1) { const t = AT(); if (t < 0) return; sweep(t, 0.7, 0.04 * v, 500, 900, 0.8, 0.25); }, /* water against the bank */
+  frog(v = 1) { const t = AT(); if (t < 0) return; const n = 2 + (Math.random() * 3 | 0); for (let i = 0; i < n; i++) voiced(t + i * 0.24, 'sawtooth', 150, 120, 0.12, 0.06 * v, 520, 4, 0, 6, 0.01); },
+  flop(v = 1) { const t = AT(); if (t < 0) return; noise(t, 0.05, 0.16 * v, 'bandpass', 1600, 1.2, SB()); tone(t, 'sine', 240, 130, 0.07, 0.1 * v, SB()); }, /* a fish slapping in the basket */
   plop() { const t = AT(); if (t < 0) return; tone(t, 'sine', 1000, 260, 0.09, 0.2, SB()); noise(t, 0.06, 0.1, 'bandpass', 1300, 1, SB()); },
   splash() { const t = AT(); if (t < 0) return; noise(t, 0.45, 0.32, 'highpass', 900, 0.7, SB()); noise(t + 0.03, 0.3, 0.14, 'bandpass', 2600, 1, SB()); tone(t, 'sine', 700, 200, 0.12, 0.15, SB()); },
   clink(v = 1) { const t = AT(); if (t < 0) return; tone(t, 'sine', 2350, 2300, 0.5, 0.07 * v, SB()); tone(t, 'sine', 3720, 3680, 0.32, 0.04 * v, SB()); },
@@ -1421,7 +1434,7 @@ const synthSfx = { ...sfx };
 const voiceOnNow = () => { try { return voice.on; } catch (e) { return false; } };
 function crowdCheer(vol = 0.9, rate = 1, when = 0, quiet = 'whistle') {
   if (voiceOnNow()) { if (quiet === 'whistle') synthSfx.whistle(vol > 0.6 ? 2 : 1, 0.28); else if (quiet === 'clap') play('clap', { vol: 0.5, when }); return; }
-  play(Math.random() < 0.5 ? 'cheer1' : 'cheer2', { vol, rate, when });
+  play(Math.random() < 0.5 ? 'cheer1' : 'cheer2', { vol: vol * CHEER, rate, when });
 }
 Object.assign(sfx, {
   snort() { if (!play('snort', { rate: 0.78, vol: 0.9 })) return synthSfx.snort(); play('snort', { rate: 0.66, vol: 0.7, when: 0.3 }); },
@@ -3549,7 +3562,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

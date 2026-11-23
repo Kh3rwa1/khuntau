@@ -4,6 +4,7 @@
 set -x
 mkdir -p out
 adb shell settings put global hide_error_dialogs 1
+adb shell settings put secure immersive_mode_confirmations confirmed
 adb shell input keyevent KEYCODE_WAKEUP
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 adb shell cmd connectivity airplane-mode enable

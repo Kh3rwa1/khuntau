@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
         web.setOnLongClickListener(v -> true); // no text-selection bubble when a thumb rests on the screen
         if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
 
-        // The splash art covers the page until the game says it is ready (or 15 s pass), then fades.
+        // The splash art covers the page until the game says it is ready (or 25 s pass), then fades.
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(0xFF2A140C);
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
         splash = cover;
         setContentView(root);
         immersive();
-        ui.postDelayed(this::hideSplash, 15000);
+        ui.postDelayed(this::hideSplash, 25000);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
