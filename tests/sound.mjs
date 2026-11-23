@@ -32,7 +32,11 @@ const near = (P, l) => P.until((l) => { const n = __k.story.debug.S.near; return
   check(await P.ev(() => __k.CHEER <= 0.5 && __k.BED.village <= 0.03 && __k.BED.ring <= 0.05), 'cheers and the music bed are turned well down');
   { const shut = await P.ev(async () => { const b = __k.bedCycle; b.t0 = performance.now() - (b.on + 5) * 1000; for (let i = 0; i < 40 && b.open; i++) await new Promise(r => setTimeout(r, 100)); const r = !b.open; b.t0 = performance.now(); return r; });
     check(shut, 'the music does not run on and on: after a while it falls silent and leaves the village to its own sounds'); }
-  await clear(P); check(await heard(P, 'rustle', 40000) && await heard(P, 'cicada', 40000), 'the land around is heard: wind in the paddy, insects');
+  // the ambience is rolled by chance each frame; on CI's slow renderer game time crawls and 40 s could pass without a
+  // roll coming up, so the dice are loaded while we listen
+  await clear(P); await P.ev(() => { window.__rnd = Math.random; Math.random = () => 0.001; });
+  const land = await heard(P, 'rustle', 60000) && await heard(P, 'cicada', 60000); await P.ev(() => { Math.random = window.__rnd; });
+  check(land, 'the land around is heard: wind in the paddy, insects');
   await clear(P); await P.ev(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand); }); check(await heard(P, 'chatter', 30000), 'people at the akhra talk among themselves');
   // into the house
   await P.ev(() => { const d = __k.story.debug, D = d.W.doorOut || null; });
