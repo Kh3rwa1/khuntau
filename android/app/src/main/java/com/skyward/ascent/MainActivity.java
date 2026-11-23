@@ -27,6 +27,7 @@ import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -287,6 +288,11 @@ public class MainActivity extends Activity {
         }
 
         @Override
+        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+            Log.w(TAG, "load error " + error.getErrorCode() + " " + error.getDescription() + " for " + request.getUrl());
+        }
+
+        @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             Uri u = request.getUrl();
             if (!HOST.equals(u.getHost()) || !"GET".equalsIgnoreCase(request.getMethod())) return null;
@@ -337,6 +343,19 @@ public class MainActivity extends Activity {
                     return reply(mime(name), null, 206, "Partial Content", new Limited(in, b - a + 1), h);
                 }
             }
+        }
+        if (total <= (4 << 20)) { // code and pages: read whole, so a half-read file can never reach the page
+            byte[] all = new byte[(int) total];
+            try (FileInputStream in = new FileInputStream(f)) {
+                int off = 0;
+                while (off < all.length) {
+                    int n = in.read(all, off, all.length - off);
+                    if (n < 0) throw new IOException("short read of " + name);
+                    off += n;
+                }
+            }
+            if (name.endsWith(".html")) Log.i(TAG, "ota: serving " + name + " (" + total / 1024 + " KB) from the downloaded files");
+            return reply(mime(name), charset(name), 200, "OK", new ByteArrayInputStream(all), null);
         }
         return reply(mime(name), charset(name), 200, "OK", new FileInputStream(f), null);
     }

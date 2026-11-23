@@ -47,6 +47,8 @@ adb shell am start -W -n com.skyward.ascent/.MainActivity
 sleep 90
 adb exec-out screencap -p > out/4-ota-applied-offline.png
 adb logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat-ota-2-applied.txt
+adb logcat -d --pid=$(adb shell pidof com.skyward.ascent) | tail -n 300 > out/logcat-ota-2-full.txt || true
+adb shell run-as com.skyward.ascent ls -laR files/ota > out/ota-files.txt 2>&1 || true
 cat out/logcat-ota-1-download.txt out/logcat-ota-2-applied.txt
 adb shell dumpsys webviewupdate | grep -i "current webview package" > out/webview.txt || true
 wc -l out/logcat.txt
