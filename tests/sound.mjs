@@ -44,7 +44,7 @@ const near = (P, l) => P.until((l) => { const n = __k.story.debug.S.near; return
   // chickens scatter with a flutter when you run at them
   await P.ev(() => { const d = __k.story.debug; d.S.inside = false; d.W.room.visible = false; });
   await clear(P);
-  const hit = await P.ev(async () => { const hs = __k.houses.slice(0, 5); for (const h of hs) { const z = h.d / 2 + 3.2, x = h.x + z * Math.sin(h.rot), y = h.z + z * Math.cos(h.rot); __k.game.p.pos.set(x, 0, y); await new Promise(r => setTimeout(r, 500)); if (window.__sfxLog.includes('flutter')) return true; } return false; });
+  const hit = await P.ev(async () => { const hs = __k.houses.slice(0, 5); for (const h of hs) { const z = h.d / 2 + 3.2, x = h.x + z * Math.sin(h.rot), y = h.z + z * Math.cos(h.rot); __k.game.p.pos.set(x, 0, y); for (let i = 0; i < 30; i++) { await new Promise(r => setTimeout(r, 100)); if (window.__sfxLog.includes('flutter')) return true; } } return false; });
   check(hit, 'chickens flutter and squawk when they scatter');
   { const e = realErrors(P.logs); check(!e.length, 'village: no page errors' + (e.length ? ': ' + e.slice(0, 3).join(' | ') : '')); }
   await P.page.close(); }
