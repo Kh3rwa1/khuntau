@@ -102,10 +102,13 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   // their talk (Dulor's recording): silent far away, heard when you creep close, louder the closer you are
   const talk = () => page.evaluate(() => { const t = __k.coupleTalk; return { v: t.v, playing: !!t.el && !t.el.paused, at: t.el ? t.el.currentTime : 0 }; });
   await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 20, 0, c.z - c.out[1] * 20); }); await sleep(900); const far = await talk();
-  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 12, 0, c.z - c.out[1] * 12); });
+  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 9.5, 0, c.z - c.out[1] * 9.5); });
   await page.waitForFunction(() => { const t = __k.coupleTalk; return t.el && !t.el.paused && t.el.currentTime > 0.3; }, { timeout: 30000, polling: 100 }).catch(() => {}); const mid = await talk();
-  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 8, 0, c.z - c.out[1] * 8); }); await sleep(700); const close = await talk();
-  check(far.v === 0 && !far.playing && mid.playing && mid.v > 0.05 && close.v > mid.v + 0.1, `the couple's talk is heard only close by, louder the nearer you are (20 m: ${far.v.toFixed(2)}, 12 m: ${mid.v.toFixed(2)}, 8 m: ${close.v.toFixed(2)})`);
+  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 7, 0, c.z - c.out[1] * 7); }); await sleep(700); const close = await talk();
+  // from your own yard and doorstep, nothing: it used to carry there
+  const home = await page.evaluate(async () => { const c = __k.market.couple, h = __k.houses[0], r = Math.hypot(h.x, h.z), out = []; for (const k of [0.62, 0.72, 0.82]) { __k.game.p.pos.set(h.x * k, 0, h.z * k); await new Promise(r => setTimeout(r, 500)); out.push(__k.coupleTalk.v); } return out; });
+  check(home.every(v => v === 0), `no talk is heard from your own yard or doorstep (${home.join(', ')})`);
+  check(far.v === 0 && !far.playing && mid.playing && mid.v > 0.05 && close.v > mid.v + 0.1, `the couple's talk is heard only close by, louder the nearer you are (20 m: ${far.v.toFixed(2)}, 9.5 m: ${mid.v.toFixed(2)}, 7 m: ${close.v.toFixed(2)})`);
   await page.evaluate(() => { window.__sfxLog.length = 0; const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 3, 0, c.z - c.out[1] * 3); __k.story.debug.snapCam(); });
   const apart = await page.waitForFunction(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position) > 1.7; }, { timeout: 30000, polling: 100 }).then(() => true, () => false);
   check(apart && await page.evaluate(() => window.__sfxLog.includes('cough')), `when you walk up they jump apart with a cough (${(await gap()).toFixed(2)} m)`);
