@@ -36,6 +36,7 @@ for (const P of [A, B]) await P.ev(() => { const d = __k.story.debug; d.S.dlg = 
 await A.ev(() => { __k.game.p.pos.set(2, 0, 16); __k.story.debug.snapCam(); }); await B.ev(() => { __k.game.p.pos.set(-3, 0, 20); });
 const seenAt = await A.until(() => { const r = [...__k.net.remotes.values()][0]; return r && r.a.wrap.visible && Math.hypot(r.a.wrap.position.x + 3, r.a.wrap.position.z - 20) < 0.6; });
 check(await A.ev(() => document.getElementById('villageScreen') ? document.getElementById('villageScreen').hidden : [...document.querySelectorAll('.overlay')].every(o => o.hidden)), 'no menu is left open over the village');
+check(await A.ev(() => !__k.voice || !navigator.mediaDevices || !document.getElementById('micBtn').hidden), 'the microphone button is there in the shared village (voice chat with friends)');
 check(seenAt, 'the host sees the friend standing where the friend is (beyond the ring, in the village)');
 check(await A.ev(() => { const r = [...__k.net.remotes.values()][0]; return !!r.tag && r.tag.visible !== false && r.name === 'Biru'; }), 'with the name over their head');
 await A.ev(() => { const r = [...__k.net.remotes.values()][0], p = r.a.wrap.position, d = __k.story.debug; __k.game.p.pos.set(p.x + 2.2, 0, p.z + 2.2); d.S.camYaw = Math.atan2(2.2, 2.2); d.snapCam(); }); await sleep(1200); await A.shot('1-friend');

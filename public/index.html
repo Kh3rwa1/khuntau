@@ -3619,7 +3619,7 @@ function frame() {
   if ((game.mode !== 'play' || game.online) && !$('rivalChip').hidden) $('rivalChip').hidden = true;
   const showPause = (game.mode === 'play' || game.mode === 'story') && !game.menuOpen;
   if ($('pauseBtn').hidden === showPause) $('pauseBtn').hidden = !showPause;
-  const showMic = voiceOk && game.online; if ($('micBtn').hidden === showMic) $('micBtn').hidden = !showMic;
+  const showMic = voiceOk && (game.online || (net.village && !!net.ws)); /* friends walking the village together can talk too */ if ($('micBtn').hidden === showMic) $('micBtn').hidden = !showMic;
   const showFs = fsSupported && !(showPause && innerWidth < 480); if ($('fsBtn').hidden === showFs) $('fsBtn').hidden = !showFs; // phones: it lives in the pause menu
   const rawDt = Math.min(clock.getDelta(), 0.05);
   if (game.slow > 0) game.slow -= rawDt;
