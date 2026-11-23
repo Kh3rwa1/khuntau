@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.skyward.ascent",
+      "sha256_cert_fingerprints": [
+        "49:2F:38:CE:FE:EE:4B:24:23:42:BF:B7:E7:2A:1F:B7:D6:06:B8:CE:69:A4:A9:34:C3:1C:0F:94:82:D8:42:B1"
+      ]
+    }
+  }
+]
