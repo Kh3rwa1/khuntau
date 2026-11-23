@@ -1,5 +1,5 @@
 {
-  "packageId": "com.tumdah.khuntau",
+  "packageId": "com.skyward.ascent",
   "host": "khuntau.dulalkisku0.workers.dev",
   "name": "Sohrai: the Santal festival game",
   "launcherName": "Sohrai",
@@ -17,14 +17,19 @@
   "maskableIconUrl": "https://khuntau.dulalkisku0.workers.dev/icon-512.png",
   "webManifestUrl": "https://khuntau.dulalkisku0.workers.dev/manifest.webmanifest",
   "splashScreenFadeOutDuration": 300,
-  "signingKey": { "path": "./khuntau-upload.keystore", "alias": "khuntau" },
+  "signingKey": {
+    "path": "./upload-keystore.jks",
+    "alias": "upload"
+  },
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "fallbackType": "customtabs",
   "features": {},
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": false,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
