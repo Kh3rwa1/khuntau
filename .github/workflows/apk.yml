@@ -7,7 +7,7 @@ on:
     branches: [main-y500hu]
     paths: ['.github/workflows/apk.yml', 'twa/twa-manifest.json', 'tools/twa-gen.mjs']
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,3 +33,9 @@ jobs:
           ls -la out
       - uses: actions/upload-artifact@v4
         with: { name: android, path: out, retention-days: 7 }
+      # The cloud session that signs the app cannot download artifacts, so the unsigned output also goes to a branch.
+      - name: Publish the unsigned build to the apk-build branch
+        run: |
+          cd out && git init -q -b apk-build && git config user.name ci && git config user.email ci@users.noreply.github.com
+          git add -A && git commit -q -m "unsigned Android build of ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" apk-build
