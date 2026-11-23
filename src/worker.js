@@ -8,7 +8,8 @@ const TICK_MS = 50; // sim at 20 Hz, snapshots at 10 Hz
 const ROUND_SECS = 120, MAX_PLAYERS = 6;
 const COLORS = ["#e8b33c", "#d9472b", "#3d8bd9", "#4caf50", "#b05cd6", "#f2f2f2"];
 const SHIRT_COLORS = ["#ffb347", "#3f8a4f", "#c8372d", "#2f5fa8", "#e8b33c"];
-const ANIMS = new Set(["Idle", "Walk", "Run", "Roll", "Jump", "RecieveHit", "Death", "Victory", "Defeat", "SwordSlash", "Shoot_OneHanded"]);
+const ANIMS = new Set(["Idle", "Walk", "Run", "Roll", "Jump", "RecieveHit", "Death", "Victory", "Defeat", "SwordSlash", "Shoot_OneHanded", "PickUp", "SitDown", "StandUp", "Punch", "Walk_Carry", "Run_Carry"]);
+const VILLAGE_R = 31; // friends walking the village together between rounds (v: 1 outside, 2 inside the house)
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -159,7 +160,8 @@ export class Room extends DurableObject {
       case "p":
         p.lastP = Date.now();
         if (typeof m.x === "number" && typeof m.z === "number") {
-          const r = Math.hypot(m.x, m.z), k = r > ARENA_R ? ARENA_R / r : 1;
+          p.v = this.phase === "play" ? 0 : (m.v | 0) & 3;
+          const lim = p.v ? VILLAGE_R : ARENA_R, r = Math.hypot(m.x, m.z), k = r > lim ? lim / r : 1;
           p.x = m.x * k; p.z = m.z * k;
         }
         if (typeof m.yaw === "number") p.yaw = m.yaw;
@@ -197,6 +199,10 @@ export class Room extends DurableObject {
         if (this.phase === "play" && p.alive && p.inRound && h.on && Math.hypot(hx - p.x, hz - p.z) < 4 && Math.hypot(hx - h.x, hz - h.z) < 2.0) this.drinkHandi(p);
         break;
       }
+      case "vev": { // something a friend does in the shared village (a drum hit, a clap): relayed to the others, lightly rate-limited
+        const now = Date.now(); if (this.phase === "play" || !p.v || now - (p.vevAt || 0) < 70) break; p.vevAt = now;
+        this.broadcast({ t: "ev", e: "v", id: p.id, k: String(m.k || "").replace(/[^a-z]/g, "").slice(0, 8), n: Math.max(0, Math.min(9, m.n | 0)) });
+        break; }
       case "tease":
         if (this.phase === "play" && p.alive && p.inRound && now() - (p.teaseAt || 0) > 1000) {
           p.teaseAt = now();
@@ -225,7 +231,7 @@ export class Room extends DurableObject {
     let i = 0; const n = this.players.size;
     for (const p of this.players.values()) {
       const a = Math.PI / 2 + (i - (n - 1) / 2) * 0.5; i++;
-      Object.assign(p, { lives: 3, score: 0, alive: true, inRound: true, lastP: Date.now(), x: Math.cos(a) * 8, z: Math.sin(a) * 8 });
+      Object.assign(p, { lives: 3, score: 0, alive: true, inRound: true, lastP: Date.now(), x: Math.cos(a) * 8, z: Math.sin(a) * 8, v: 0 });
     }
     this.broadcast({ t: "ev", e: "start", spawn: [...this.players.values()].map(p => [p.id, +p.x.toFixed(2), +p.z.toFixed(2)]) });
     this.broadcastRoster();
@@ -360,7 +366,7 @@ export class Room extends DurableObject {
     this.broadcast({
       t: "s", ts: Date.now() - (this.t0 || (this.t0 = Date.now())), ph: this.phase, h: this.phase === "play" && this.handi && this.handi.on ? [this.handi.x, this.handi.z] : 0, tl: Math.max(0, Math.ceil(this.timeLeft)), pr: this.pithaReady ? 1 : 0, d: +this.difficulty().toFixed(2),
       b: [+b.x.toFixed(2), +b.z.toFixed(2), +b.yaw.toFixed(3), st, b.target || 0],
-      ps: [...this.players.values()].map(p => [p.id, +p.x.toFixed(2), +p.z.toFixed(2), +p.yaw.toFixed(2), p.a, p.lives, p.score, p.alive ? 1 : 0, p.inRound ? 1 : 0]),
+      ps: [...this.players.values()].map(p => [p.id, +p.x.toFixed(2), +p.z.toFixed(2), +p.yaw.toFixed(2), p.a, p.lives, p.score, p.alive ? 1 : 0, p.inRound ? 1 : 0, p.v || 0]),
     });
   }
 
@@ -388,7 +394,7 @@ const DISTRICTS = new Set(["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "E
   "Bankura", "Birbhum", "Purulia", "Jhargram", "Paschim Medinipur", "Paschim Bardhaman", "Purba Bardhaman", "Dakshin Dinajpur", "Uttar Dinajpur", "Malda", "Hooghly", "Murshidabad",
   "Mayurbhanj", "Balasore", "Keonjhar", "Sundargarh", "Banka", "Bhagalpur", "Jamui", "Katihar", "Purnia", "Kokrajhar", "Chirang", "Udalguri", "Sonitpur"]);
 // the only step names the counter accepts (anything else is dropped)
-const EV_KEY = /^(rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
+const EV_KEY = /^(village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));

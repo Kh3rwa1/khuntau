@@ -377,6 +377,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <ul class="plist" id="plist"></ul>
     <button class="btn ghost small" id="openBtn" type="button" hidden>Join requests: on</button>
     <button class="btn" id="hostStartBtn" hidden>Start round</button>
+    <button class="btn ghost" id="walkBtn" type="button">Walk in the village together</button>
     <p class="lede" id="lobbyNote">Waiting for the host to start the round…</p>
     <button class="btn ghost small" id="leaveBtn">Leave room</button>
   </div>
@@ -2026,9 +2027,12 @@ function onCrowdLoaded() {
     story = m.initStory({ props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
-      villageRing: () => { track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
+      villageRing: () => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
+          if (net.host === net.id) { leaveSharedVillage(); showLobby(); netSend({ t: 'start' }); } else { leaveSharedVillage(); showLobby(); toast('Waiting for the host to start', 1800); } return; }
+        track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
+      netVev: (k, n) => { if (net.village && net.ws) netSend({ t: 'vev', k, n }); }, shared: () => !!(net.village && net.ws),
       track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
-      toMenu: () => { game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
+      toMenu: () => { if (net.village && net.ws) { leaveSharedVillage(); showLobby(); return; } /* quitting the shared village goes back to the room */ game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
     });
     $('quickBtn').disabled = false; $('startBtn').dataset.village = 'ready'; renderStoryBtn();
     if (villageWanted && !$('startScreen').hidden) enterVillage();
@@ -3216,7 +3220,7 @@ function onNet(m) {
       if (voice.on) { [...voice.pcs.keys()].forEach(closePeer); netSend({ t: 'voice', on: true }); } // rejoined with a new id
       history.replaceState(null, '', '?room=' + net.code);
       if (game.mode === 'play' && m.phase === 'play') { game.spectator = true; game.p.state = 'dead'; hint('Reconnected. You will be back in next round.', 2600); }
-      else showLobby();
+      else if (!(net.village && game.mode === 'story')) showLobby();
       if (m.phase === 'play') hint('A round is in progress. You will join the next one.', 3000);
       break;
     case 'roster':
@@ -3250,7 +3254,7 @@ function onNet(m) {
 }
 function onNetEvent(m) {
   switch (m.e) {
-    case 'start': { track('online.play'); game.storyRun = game.villageRun = false; ringLabels();
+    case 'start': { if (story && story.active()) story.stop(); net.village = false; track('online.play'); game.storyRun = game.villageRun = false; ringLabels();
       resetGame(); game.mode = 'play'; game.online = true; MUSIC_VOL.game = BED.ring; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
       const sp = m.spawn.find(s => s[0] === net.id);
       const inRound = !!sp;
@@ -3275,6 +3279,7 @@ function onNetEvent(m) {
       else toast(nameOf(m.id) + ' got it!', 900);
       break;
     }
+    case 'v': if (m.id !== net.id && net.village && story && story.peer) story.peer(m.k, m.n, net.remotes.get(m.id)); break;
     case 'hit': if (m.id !== net.id) { sfx.hit(); toast(nameOf(m.id) + (m.lives ? ' got horned!' : ' is out!'), 900); } break;
     case 'snort': sfx.snort(); break;
     case 'tease': if (m.id !== net.id) { sfx.tease(); const r = net.remotes.get(m.id); if (r) r.a.flap = 0.9; } break;
@@ -3319,6 +3324,14 @@ $('joinBtn').addEventListener('click', () => { track('room.join');
 });
 $('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('joinBtn').click(); });
 $('hostStartBtn').addEventListener('click', () => netSend({ t: 'start' }));
+// The shared village: friends in a room walk the village together between rounds. Each keeps their own festival day and
+// progress; they see each other (name tags, walking, what they are doing), hear each other's drum, and the host can
+// start the khunt round for everyone from the khunt itself. The round ends back in the lobby, one tap from the village.
+function enterSharedVillage() { if (!story || !net.ws) return; net.village = true; game.online = false; /* the village runs on the solo paths; the room stays connected */
+  ['lobbyScreen', 'overScreen', 'board', 'timerChip'].forEach(id => $(id).hidden = true); track('village.shared'); initAudio(); game.storyRun = game.villageRun = false; story.start();
+  setTimeout(() => { if (net.village) hint(L(net.roster.length > 1 ? 'Your friends are in the village with you.' : 'Friends who join the room appear here.'), 2600); }, 2500); }
+function leaveSharedVillage() { if (!net.village) return; net.village = false; netSend({ t: 'p', x: 0, z: 8, yaw: 0, a: 'Idle', st: 'free', v: 0 }); }
+$('walkBtn').addEventListener('click', enterSharedVillage);
 $('leaveBtn').addEventListener('click', () => leaveOnline(false));
 $('outLobbyBtn').addEventListener('click', () => { gallop(false); showLobby(); toast(net.phase === 'play' ? 'The round is finishing. The next one starts from here.' : 'Back in the lobby', 2200); });
 $('shareBtn').addEventListener('click', () => { track('share.room');
@@ -3370,7 +3383,8 @@ function netBull(dt) {
   arrow.position.set(g.pos.x, 0.03, g.pos.z); arrow.rotation.y = g.yaw; arrow.scale.set(1, 1, 7);
 }
 function netFrame(dt) {
-  if (!game.online) return;
+  if (!game.online && !net.village) return;
+  const inVil = net.village && game.mode === 'story'; if (net.village && !inVil) { for (const r of net.remotes.values()) r.a.wrap.visible = false; } /* a solo story scene: nobody else in it */
   // remote players
   const smp = sampleSnaps();
   if (smp) {
@@ -3378,7 +3392,8 @@ function netFrame(dt) {
     for (const [id, r] of net.remotes) {
       const A = ia.get(id), B = ib.get(id) || A;
       if (!A) { r.a.wrap.visible = false; continue; }
-      r.a.wrap.visible = game.mode !== 'play' || A[8] === 1;
+      r.a.wrap.visible = inVil ? A[9] === 1 : net.village ? false : game.mode === 'play' ? A[8] === 1 : !(A[9] > 0); /* in the village: friends who are out in it too (not indoors); in the lobby: those not in the village */
+      if (r.a.hide) r.a.hide.visible = !inVil; if (!r.a.wrap.visible) continue;
       r.a.wrap.position.set(lerp(B[1], A[1], smp.k), A[4] === 'Victory' && A[1] === B[1] && A[2] === B[2] ? Math.abs(Math.sin(performance.now() / 111)) * 0.18 : 0, lerp(B[2], A[2], smp.k));
       r.a.wrap.rotation.y = lerpAng(B[3], A[3], smp.k);
       if (A[4] !== r.anim && A[4] === 'SwordSlash') r.a.flap = 0.9;
@@ -3394,10 +3409,10 @@ function netFrame(dt) {
   }
   // tell the room where I am
   net.sendT -= dt;
-  if (game.mode === 'play' && net.sendT <= 0) {
-    net.sendT = 0.066;
-    const p = game.p;
-    netSend({ t: 'p', x: +p.pos.x.toFixed(2), z: +p.pos.z.toFixed(2), yaw: +p.yaw.toFixed(2), a: player.curName || 'Idle', st: p.state });
+  if ((inVil || (game.mode === 'play' && game.online)) && net.sendT <= 0) {
+    net.sendT = inVil ? 0.1 : 0.066;
+    const p = game.p, ins = inVil && story.debugInside && story.debugInside();
+    netSend({ t: 'p', x: +p.pos.x.toFixed(2), z: +p.pos.z.toFixed(2), yaw: +p.yaw.toFixed(2), a: player.curName || 'Idle', st: p.state, v: inVil ? (ins ? 2 : 1) : 0 });
   }
 }
 setInterval(() => { if (net.ws) netSend({ t: 'ping', c: Date.now() }); }, 5000);
@@ -3525,7 +3540,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, MUSIC_VOL, STAGES, stageOf };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

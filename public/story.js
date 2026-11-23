@@ -118,6 +118,7 @@ export function initStory(C) {
     'They jump apart and study the paddy very hard.': 'दोनों झट से अलग हो गए और बड़े ध्यान से धान देखने लगे।',
     'Draw the alpana': 'अल्पना बनाओ', 'DRAW': 'बनाओ', 'Alpana drawn': 'अल्पना बन गई', 'White rice paste before the door': 'दरवाज़े के आगे सफ़ेद चावल का लेप',
     'Sohrai complete!': 'सोहराय पूरा!', 'You lived all five days. Johar!': 'तुमने पाँचों दिन जिए। जोहार!', 'Sohrai complete': 'सोहराय पूरा',
+    'Your friends are in the village with you.': 'तुम्हारे दोस्त गाँव में तुम्हारे साथ हैं।', 'Friends who join the room appear here.': 'जो दोस्त कमरे में आएँगे, यहीं दिखेंगे।',
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
     '×# combo · Hoy!': '×# कॉम्बो · होय!', '×# combo · Johar!': '×# कॉम्बो · जोहार!', '×# combo · Got it!': '×# कॉम्बो · मिल गया!', '×# combo · Snatched!': '×# कॉम्बो · झपट लिया!',
     'Golden pitha! +#': 'सुनहरा पीठा! +#', 'Golden pitha!': 'सुनहरा पीठा!', 'Golden pitha! Worth # extra points.': 'सुनहरा पीठा! # अंक ज़्यादा।', 'Combo lost': 'कॉम्बो टूट गया',
@@ -763,7 +764,7 @@ export function initStory(C) {
     if (S.mode === 'echo') { echoStrike(lane); return; }
     if (S.mode !== 'drum' || drum.done) return;
     const pl = C.player(), tn = (at ?? now()) - off();
-    drumSound(lane);
+    drumSound(lane); if (C.netVev) C.netVev('drum', lane === 'T' ? 0 : 1); /* friends in the village hear it */
     const dp = (lane === 'T' ? W.tamak.position : W.tumdak.position).clone(); dp.y = lane === 'T' ? 0.62 : 0.6;
     C.emit(C.dustPool, dp, { life: 0.35, vel: V(0, 1.4, 0), size: 0.25, grow: 0.7 });
     let power = 1;
@@ -1322,6 +1323,9 @@ export function initStory(C) {
 
   return {
     start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing, back, tr,
+    debugInside: () => S.inside,
+    // a friend in the shared village did something: their drum is heard, quieter with distance, and the dancers feel it
+    peer: (k, n, r) => { if (!S.on || S.inside) return; if (k === 'drum') { dance.peer = (dance.peer || 0) + 1; const ctx = C.audio.ctx, v = C.sfx.near(W.drumStand, 30); if (ctx && !C.audio.muted && v > 0) { const t = ctx.currentTime; if (n === 0) C.sfx.dhamsa(t); else C.sfx.madalHi(t); } dance.energy = Math.min(1.5, dance.energy + 0.12); } },
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
