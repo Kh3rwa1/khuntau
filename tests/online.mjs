@@ -30,6 +30,15 @@ check(typeof t1 === 'string' && t1.split('.').length === 3, 'run ticket issued')
 { const r = await j('/api/save', { pid, data: { x: 'y'.repeat(3000) } }); check(r.s === 413, 'oversized save refused'); }
 { const r = await j('/api/push/sub', { pid, endpoint: 'https://evil.example.com/x' }); check(r.s === 400, 'push to a non-push host refused'); }
 
+// ---------- the village keeps the festival together ----------
+{ const ft = 'Fest' + Math.random().toString(36).slice(2, 7).replace(/[0-9]/g, 'q'), p1 = rid(), p2 = rid(), lone = rid();
+  await j('/api/village', { pid: p1, name: ft, dist: 'Dumka' }); await j('/api/village', { pid: p2, name: ft, dist: 'Dumka' });
+  const a = await j('/api/fest', { pid: p1, d: 1 }), a2 = await j('/api/fest', { pid: p1, d: 1 }), b = await j('/api/fest', { pid: p2, d: 3 });
+  check(a.s === 200 && a.d.n === 1 && a2.d.n === 1 && b.d.n === 2, `finishing a festival day counts once a day per player for their village (${a.d.n}, ${a2.d.n}, ${b.d.n})`);
+  check((await j('/api/vboard?pid=' + p1)).d.fest === 2, 'the village board tells you how many kept the festival today');
+  check((await j('/api/fest', { pid: lone, d: 2 })).d.n === 0, 'a player with no village is accepted and counts for none');
+  check((await j('/api/fest', { pid: p1, d: 9 })).s === 400 && (await j('/api/fest', { pid: 'x', d: 1 })).s === 400, 'bad day or bad player id refused'); }
+
 // ---------- village vs village ----------
 const vtag = 'Test' + Math.random().toString(36).slice(2, 7).replace(/[0-9]/g, 'q'); // a fresh village name per run
 const play = async (p, pts = 3) => { const t = (await j('/api/run?pid=' + p)).d.tok; return (await j('/api/score', { pid: p, name: 'V', pts, tok: t })).s; };

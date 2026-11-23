@@ -52,6 +52,11 @@ await B.ev(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand)
 await B.until(() => __k.story.debug.S.mode === 'drum', 15000);
 await B.ev(async () => { for (let i = 0; i < 6; i++) { __k.story.debug.strike(i % 2 ? 'T' : 'U'); await new Promise(r => setTimeout(r, 200)); } });
 check(await A.until(() => (__k.story.debug.dance.peer || 0) >= 3, 10000), "the friend's drumming reaches you (the dancers pick it up)");
+// drumming together: the host joins in while the friend keeps going
+await A.ev(() => document.getElementById('actBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))); await A.until(() => __k.story.debug.S.mode === 'drum', 15000);
+await Promise.all([A, B].map(P => P.ev(async () => { for (let i = 0; i < 16; i++) { __k.story.debug.strike(i % 2 ? 'T' : 'U'); await new Promise(r => setTimeout(r, 180)); } })));
+check(await A.ev(() => (__k.story.debug.dance.duet || 0) >= 12 && __k.story.debug.today().duet === 1), `two friends on the drums at once: counted as drumming together, with a bonus once a day (${await A.ev(() => __k.story.debug.dance.duet)})`);
+await A.ev(() => { document.getElementById('padDone') && document.getElementById('padDone').click(); const d = __k.story.debug; if (d.S.mode === 'drum') d.S.mode = 'walk'; document.getElementById('pads').hidden = true; });
 // the host starts the khunt round from the village: both land in the ring
 await B.ev(() => { document.getElementById('padDone') && document.getElementById('padDone').click(); });
 await A.ev(() => { __k.game.p.pos.set(0, 0, 6); }); await A.until(() => { const n = __k.story.debug.S.near; return n && n.label === 'RING'; }, 15000);
@@ -60,5 +65,9 @@ const both = await Promise.all([A, B].map(P => P.until(() => __k.game.mode === '
 check(both[0] && both[1], 'the host starts the khunt round from the village and both friends are in the ring');
 check(await B.ev(() => !document.documentElement.classList.contains('story-on') && !__k.net.village), 'the village screen is put away for the round');
 await B.shot('2-ring');
+// ring stages online: the room's fifth pitha brings Stage 2 for everyone (the server runs the bull's new moves)
+await A.ev(() => { window.__grabber = setInterval(() => { const g = __k.game; if (g.mode !== 'play') return; g.p.invuln = 999; g.p.state = 'free'; g.p.pos.set(0, 0, 1.2); __k.netSend({ t: 'p', x: 0, z: 1.2, yaw: 0, a: 'Idle', st: 'free' }); __k.netSend({ t: 'grab' }); }, 250); });
+check(await B.until(() => /Stage 2/.test(document.getElementById('stageBanner').textContent) && __k.game.stage === 2, 40000), 'online rounds have stages too: at the room\u2019s fifth pitha both friends see Stage 2');
+await A.ev(() => clearInterval(window.__grabber)); await B.shot('3-stage');
 for (const P of [A, B]) { const e = realErrors(P.logs); check(!e.length, 'no page errors ' + e.join(' | ')); }
 await finish(browser);

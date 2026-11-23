@@ -181,7 +181,8 @@ export class Room extends DurableObject {
         break;
       case "grab":
         if (this.phase === "play" && p.alive && this.pithaReady && Math.hypot(p.x, p.z) < GRAB_R + 0.8) {
-          this.pithaReady = false; this.pithaTimer = 0; p.score++; this.total++;
+          const st0 = this.stage(); this.pithaReady = false; this.pithaTimer = 0; p.score++; this.total++;
+          if (this.stage() > st0) { this.broadcast({ t: "ev", e: "stage", n: this.stage() }); if (!this.handi.on) this.handi.next = Math.min(this.handi.next, 1.5); } // announced to the room, with a handi thrown in
           const kinds = ["hifive", "hifive", "hifive", "dance", "dance", "victory"];
           this.broadcast({ t: "ev", e: "grab", id: p.id, score: p.score, kind: kinds[Math.floor(Math.random() * kinds.length)] });
         }
@@ -290,6 +291,10 @@ export class Room extends DurableObject {
   }
 
   difficulty() { return clamp(this.total / 12, 0, 1); }
+  // Ring stages in online rounds too (the room's pitha together): 2 the feint, 3 twice, 4 the hunter, 5 all of it more often
+  stage() { const t = this.total; return t >= 24 ? 5 : t >= 16 ? 4 : t >= 10 ? 3 : t >= 5 ? 2 : 1; }
+  againMaybe() { const b = this.bull, st = this.stage(); if (st < 3 || b.again || Math.random() > (st >= 5 ? 0.6 : 0.45)) { b.again = false; return; }
+    b.again = true; b.feinted = true; this.setBull("windup", 0.55); this.broadcast({ t: "ev", e: "snort" }); }
 
   pickTarget() {
     const alive = [...this.players.values()].filter(p => p.alive && p.inRound);
@@ -329,13 +334,16 @@ export class Room extends DurableObject {
           b.walking = false;
           b.yaw = turnTo(b.yaw, yawToP, 3.2, dt);
           const urgent = Math.hypot(tp.x, tp.z) < GRAB_R + 0.2;
-          if (b.t > (urgent ? b.dur * 0.35 : b.dur)) { this.setBull("windup", lerp(1.05, 0.5, d)); this.broadcast({ t: "ev", e: "snort" }); }
+          if (b.t > (urgent ? b.dur * 0.35 : b.dur)) { this.setBull("windup", lerp(1.05, 0.5, d)); b.again = false; this.broadcast({ t: "ev", e: "snort" }); }
         }
         break;
       }
       case "windup": {
         b.yaw = turnTo(b.yaw, yawToP, 4.5, dt);
-        if (b.t > b.dur) {
+        if (b.t > b.dur && !b.feinted && this.stage() >= 2 && Math.random() < (this.stage() >= 5 ? 0.5 : 0.35)) { // the feint: half a lunge, a stop, a short second windup
+          b.feinted = true; b.x += Math.sin(b.yaw) * 0.7; b.z += Math.cos(b.yaw) * 0.7; this.setBull("windup", 0.45 + Math.random() * 0.25); this.broadcast({ t: "ev", e: "snort" });
+        } else if (b.t > b.dur) {
+          b.feinted = false;
           const l = Math.hypot(tx, tz) || 1; b.dx = tx / l; b.dz = tz / l; b.yaw = Math.atan2(b.dx, b.dz);
           b.speed = lerp(8.5, 13, d); b.dist = Math.max(distP + 2.5, 5);
           this.setBull("charge", 3);
@@ -343,11 +351,12 @@ export class Room extends DurableObject {
         break;
       }
       case "charge": {
+        if (this.stage() >= 4 && distP > 1.6) { const ny = turnTo(Math.atan2(b.dx, b.dz), yawToP, this.stage() >= 5 ? 1.0 : 0.75, dt); b.dx = Math.sin(ny); b.dz = Math.cos(ny); b.yaw = ny; } // the hunter bends his charge
         const step = b.speed * dt; b.x += b.dx * step; b.z += b.dz * step; b.dist -= step;
         const r = Math.hypot(b.x, b.z);
         if (r < 1.0) { const k = 1.0 / r; b.x *= k; b.z *= k; this.setBull("stunned", lerp(1.8, 1.1, d)); this.broadcast({ t: "ev", e: "bonk" }); }
-        else if (r > ROPE_L) { const k = ROPE_L / r; b.x *= k; b.z *= k; this.setBull("stunned", lerp(1.5, 0.85, d)); this.broadcast({ t: "ev", e: "snap" }); }
-        else if (b.dist <= 0) this.setBull("recover", lerp(1.7, 0.85, d));
+        else if (r > ROPE_L) { const k = ROPE_L / r; b.x *= k; b.z *= k; this.setBull("stunned", lerp(1.5, 0.85, d)); this.broadcast({ t: "ev", e: "snap" }); this.againMaybe(); }
+        else if (b.dist <= 0) { this.setBull("recover", lerp(1.7, 0.85, d)); this.againMaybe(); }
         break;
       }
       case "stunned":
@@ -394,7 +403,7 @@ const DISTRICTS = new Set(["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "E
   "Bankura", "Birbhum", "Purulia", "Jhargram", "Paschim Medinipur", "Paschim Bardhaman", "Purba Bardhaman", "Dakshin Dinajpur", "Uttar Dinajpur", "Malda", "Hooghly", "Murshidabad",
   "Mayurbhanj", "Balasore", "Keonjhar", "Sundargarh", "Banka", "Bhagalpur", "Jamui", "Katihar", "Purnia", "Kokrajhar", "Chirang", "Udalguri", "Sonitpur"]);
 // the only step names the counter accepts (anything else is dropped)
-const EV_KEY = /^(village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
+const EV_KEY = /^(duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
@@ -416,6 +425,7 @@ export class Board extends DurableObject {
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS vday (day TEXT NOT NULL, pid TEXT NOT NULL, vkey TEXT NOT NULL, pts INTEGER NOT NULL, PRIMARY KEY (day, pid))");
       this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS vday_v ON vday (day, vkey)");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS stats (day TEXT NOT NULL, k TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, k))");
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS vfest (day TEXT NOT NULL, pid TEXT NOT NULL, vkey TEXT NOT NULL, d INTEGER NOT NULL, PRIMARY KEY (day, pid))"); // who kept a day of the festival today, by village
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS alltime (pid TEXT PRIMARY KEY, name TEXT NOT NULL, pts INTEGER NOT NULL, lvl INTEGER NOT NULL DEFAULT 1, at INTEGER NOT NULL)");
     });
   }
@@ -464,7 +474,8 @@ export class Board extends DurableObject {
       const rank = me ? shown.indexOf(me) + 1 : 0, above = rank > 1 ? shown[rank - 2] : null;
       out[k] = { top: shown.slice(0, 20).map(row), total: shown.length, me: me ? { ...row(me), rank, above: above ? row(above) : null } : null };
     }
-    if (mine) { const n = this.ctx.storage.sql.exec("SELECT vname, dist FROM vnames WHERE vkey = ?", mine).toArray()[0]; if (n) out.mine = { v: n.vname, d: n.dist }; }
+    if (mine) { const n = this.ctx.storage.sql.exec("SELECT vname, dist FROM vnames WHERE vkey = ?", mine).toArray()[0]; if (n) out.mine = { v: n.vname, d: n.dist };
+      out.fest = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM vfest WHERE day = ? AND vkey = ?", istDay(), mine).toArray()[0].n; }
     return out;
   }
   board(pid) {
@@ -534,6 +545,12 @@ export class Board extends DurableObject {
       return this.json({ villages: rows.filter(r => !HIDDEN_VILLAGES.has(r.vkey) && r.n > 0).map(r => ({ v: r.vname, n: r.n })) });
     }
     if (path === "/api/vboard") return this.json(this.vboard(url.searchParams.get("pid")));
+    if (path === "/api/fest" && request.method === "POST") { // a player finished today's part of the festival: counted once a day for their village
+      const d = m && (m.d | 0); if (!m || !okPid(m.pid) || !(d >= 1 && d <= 5)) return new Response("bad", { status: 400 });
+      if (this.flood("f" + ip, 40)) return new Response("slow down", { status: 429 });
+      const vk = this.villageOf(m.pid) || "", day = istDay(); sql.exec("INSERT OR REPLACE INTO vfest (day, pid, vkey, d) VALUES (?, ?, ?, ?)", day, m.pid, vk, d);
+      return this.json({ ok: 1, n: vk ? sql.exec("SELECT COUNT(*) AS n FROM vfest WHERE day = ? AND vkey = ?", day, vk).toArray()[0].n : 0 });
+    }
 
     // anonymous step counts (no ids): the game sends which steps happened this visit; one row per day and step
     if (path === "/api/ev" && request.method === "POST") {

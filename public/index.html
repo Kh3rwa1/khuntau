@@ -2030,6 +2030,8 @@ function onCrowdLoaded() {
       villageRing: () => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
           if (net.host === net.id) { leaveSharedVillage(); showLobby(); netSend({ t: 'start' }); } else { leaveSharedVillage(); showLobby(); toast('Waiting for the host to start', 1800); } return; }
         track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
+      festDone: async (d) => { try { const r = await fetch('/api/fest', { method: 'POST', body: JSON.stringify({ pid: meta.pid, d }) }); if (!r.ok) return; const j = await r.json();
+          if (j.n > 1 && meta.vil) setTimeout(() => toast(L(j.n + ' from your village kept the festival today'), 2800), 5200); loadVillages(); } catch (e) {} }, /* the village's festival count */
       netVev: (k, n) => { if (net.village && net.ws) netSend({ t: 'vev', k, n }); }, shared: () => !!(net.village && net.ws),
       track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
       toMenu: () => { if (net.village && net.ws) { leaveSharedVillage(); showLobby(); return; } /* quitting the shared village goes back to the room */ game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
@@ -2201,6 +2203,7 @@ function renderVillageLine() {
   const v = meta.vil, t = vboard && vboard.today && vboard.today.me;
   $('villageCta').textContent = v ? 'Change' : 'Choose';
   $('villageLine').textContent = !v ? 'Play for your village' : !t ? `Playing for ${v.v}` : t.rank ? `${v.v} is #${t.rank} today` + (t.above ? ` · ${t.above.p - t.p + 1} to pass ${t.above.v}` : '') : `${v.v}: ${t.n} of 3 players needed today`;
+  if (v && vboard && vboard.fest > 0) $('villageLine').textContent += ` · ${vboard.fest} kept the festival today`;
 }
 function renderVillages() {
   const ol = $('boardList'), d = vboard && vboard.today;
@@ -2380,8 +2383,10 @@ const STAGES = [[0, 'Stage 1', ''], [5, 'Stage 2: The Feint', 'He fakes now. Wai
   [16, 'Stage 4: The Hunter', 'His charge bends toward you. Roll late!'], [24, 'Stage 5: Sohrai Legend', 'Everything he has. Hold on!']];
 const stageOf = (score) => { let n = 1; for (let i = 1; i < STAGES.length; i++) if (score >= STAGES[i][0]) n = i + 1; return n; };
 const stage = () => (game.online || game.storyRun ? 1 : game.stage || 1);
+function stageShow(n) { const st = STAGES[n - 1], el = $('stageBanner'); if (!st) return; el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  sfx.bellow(); crowdCheer(1, 1.05); game.shake = Math.max(game.shake || 0, 0.6); buzz([30, 40, 30, 40, 60]); } /* online: the server runs the bull's new moves, the room sees the banner together */
 function stageUp(n) { game.stage = n; const st = STAGES[n - 1];
-  setTimeout(() => { if (game.mode !== 'play') return; const el = $('stageBanner'); el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  setTimeout(() => { if (game.mode !== 'play') return; if (game.online) { stageShow(n); return; } const el = $('stageBanner'); el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     sfx.bellow(); crowdCheer(1, 1.05); game.shake = Math.max(game.shake || 0, 0.6); cineR.kick = 1; buzz([30, 40, 30, 40, 60]); track('stage.' + n);
     if (!hs.on) hs.next = Math.min(hs.next, 1.2); /* a handi for the brave */ }, 1900); }
 function award(pts, label) {
@@ -3280,6 +3285,7 @@ function onNetEvent(m) {
       break;
     }
     case 'v': if (m.id !== net.id && net.village && story && story.peer) story.peer(m.k, m.n, net.remotes.get(m.id)); break;
+    case 'stage': if (game.mode === 'play') { game.stage = m.n; setTimeout(() => stageShow(m.n), 900); } break;
     case 'hit': if (m.id !== net.id) { sfx.hit(); toast(nameOf(m.id) + (m.lives ? ' got horned!' : ' is out!'), 900); } break;
     case 'snort': sfx.snort(); break;
     case 'tease': if (m.id !== net.id) { sfx.tease(); const r = net.remotes.get(m.id); if (r) r.a.flap = 0.9; } break;

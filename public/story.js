@@ -42,7 +42,7 @@ export function initStory(C) {
   function banner(a, b) { const el = $('stageBanner'); if (!el) return; el.firstElementChild.textContent = a; el.lastElementChild.textContent = b; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
   function festCheck() { if (!GATED || F.fin || F.on) return; const d = festDay(), td = today();
     const ok = d === 1 ? !!save.oiled : d === 2 ? !!save.alpana : d === 3 ? save.ch >= 5 : d === 4 ? !!td.jale : !!td.fish; if (!ok) return;
-    F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday();
+    F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday(); if (C.festDone) C.festDone(d);
     setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!')); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
       else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow')); } }, d === 3 ? 6500 : 2600); }
   // A free world: nothing is locked. But do a thing on the wrong day and the Majhi or a village elder tells you off first
@@ -119,6 +119,7 @@ export function initStory(C) {
     'Draw the alpana': 'अल्पना बनाओ', 'DRAW': 'बनाओ', 'Alpana drawn': 'अल्पना बन गई', 'White rice paste before the door': 'दरवाज़े के आगे सफ़ेद चावल का लेप',
     'Sohrai complete!': 'सोहराय पूरा!', 'You lived all five days. Johar!': 'तुमने पाँचों दिन जिए। जोहार!', 'Sohrai complete': 'सोहराय पूरा',
     'Your friends are in the village with you.': 'तुम्हारे दोस्त गाँव में तुम्हारे साथ हैं।', 'Friends who join the room appear here.': 'जो दोस्त कमरे में आएँगे, यहीं दिखेंगे।',
+    'Together!': 'साथ-साथ!', 'You and a friend on the drums': 'तुम और तुम्हारा दोस्त ढोल पर', 'Drummed together': 'साथ में ढोल बजाया', '# from your village kept the festival today': 'तुम्हारे गाँव के # लोगों ने आज पर्व निभाया',
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
     '×# combo · Hoy!': '×# कॉम्बो · होय!', '×# combo · Johar!': '×# कॉम्बो · जोहार!', '×# combo · Got it!': '×# कॉम्बो · मिल गया!', '×# combo · Snatched!': '×# कॉम्बो · झपट लिया!',
     'Golden pitha! +#': 'सुनहरा पीठा! +#', 'Golden pitha!': 'सुनहरा पीठा!', 'Golden pitha! Worth # extra points.': 'सुनहरा पीठा! # अंक ज़्यादा।', 'Combo lost': 'कॉम्बो टूट गया',
@@ -765,6 +766,8 @@ export function initStory(C) {
     if (S.mode !== 'drum' || drum.done) return;
     const pl = C.player(), tn = (at ?? now()) - off();
     drumSound(lane); if (C.netVev) C.netVev('drum', lane === 'T' ? 0 : 1); /* friends in the village hear it */
+    if (now() - (dance.peerT || -9) < 2) { dance.duet = (dance.duet || 0) + 1; /* a friend is drumming with you: twelve hits together is worth a bonus once a day */
+      if (dance.duet === 4) pop('Together!', 'You and a friend on the drums'); if (dance.duet === 12 && !today().duet) { today().duet = 1; persist(); C.addXp(10, 'Drummed together'); if (C.track) C.track('duet'); setTimeout(() => pop('+10 XP', 'Drummed together'), 600); } }
     const dp = (lane === 'T' ? W.tamak.position : W.tumdak.position).clone(); dp.y = lane === 'T' ? 0.62 : 0.6;
     C.emit(C.dustPool, dp, { life: 0.35, vel: V(0, 1.4, 0), size: 0.25, grow: 0.7 });
     let power = 1;
@@ -1325,7 +1328,7 @@ export function initStory(C) {
     start: () => fade(() => start(false), 220), stop, update, cam, key, afterRing, back, tr,
     debugInside: () => S.inside,
     // a friend in the shared village did something: their drum is heard, quieter with distance, and the dancers feel it
-    peer: (k, n, r) => { if (!S.on || S.inside) return; if (k === 'drum') { dance.peer = (dance.peer || 0) + 1; const ctx = C.audio.ctx, v = C.sfx.near(W.drumStand, 30); if (ctx && !C.audio.muted && v > 0) { const t = ctx.currentTime; if (n === 0) C.sfx.dhamsa(t); else C.sfx.madalHi(t); } dance.energy = Math.min(1.5, dance.energy + 0.12); } },
+    peer: (k, n, r) => { if (!S.on || S.inside) return; if (k === 'drum') { dance.peer = (dance.peer || 0) + 1; dance.peerT = now(); const ctx = C.audio.ctx, v = C.sfx.near(W.drumStand, 30); if (ctx && !C.audio.muted && v > 0) { const t = ctx.currentTime; if (n === 0) C.sfx.dhamsa(t); else C.sfx.madalHi(t); } dance.energy = Math.min(1.5, dance.energy + 0.12); } },
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
