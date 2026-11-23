@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,7 +38,6 @@ import android.webkit.WebViewClient;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -329,10 +327,6 @@ public class MainActivity extends Activity {
                 try { return fromFile(up, rel, range); } catch (Exception e) { Log.w(TAG, "ota: could not read " + rel + ": " + e); }
             }
             try {
-                if (range != null) {
-                    WebResourceResponse part = ranged(asset, range);
-                    if (part != null) return part;
-                }
                 return reply(mime(asset), charset(asset), 200, "OK", open(asset), null);
             } catch (IOException e) {
                 return null; // not packed: let the network answer
@@ -341,27 +335,9 @@ public class MainActivity extends Activity {
     }
 
     WebResourceResponse fromFile(File f, String name, String range) throws IOException {
+        // No range handling here or for packed files: the WebView seeks inside the full stream itself when the page asks
+        // for a piece of a file (music). Answering with a piece made it skip twice and the music failed to load.
         long total = f.length();
-        if (range != null && range.startsWith("bytes=")) {
-            String[] ab = range.substring(6).split("-", 2);
-            if (!ab[0].trim().isEmpty()) {
-                long a = Long.parseLong(ab[0].trim());
-                long b = ab.length > 1 && !ab[1].trim().isEmpty() ? Math.min(Long.parseLong(ab[1].trim()), total - 1) : total - 1;
-                if (a >= 0 && a <= b) {
-                    InputStream in = new FileInputStream(f);
-                    long skipped = 0;
-                    while (skipped < a) {
-                        long n = in.skip(a - skipped);
-                        if (n <= 0) break;
-                        skipped += n;
-                    }
-                    Map<String, String> h = new HashMap<>();
-                    h.put("Content-Range", "bytes " + a + "-" + b + "/" + total);
-                    h.put("Content-Length", String.valueOf(b - a + 1));
-                    return reply(mime(name), null, 206, "Partial Content", new Limited(in, b - a + 1), h);
-                }
-            }
-        }
         if (total <= (4 << 20)) { // code and pages: read whole, so a half-read file can never reach the page
             byte[] all = new byte[(int) total];
             try (FileInputStream in = new FileInputStream(f)) {
@@ -387,36 +363,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Music is asked for in pieces ("Range: bytes=a-b"); answer with that piece so it can loop and seek. */
-    WebResourceResponse ranged(String asset, String range) {
-        try {
-            if (!range.startsWith("bytes=")) return null;
-            String[] ab = range.substring(6).split("-", 2);
-            if (ab[0].isEmpty()) return null;
-            AssetFileDescriptor fd = getAssets().openFd(asset); // only works for files stored uncompressed
-            long total = fd.getLength(), a = Long.parseLong(ab[0].trim());
-            long b = ab.length > 1 && !ab[1].trim().isEmpty() ? Math.min(Long.parseLong(ab[1].trim()), total - 1) : total - 1;
-            if (a < 0 || a > b) { fd.close(); return null; }
-            InputStream in = fd.createInputStream();
-            long skipped = 0;
-            while (skipped < a) {
-                long n = in.skip(a - skipped);
-                if (n <= 0) break;
-                skipped += n;
-            }
-            Map<String, String> h = new HashMap<>();
-            h.put("Content-Range", "bytes " + a + "-" + b + "/" + total);
-            h.put("Content-Length", String.valueOf(b - a + 1));
-            return reply(mime(asset), null, 206, "Partial Content", new Limited(in, b - a + 1), h);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     static WebResourceResponse reply(String mime, String enc, int status, String reason, InputStream body, Map<String, String> extra) {
         Map<String, String> h = new HashMap<>();
         h.put("Cache-Control", "no-cache");
-        h.put("Accept-Ranges", "bytes");
         h.put("Access-Control-Allow-Origin", "*");
         if (extra != null) h.putAll(extra);
         return new WebResourceResponse(mime, enc, status, reason, h, body);
@@ -450,34 +399,6 @@ public class MainActivity extends Activity {
             case "wasm": return "application/wasm";
             case "txt": return "text/plain";
             default: return "application/octet-stream";
-        }
-    }
-
-    /** At most n bytes of a stream. */
-    static class Limited extends FilterInputStream {
-        long left;
-
-        Limited(InputStream in, long n) { super(in); left = n; }
-
-        @Override
-        public int read() throws IOException {
-            if (left <= 0) return -1;
-            int c = super.read();
-            if (c >= 0) left--;
-            return c;
-        }
-
-        @Override
-        public int read(byte[] buf, int off, int len) throws IOException {
-            if (left <= 0) return -1;
-            int n = super.read(buf, off, (int) Math.min(len, left));
-            if (n > 0) left -= n;
-            return n;
-        }
-
-        @Override
-        public int available() throws IOException {
-            return (int) Math.min(super.available(), left);
         }
     }
 }
