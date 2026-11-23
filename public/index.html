@@ -2324,9 +2324,12 @@ $('restoreBtn').addEventListener('click', async () => { const code = $('restoreI
 // daily reminder (web push). Phones only allow it after a tap, and iPhones only once the game is on the home screen.
 // inside the Android app (a WebView) there is no navigator.share: hand the text to the app's own share sheet
 if (window.SohraiApp && !navigator.share) navigator.share = d => { try { window.SohraiApp.share([d && d.text, d && d.url].filter(Boolean).join(' ')); } catch (e) {} return Promise.resolve(); };
-const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const pushOK = !window.SohraiApp && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 // the offline copy (about 7 MB) is fetched only after the game is up, so it never competes with the first load
-const registerSW = () => { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {}); };
+const registerSW = () => { if (!window.SohraiApp && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {}); };
+// The Android app carries the game's files itself. A service worker there would load pages from the network behind its
+// back and keep stale copies, so the app never registers one and removes any that an older build left behind.
+if (window.SohraiApp) { try { navigator.serviceWorker && navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {}); window.caches && caches.keys().then(ks => ks.forEach(k => k.startsWith('khuntau-') && caches.delete(k))).catch(() => {}); } catch (e) {} }
 if ('serviceWorker' in navigator && navigator.serviceWorker.controller) registerSW(); // returning players: check for updates at once
 // offline: solo play still works; hide what needs the internet, bring it back when the connection returns
 function netState() {

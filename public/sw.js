@@ -1,15 +1,18 @@
 // Khuntau service worker: keeps the game on the phone so solo play works offline, and sends the daily reminder.
 // The page itself is always fetched fresh when there is a connection, so updates show at once.
-const VERSION = 'ccdc53c4d0';
+const VERSION = '9d6ca40f9e';
 const CACHE = 'khuntau-' + VERSION;
 const FILES = [ "/audio/bellow.mp3", "/audio/bells.mp3", "/audio/bonk.mp3", "/audio/cheer1.mp3", "/audio/cheer2.mp3", "/audio/clap.mp3", "/audio/gallop.mp3", "/audio/khuntau.mp3", "/audio/highfive.mp3", "/audio/hit.mp3", "/audio/intro.mp3", "/audio/punch.mp3", "/audio/snap.mp3", "/audio/snort.mp3", "/audio/whoosh.mp3", "/fonts/baloo-2-latin-ext.woff2", "/fonts/baloo-2-latin.woff2", "/fonts/fonts.css", "/fonts/noto-sans-ol-chiki-latin-ext.woff2", "/fonts/noto-sans-ol-chiki-latin.woff2", "/fonts/noto-sans-ol-chiki-ol-chiki.woff2", "/fonts/rubik-dirt-latin-ext.woff2", "/fonts/rubik-dirt-latin.woff2", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/index.html", "/manifest.webmanifest", "/story.js", "/life.js", "/models/bull.json", "/models/casual_female.json", "/models/cow.json", "/models/casual_male.json", "/models/worker_female.json", "/vendor/three/build/three.module.min.js", "/vendor/three/examples/jsm/loaders/GLTFLoader.js", "/vendor/three/examples/jsm/utils/BufferGeometryUtils.js", "/vendor/three/examples/jsm/utils/SkeletonUtils.js" ];
 
+// The host answers /index.html with a redirect to /. A response that came through a redirect cannot be given to a
+// page navigation (the browser shows an error), so the saved page is re-wrapped as a plain response.
+const clean = async (r) => r && r.redirected ? new Response(await r.blob(), { status: r.status, statusText: r.statusText, headers: r.headers }) : r;
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
     // one by one, so a single failed file doesn't stop the rest from being saved
     await Promise.all(FILES.map(f => c.add(new Request(f, { cache: 'reload' })).catch(() => {})));
-    await c.put('/', (await c.match('/index.html')) || await fetch('/'));
+    await c.put('/', await clean((await c.match('/index.html')) || await fetch('/')));
     self.skipWaiting();
   })());
 });
@@ -32,7 +35,7 @@ self.addEventListener('fetch', (e) => {
         const net = await Promise.race([fetch(req), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 4000))]);
         if (net.ok) c.put(key, net.clone());
         return net;
-      } catch (err) { return (await c.match(key)) || (page && await c.match('/index.html')) || Response.error(); }
+      } catch (err) { return (await clean(await c.match(key))) || (page && await clean(await c.match('/index.html'))) || Response.error(); }
     })());
     return;
   }

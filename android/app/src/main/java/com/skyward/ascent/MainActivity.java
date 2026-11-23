@@ -26,6 +26,8 @@ import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.ServiceWorkerClient;
+import android.webkit.ServiceWorkerController;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -125,6 +127,15 @@ public class MainActivity extends Activity {
 
         web.addJavascriptInterface(new Bridge(), "SohraiApp");
         web.setWebViewClient(new Client());
+        // The website's offline cache (its service worker) must not run inside the app: it would fetch pages from the
+        // network behind the app's back and keep its own stale copies. Its script is refused (/sw.js answers 404), and
+        // whatever a worker left over from an older build asks for is answered from the phone like any page request.
+        ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
+                return intercept(request);
+            }
+        });
         web.setWebChromeClient(new Chrome());
 
         ota.check();
@@ -294,6 +305,13 @@ public class MainActivity extends Activity {
 
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            return intercept(request);
+        }
+    }
+
+    /** Answers a request for a game file from the phone (downloaded update first, then the APK); null = use the network. */
+    WebResourceResponse intercept(WebResourceRequest request) {
+        {
             Uri u = request.getUrl();
             if (!HOST.equals(u.getHost()) || !"GET".equalsIgnoreCase(request.getMethod())) return null;
             String path = u.getPath();
