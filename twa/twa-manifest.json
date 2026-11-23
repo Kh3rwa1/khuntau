@@ -14,7 +14,7 @@
   "enableNotifications": true,
   "startUrl": "/?src=app",
   "iconUrl": "https://khuntau.dulalkisku0.workers.dev/icon-512.png",
-  "maskableIconUrl": "https://khuntau.dulalkisku0.workers.dev/icon-512.png",
+  "maskableIconUrl": "https://khuntau.dulalkisku0.workers.dev/icon-maskable-512.png",
   "webManifestUrl": "https://khuntau.dulalkisku0.workers.dev/manifest.webmanifest",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
