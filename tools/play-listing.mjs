@@ -3,7 +3,8 @@
 //   DRY=1 node tools/play-listing.mjs      checks the text and images, sends nothing
 // Text comes from twa/store-listing.md (the six code blocks: EN name/short/full, HI name/short/full), images from the
 // repo. The service account needs "Edit store listing, pricing & distribution" on the app in Play Console.
-// Never commit the key. Rating, data safety and target audience are console forms; the API cannot set them.
+// Also sets the Data safety form from twa/data-safety.csv (NO_SAFETY=1 skips it).
+// Never commit the key. Content rating and target audience are console forms; the API cannot set them.
 import fs from 'fs'; import crypto from 'crypto';
 const PKG = 'com.skyward.ascent', API = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/' + PKG;
 const UP = 'https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/' + PKG;
@@ -15,6 +16,7 @@ const S = 'design/brand/store/';
 const images = { icon: ['public/icon-512.png'], featureGraphic: ['design/brand/play-feature-1024x500.png'],
   phoneScreenshots: ['7-ring', '8-bull', '2-yard', '4-akhra', '6-fields', '1-home'].map(n => S + n + '.png') };
 for (const fsList of Object.values(images)) for (const f of fsList) if (!fs.existsSync(f)) throw new Error('missing ' + f);
+if (!fs.existsSync('twa/data-safety.csv')) throw new Error('missing twa/data-safety.csv');
 if (process.env.DRY) { console.log('dry run: text and images are fine, nothing sent'); process.exit(0); }
 const raw = process.env.PLAY_SERVICE_ACCOUNT_JSON; if (!raw) throw new Error('set PLAY_SERVICE_ACCOUNT_JSON to the service account key (file contents)');
 const key = JSON.parse(raw.trim().startsWith('{') ? raw : fs.readFileSync(raw, 'utf8'));
@@ -26,6 +28,7 @@ const tok = await (await fetch('https://oauth2.googleapis.com/token', { method: 
 if (!tok.access_token) throw new Error('no access token: ' + (tok.error_description || tok.error));
 const call = async (method, url, body, type = 'application/json') => { const r = await fetch(url, { method, headers: { authorization: 'Bearer ' + tok.access_token, ...(body ? { 'content-type': type } : {}) }, body: body && type === 'application/json' ? JSON.stringify(body) : body });
   const t = await r.text(); if (!r.ok) throw new Error(method + ' ' + url.replace(/^.*applications\//, '') + ' -> ' + r.status + ' ' + t.slice(0, 400)); return t ? JSON.parse(t) : {}; };
+if (!process.env.NO_SAFETY) { await call('POST', API + '/dataSafety', { safetyLabels: fs.readFileSync('twa/data-safety.csv', 'utf8') }); console.log('data safety form set from twa/data-safety.csv'); }
 const edit = await call('POST', API + '/edits', {}); const E = '/edits/' + edit.id;
 for (const [lang, [title, shortDescription, fullDescription]] of Object.entries(listings)) {
   await call('PUT', API + E + '/listings/' + lang, { language: lang, title, shortDescription, fullDescription }); console.log('text set', lang);
