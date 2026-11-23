@@ -2551,6 +2551,7 @@ $('startBtn').addEventListener('click', () => { if (directRing) { track('play');
 $('quickBtn').addEventListener('click', () => { track('play'); track('play.quick'); game.storyRun = game.villageRun = false; startGame(); });
 $('friendsBtn').addEventListener('click', () => { const box = $('onlineBox'); box.hidden = !box.hidden; if (!box.hidden) $('nameIn').focus(); });
 $('creditsBtn').addEventListener('click', () => { $('credits').hidden = !$('credits').hidden; });
+try { if (window.SohraiApp && window.SohraiApp.info) $('credits').append(' App ' + window.SohraiApp.info() + '.'); } catch (e) {} // which app build and which game files this phone is running
 $('menuBtn').addEventListener('click', () => { if (game.villageRun && story && !game.online) { story.back(); return; } game.mode = 'menu'; resetGame(); $('overScreen').hidden = true; $('startScreen').hidden = false; renderBestLine(); renderToday(); loadBoard(); applyShirt(); setMusic('intro'); });
 $('againBtn').addEventListener('click', () => { if (game.online) netSend({ t: 'start' }); else startGame(); });
 $('copyBtn').addEventListener('click', () => {

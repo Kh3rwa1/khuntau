@@ -24,6 +24,30 @@ sleep 6
 adb exec-out screencap -p > out/3-offline-back-pauses.png
 adb shell dumpsys activity activities | grep -m1 -i "ResumedActivity" > out/resumed.txt || true
 adb logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat.txt
+
+# Over-the-air update, end to end. Serve a changed copy of the game from this machine (the emulator reaches it at
+# 10.0.2.2), let the app download it online, then cut the network and relaunch: the changed tagline must be on screen.
+adb shell cmd connectivity airplane-mode disable
+sleep 12
+rm -rf /tmp/ota && mkdir -p /tmp/ota && cp -r public/. /tmp/ota/
+sed -i 's/Snatch the pitha. Dodge the bull./Over the air update applied/' /tmp/ota/index.html
+node tools/files-manifest.mjs /tmp/ota
+(cd /tmp/ota && python3 -m http.server 8799 > /tmp/ota-server.log 2>&1 &)
+sleep 2
+adb shell am force-stop com.skyward.ascent
+adb logcat -c
+adb shell am start -W -n com.skyward.ascent/.MainActivity --es ota http://10.0.2.2:8799
+sleep 75
+adb logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat-ota-1-download.txt
+adb shell am force-stop com.skyward.ascent
+adb shell cmd connectivity airplane-mode enable
+sleep 5
+adb logcat -c
+adb shell am start -W -n com.skyward.ascent/.MainActivity
+sleep 90
+adb exec-out screencap -p > out/4-ota-applied-offline.png
+adb logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat-ota-2-applied.txt
+cat out/logcat-ota-1-download.txt out/logcat-ota-2-applied.txt
 adb shell dumpsys webviewupdate | grep -i "current webview package" > out/webview.txt || true
 wc -l out/logcat.txt
 exit 0

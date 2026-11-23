@@ -3,6 +3,8 @@ package com.skyward.ascent;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
@@ -32,6 +34,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +58,8 @@ public class MainActivity extends Activity {
     View splash;
     PermissionRequest pendingMic;
     long startedAt;
+    Ota ota;
+    boolean gameUp;
     final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
@@ -66,6 +72,12 @@ public class MainActivity extends Activity {
             getWindow().setAttributes(lp);
         }
         startedAt = SystemClock.elapsedRealtime();
+        // Over-the-air updates: use the newest complete set of game files this phone holds (see Ota).
+        String from = "https://" + HOST;
+        String alt = getIntent() == null ? null : getIntent().getStringExtra("ota"); // debug builds: CI's emulator test serves an update itself
+        if (alt != null && (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) from = alt;
+        ota = new Ota(this, from);
+        ota.start(appVersion());
         setVolumeControlStream(AudioManager.STREAM_MUSIC); // the volume keys turn the game up and down, not the ringer
         web = new WebView(this);
         web.setBackgroundColor(0xFF2A140C);
@@ -97,7 +109,7 @@ public class MainActivity extends Activity {
         splash = cover;
         setContentView(root);
         immersive();
-        ui.postDelayed(this::hideSplash, 25000);
+        ui.postDelayed(() -> { if (!gameUp) ota.report(false); hideSplash(); }, 25000);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -114,6 +126,7 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new Client());
         web.setWebChromeClient(new Chrome());
 
+        ota.check();
         if (state != null && web.restoreState(state) != null) return;
         Uri link = getIntent() == null ? null : getIntent().getData();
         web.loadUrl(link != null && HOST.equals(link.getHost()) ? link.toString() : START);
@@ -136,6 +149,16 @@ public class MainActivity extends Activity {
     public void onWindowFocusChanged(boolean has) {
         super.onWindowFocusChanged(has);
         if (has) immersive();
+    }
+
+    @SuppressWarnings("deprecation")
+    long appVersion() {
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode; } catch (Exception e) { return 0; }
+    }
+
+    @SuppressWarnings("deprecation")
+    String appName() {
+        try { PackageInfo i = getPackageManager().getPackageInfo(getPackageName(), 0); return i.versionName + " (" + i.versionCode + ")"; } catch (Exception e) { return "?"; }
     }
 
     void hideSplash() {
@@ -206,7 +229,16 @@ public class MainActivity extends Activity {
         /** The page calls this when the Play button is live. */
         @JavascriptInterface
         public void ready() {
-            ui.post(MainActivity.this::hideSplash);
+            ui.post(() -> {
+                if (!gameUp) { gameUp = true; ota.report(true); }
+                hideSplash();
+            });
+        }
+
+        /** Which app build and which game files are running, for the Credits line. */
+        @JavascriptInterface
+        public String info() {
+            return appName() + ", game " + ota.version();
         }
 
         @JavascriptInterface
@@ -265,6 +297,13 @@ public class MainActivity extends Activity {
             if (path.equals("/sw.js")) return reply("text/plain", "utf-8", 404, "Not Found", new ByteArrayInputStream(new byte[0]), null);
             String asset = "www" + path;
             String range = request.getRequestHeaders() == null ? null : request.getRequestHeaders().get("Range");
+            // a newer copy downloaded over the air wins over the packed one
+            String rel = path.substring(1);
+            File up = ota.file(rel);
+            if (up == null && rel.lastIndexOf('.') <= rel.lastIndexOf('/')) { rel = rel + ".html"; up = ota.file(rel); }
+            if (up != null && up.isFile()) {
+                try { return fromFile(up, rel, range); } catch (Exception e) { Log.w(TAG, "ota: could not read " + rel + ": " + e); }
+            }
             try {
                 if (range != null) {
                     WebResourceResponse part = ranged(asset, range);
@@ -275,6 +314,31 @@ public class MainActivity extends Activity {
                 return null; // not packed: let the network answer
             }
         }
+    }
+
+    WebResourceResponse fromFile(File f, String name, String range) throws IOException {
+        long total = f.length();
+        if (range != null && range.startsWith("bytes=")) {
+            String[] ab = range.substring(6).split("-", 2);
+            if (!ab[0].trim().isEmpty()) {
+                long a = Long.parseLong(ab[0].trim());
+                long b = ab.length > 1 && !ab[1].trim().isEmpty() ? Math.min(Long.parseLong(ab[1].trim()), total - 1) : total - 1;
+                if (a >= 0 && a <= b) {
+                    InputStream in = new FileInputStream(f);
+                    long skipped = 0;
+                    while (skipped < a) {
+                        long n = in.skip(a - skipped);
+                        if (n <= 0) break;
+                        skipped += n;
+                    }
+                    Map<String, String> h = new HashMap<>();
+                    h.put("Content-Range", "bytes " + a + "-" + b + "/" + total);
+                    h.put("Content-Length", String.valueOf(b - a + 1));
+                    return reply(mime(name), null, 206, "Partial Content", new Limited(in, b - a + 1), h);
+                }
+            }
+        }
+        return reply(mime(name), charset(name), 200, "OK", new FileInputStream(f), null);
     }
 
     InputStream open(String asset) throws IOException {
