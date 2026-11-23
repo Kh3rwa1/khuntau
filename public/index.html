@@ -1956,7 +1956,7 @@ function onCoreLoaded() {
   player.mixer.addEventListener('finished', e => { if (game.p.state === 'free') player.play('Idle'); });
   buildDrummers(nCrowd);
   resetGame();
-  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play'; if (directRing) $('quickBtn').hidden = true;
+  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Play'; appReady(); if (directRing) $('quickBtn').hidden = true;
   { const t = performance.now() / 1000; track('ready.' + (t < 3 ? 'lt3' : t < 6 ? '3_6' : t < 10 ? '6_10' : t < 20 ? '10_20' : 'gt20')); } // seconds from opening the link to PLAY
   $('createBtn').disabled = false; $('joinBtn').disabled = false;
   const q = new URLSearchParams(location.search).get('room');
@@ -2066,7 +2066,8 @@ function loadSet(keys) {
     mergeChar(g, k); if (!g.userData.fit) fitModel(g); loaded[k] = g; loadedCount++; $('loadBar').firstElementChild.style.width = (Math.min(loadedCount, 2) / 2 * 100) + '%';
   })));
 }
-const loadFail = (err) => { console.error(err); $('startBtn').textContent = 'Could not load. Refresh to retry'; $('loadErr').textContent = String(err && err.message || err).slice(0, 140); };
+function appReady() { try { window.SohraiApp && window.SohraiApp.ready(); } catch (e) {} } // the Android app holds its splash art until this
+const loadFail = (err) => { console.error(err); appReady(); $('startBtn').textContent = 'Could not load. Refresh to retry'; $('loadErr').textContent = String(err && err.message || err).slice(0, 140); };
 loadSet(['bull', 'man']).then(() => { coreDone = true; onCoreLoaded(); return loadSet(['woman', 'worker']); })
   .then(() => { crowdDone = true; onCrowdLoaded(); }).catch(loadFail);
 
@@ -3577,6 +3578,8 @@ function quitToMenu() {
 $('pauseBtn').addEventListener('click', openPause);
 $('resumeBtn').addEventListener('click', closePause);
 $('quitBtn').addEventListener('click', quitToMenu);
+// the Android app's back button: pause or resume; false tells the app there was nothing to close, so it may leave
+window.__appBack = () => { if (game.menuOpen) { closePause(); return true; } if (game.mode === 'play' || game.mode === 'story') { openPause(); return true; } return false; };
 addEventListener('keydown', e => {
   if (e.code !== 'Escape' && e.code !== 'KeyP') return;
   if (document.activeElement?.tagName === 'INPUT') return;

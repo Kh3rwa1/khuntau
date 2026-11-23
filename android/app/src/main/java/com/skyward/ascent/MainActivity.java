@@ -9,7 +9,17 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.media.AudioManager;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
+import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
@@ -41,7 +51,10 @@ public class MainActivity extends Activity {
     static final int MIC = 7;
 
     WebView web;
+    View splash;
     PermissionRequest pendingMic;
+    long startedAt;
+    final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle state) {
@@ -52,9 +65,39 @@ public class MainActivity extends Activity {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(lp);
         }
+        startedAt = SystemClock.elapsedRealtime();
+        setVolumeControlStream(AudioManager.STREAM_MUSIC); // the volume keys turn the game up and down, not the ringer
         web = new WebView(this);
         web.setBackgroundColor(0xFF2A140C);
-        setContentView(web);
+        web.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        web.setVerticalScrollBarEnabled(false);
+        web.setHorizontalScrollBarEnabled(false);
+        web.setHapticFeedbackEnabled(false);
+        web.setOnLongClickListener(v -> true); // no text-selection bubble when a thumb rests on the screen
+        if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+
+        // The splash art covers the page until the game says it is ready (or 15 s pass), then fades.
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(0xFF2A140C);
+        root.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        FrameLayout cover = new FrameLayout(this);
+        cover.setBackgroundColor(0xFF2A140C);
+        cover.setClickable(true);
+        ImageView art = new ImageView(this);
+        art.setImageResource(R.drawable.splash_art);
+        art.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        cover.addView(art, new FrameLayout.LayoutParams(-1, -1));
+        ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        bar.setIndeterminate(true);
+        float dp = getResources().getDisplayMetrics().density;
+        FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams((int) (160 * dp), (int) (4 * dp), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        bp.bottomMargin = (int) (56 * dp);
+        cover.addView(bar, bp);
+        root.addView(cover, new FrameLayout.LayoutParams(-1, -1));
+        splash = cover;
+        setContentView(root);
+        immersive();
+        ui.postDelayed(this::hideSplash, 15000);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -62,6 +105,8 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportMultipleWindows(false);
+        s.setSupportZoom(false);
+        s.setBuiltInZoomControls(false);
         s.setTextZoom(100);
         s.setUserAgentString(s.getUserAgentString() + " SohraiApp/1");
 
@@ -93,8 +138,25 @@ public class MainActivity extends Activity {
         if (has) immersive();
     }
 
+    void hideSplash() {
+        final View v = splash;
+        if (v == null) return;
+        splash = null;
+        Log.i(TAG, "ready after " + (SystemClock.elapsedRealtime() - startedAt) + " ms");
+        v.animate().alpha(0f).setDuration(350).withEndAction(() -> ((FrameLayout) v.getParent()).removeView(v)).start();
+    }
+
     @SuppressWarnings("deprecation")
     void immersive() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController c = getWindow().getInsetsController();
+            if (c != null) {
+                c.hide(WindowInsets.Type.systemBars());
+                c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+            return;
+        }
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -115,15 +177,17 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        ui.removeCallbacksAndMessages(null);
         web.destroy();
         super.onDestroy();
     }
 
-    /** Back never throws the round away: it puts the game in the background. */
+    /** Back pauses (or resumes) the game; with nothing to close it puts the game in the background. Never loses a round. */
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
-        moveTaskToBack(true);
+        web.evaluateJavascript("(function(){try{return window.__appBack&&window.__appBack()?1:0}catch(e){return 0}})()",
+                r -> { if (!"1".equals(r)) moveTaskToBack(true); });
     }
 
     @Override
@@ -139,6 +203,12 @@ public class MainActivity extends Activity {
 
     /** What the page can ask the app to do. */
     class Bridge {
+        /** The page calls this when the Play button is live. */
+        @JavascriptInterface
+        public void ready() {
+            ui.post(MainActivity.this::hideSplash);
+        }
+
         @JavascriptInterface
         public void share(final String text) {
             runOnUiThread(() -> {

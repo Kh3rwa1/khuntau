@@ -2,7 +2,7 @@
     <color name="bg">#2A140C</color>
     <color name="icon_bg">#1F0C06</color>
     <style name="Splash" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="android:windowBackground">@color/bg</item>
         <item name="android:statusBarColor">@color/bg</item>
         <item name="android:navigationBarColor">@color/bg</item>
     </style>
