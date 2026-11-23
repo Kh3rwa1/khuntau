@@ -43,3 +43,5 @@ village, and anonymous step counts.
 
 ## Store listing
 Text, graphics list and the App content answers (ads, rating, data safety): `twa/store-listing.md`. Privacy policy: `public/privacy.html`.
+
+To push the listing text and images through the Play API instead of pasting: `PLAY_SERVICE_ACCOUNT_JSON=... node tools/play-listing.mjs` (`DRY=1` checks without sending). The key lives in the environment, never in git.
