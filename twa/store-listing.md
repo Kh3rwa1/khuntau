@@ -123,7 +123,7 @@ Tablet screenshots and a promo video are optional; skip them for now.
 
 - App or game: **Game**. Category: **Action**.
 - Contact email: Dulor's own (it is shown publicly; use one you are happy to publish). Website: `https://khuntau.dulalkisku0.workers.dev`
-- Privacy policy URL: `https://khuntau.dulalkisku0.workers.dev/privacy.html`
+- Privacy policy URL: `https://khuntau.dulalkisku0.workers.dev/privacy`
 
 ## App content (Policy > App content)
 
@@ -136,7 +136,7 @@ Tablet screenshots and a promo video are optional; skip them for now.
   - Users can interact or exchange content: yes (voice chat, names on the leaderboard, village names). Not moderated.
   - Shares location: no. Purchases: no. Gambling, sexual content, drugs, bad language: no.
   - Expect a rating around 12+/Teen, not "Everyone".
-- **Data safety** (Claude's reading of the form against what `src/worker.js` stores; Dulor signs it):
+- **Data safety:** import `twa/data-safety.csv` (Data safety > Import from CSV), then check every screen before saving. It holds these answers (Claude's reading of the form against what `src/worker.js` stores; Dulor signs it):
   - Collects or shares user data: Yes. Encrypted in transit: Yes. Users can ask for deletion: Yes (by email; see the privacy page).
   - Personal info > Name: collected, optional, app functionality (leaderboard name; a nickname counts).
   - Device or other IDs: collected, required, app functionality (a random player id made by the game).
