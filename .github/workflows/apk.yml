@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main-y500hu]
-    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh']
+    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh', 'public/**', 'twa/twa-manifest.json']
 permissions:
   contents: write
 concurrency:

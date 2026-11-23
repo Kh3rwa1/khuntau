@@ -59,6 +59,7 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 #stageBanner { position: fixed; z-index: 6; left: 0; right: 0; top: 15%; text-align: center; pointer-events: none; opacity: 0; padding: 14px 10px; background: linear-gradient(90deg, rgba(42,20,12,0), rgba(42,20,12,.82) 25%, rgba(42,20,12,.82) 75%, rgba(42,20,12,0)); }
 #stageBanner b { display: block; font-family: var(--font-display); font-size: clamp(30px, 8.5vw, 58px); color: #ffb347; text-shadow: 0 3px 0 #7a2a14; line-height: 1.1; }
 #stageBanner span { display: block; margin-top: 4px; font-size: clamp(14px, 4vw, 19px); color: #f6eedd; font-weight: 700; }
+#stageBanner::before { content: attr(data-ol); display: block; font-family: var(--font-olchiki); font-size: clamp(16px, 4.6vw, 26px); color: #f6eedd; letter-spacing: .08em; margin-bottom: 2px; }
 #stageBanner.show { animation: stageIn 2.6s ease-out both; }
 @keyframes stageIn { 0% { opacity: 0; transform: scale(1.5); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(.96); } }
 @keyframes stageFade { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -94,6 +95,15 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 .overlay { overflow-y: auto; place-items: start center; -webkit-overflow-scrolling: touch; }
 @media (max-height: 600px) { .card .how, .card .lede, .card .olchiki, .card .vilhow { display: none; } h1 { font-size: 56px; } .card { gap: 10px; } }
 .olchiki { font-family: var(--font-olchiki); font-size: 18px; color: var(--saffron); letter-spacing: .08em; }
+.olchiki.day { font-size: 15px; margin: -8px 0 0; opacity: .9; }
+.home-a, .home-r, .home-b { display: contents; }
+/* laptops and monitors: the home screen was a phone column you had to scroll. Title and Play on the left, today's panel on the right. */
+@media (min-width: 900px) and (min-height: 520px) {
+  .card.home { width: min(1000px, 100%); grid-template-columns: minmax(0, 1fr) minmax(0, 420px); grid-template-areas: "a r" "b r"; column-gap: 56px; align-items: center; }
+  .home-a, .home-r, .home-b { display: grid; gap: 14px; justify-items: center; width: 100%; }
+  .home-a { grid-area: a; align-self: end; } .home-b { grid-area: b; align-self: start; } .home-r { grid-area: r; }
+  .card.home h1 { font-size: clamp(96px, 11vw, 150px); }
+}
 h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(64px, 19vw, 112px); line-height: .85; color: var(--paste); text-shadow: 0 4px 0 var(--ochre), 0 14px 40px rgba(0, 0, 0, .6); text-wrap: balance; }
 h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(44px, 13vw, 72px); line-height: .9; color: var(--paste); text-shadow: 0 4px 0 var(--ochre); }
 .lede { margin: 0; font-size: 17px; line-height: 1.4; max-width: 34ch; opacity: .92; text-wrap: balance; }
@@ -231,6 +241,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 #dlgBox { width: min(560px, 100%); background: rgba(20, 10, 6, .9); border: 1px solid rgba(255, 179, 71, .45); border-radius: 18px; padding: 12px 16px 12px; box-sizing: border-box; zoom: var(--ui, 1); }
 #dlgWho { font-family: var(--font-display); font-size: 22px; color: var(--saffron); line-height: 1; margin-bottom: 4px; }
 #dlgText { margin: 0; font-size: 17px; line-height: 1.35; min-height: 2.7em; text-wrap: pretty; }
+.olname { font-family: var(--font-olchiki); font-size: 15px; color: var(--paste); opacity: .85; margin-left: 10px; letter-spacing: .06em; vertical-align: middle; }
 #dlgNext { text-align: right; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; opacity: .7; margin-top: 2px; }
 #pick { position: fixed; z-index: 7; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: grid; gap: 10px; justify-items: center; width: min(420px, calc(100vw - 24px)); background: rgba(20, 10, 6, .88); border: 1px solid rgba(255, 179, 71, .45); border-radius: 18px; padding: 12px; box-sizing: border-box; zoom: var(--ui, 1); }
 #pick .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
@@ -326,6 +337,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 
 <div class="overlay" id="startScreen">
   <div class="card home">
+    <div class="home-a">
     <div class="olchiki" lang="sat">ᱥᱚᱦᱨᱟᱭ</div>
     <h1>Sohrai</h1>
     <p class="tag">Snatch the pitha. Dodge the bull.</p>
@@ -333,8 +345,11 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <div class="bar" id="loadBar"><i></i></div>
     <button class="btn play" id="startBtn" disabled>Loading…</button>
     <p class="playsub" id="playSub"></p>
+    <p class="olchiki day" id="dayOl" lang="sat" hidden></p>
     <div class="storyrow"><button class="linkbtn" id="quickBtn" type="button" disabled>Quick round at the khunt</button></div>
     <p class="bestline" id="bestLine" hidden></p>
+    </div>
+    <div class="home-r">
     <div class="today" id="today">
       <div class="today-head"><span id="lvlLine">Level 1</span><b id="streakLine"></b></div>
       <div class="xpbar"><i id="xpFill"></i></div>
@@ -350,6 +365,8 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
       <div class="today-head"><span>Playing now</span><b id="roomsCount"></b></div>
       <ul class="roomlist" id="roomList"></ul>
     </div>
+    </div>
+    <div class="home-b">
     <button class="linkbtn" id="friendsBtn" type="button">Play with friends</button>
     <div class="online-box" id="onlineBox" hidden>
       <input id="nameIn" maxlength="14" placeholder="Your name" autocomplete="nickname" enterkeyhint="done" aria-label="Your name">
@@ -361,6 +378,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <button class="linkbtn tiny" id="keepBtn" type="button">Keep my progress</button>
     <button class="linkbtn tiny" id="creditsBtn" type="button">Credits</button>
     <p class="fine" id="credits" hidden>Made by Dulor (Tumdah). Music: Dulor (Tumdah), all rights reserved. Bull, cow &amp; villagers: Quaternius (CC0). Sound effects via Openverse: Freesound, CC0; bull bellow by confusion_music (CC BY 4.0). three.js (MIT). Fonts: SIL Open Font License. <a href="/privacy.html" style="color:inherit">Privacy policy</a></p>
+    </div>
   </div>
 </div>
 
@@ -1767,7 +1785,7 @@ function tint(a, map) {
 function shadows(a) { a.root.traverse(o => { if (o.isMesh) o.castShadow = true; }); }
 
 let bull, player, story = null, life = null; const crowd = [];
-function renderStoryBtn() { if (story) $('playSub').textContent = story.label(); }
+function renderStoryBtn() { if (!story) return; $('playSub').textContent = story.label(); const ol = story.dayOl ? story.dayOl() : ''; $('dayOl').textContent = ol; $('dayOl').hidden = !ol; }
 /* ---------- drum troupe: one dhamsa, two madal ---------- */
 const drummers = []; let drumHeat = 1;
 const leatherMat = Mat({ color: 0xe2cfa6, roughness: 0.85 });
@@ -2399,10 +2417,10 @@ const STAGES = [[0, 'Stage 1', ''], [5, 'Stage 2: The Feint', 'He fakes now. Wai
   [16, 'Stage 4: The Hunter', 'His charge bends toward you. Roll late!'], [24, 'Stage 5: Sohrai Legend', 'Everything he has. Hold on!']];
 const stageOf = (score) => { let n = 1; for (let i = 1; i < STAGES.length; i++) if (score >= STAGES[i][0]) n = i + 1; return n; };
 const stage = () => (game.online || game.storyRun ? 1 : game.stage || 1);
-function stageShow(n) { const st = STAGES[n - 1], el = $('stageBanner'); if (!st) return; el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+function stageShow(n) { const st = STAGES[n - 1], el = $('stageBanner'); if (!st) return; el.dataset.ol = ''; el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   sfx.bellow(); crowdCheer(1, 1.05); game.shake = Math.max(game.shake || 0, 0.6); buzz([30, 40, 30, 40, 60]); } /* online: the server runs the bull's new moves, the room sees the banner together */
 function stageUp(n) { game.stage = n; const st = STAGES[n - 1];
-  setTimeout(() => { if (game.mode !== 'play') return; if (game.online) { stageShow(n); return; } const el = $('stageBanner'); el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  setTimeout(() => { if (game.mode !== 'play') return; if (game.online) { stageShow(n); return; } const el = $('stageBanner'); el.dataset.ol = ''; el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     sfx.bellow(); crowdCheer(1, 1.05); game.shake = Math.max(game.shake || 0, 0.6); cineR.kick = 1; buzz([30, 40, 30, 40, 60]); track('stage.' + n);
     if (!hs.on) hs.next = Math.min(hs.next, 1.2); /* a handi for the brave */ }, 1900); }
 function award(pts, label) {

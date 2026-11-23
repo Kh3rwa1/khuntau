@@ -32,6 +32,10 @@ export function initStory(C) {
   // Off under ?debug (the older tests play the whole story in one sitting); ?debug&fest turns it on.
   const FEST = [['Um Hilok', 'Wake, paint the wall, choose your animal and oil its horns'], ['Dakay Din', 'Draw the alpana before your door'], ['Khuntau', 'Garland the animal, beat the tamak, face the bull'],
     ['Jale', 'Join the Sarpa enej at three houses'], ['Hako Katkom', 'Catch fish at the pond for the feast']];
+  // Ol Chiki for the Santali names the game already uses (the five days, the people). Names only, never sentences:
+  // Santali text waits for a Santali speaker. Dulor confirmed ᱥᱚᱦᱨᱟᱭ; the rest are Claude's spellings and need Dulor's eye.
+  const OLD = ['ᱩᱢ ᱦᱤᱞᱚᱜ', 'ᱫᱟᱠᱟᱭ ᱫᱤᱱ', 'ᱠᱷᱩᱱᱴᱟᱣ', 'ᱡᱟᱞᱮ', 'ᱦᱟᱠᱚ ᱠᱟᱴᱠᱚᱢ'];
+  const OLWHO = { Gogo: 'ᱜᱚᱜᱚ', 'गोगो': 'ᱜᱚᱜᱚ', Majhi: 'ᱢᱟᱹᱡᱷᱤ', 'माझी': 'ᱢᱟᱹᱡᱷᱤ' };
   const GATED = !/[?&]debug\b/.test(location.search) || /[?&]fest\b/.test(location.search);
   const dateKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
   if (!save.fest) { save.fest = { day: save.ch >= 5 ? 4 : save.ch >= 3 || save.garland ? 3 : save.oiled ? 2 : 1, on: '', fin: 0, seen: 0 }; if (save.fest.day >= 3) save.alpana = 1; } /* players from before the festival keep what they did */
@@ -39,12 +43,12 @@ export function initStory(C) {
   function festDay() { if (GATED && !F.fin && F.on && F.on !== dateKey() && F.day < 5) { F.day++; F.on = ''; persist(); S.objKey = ''; } return F.day; }
   const festWaiting = () => GATED && !F.fin && !!F.on && F.on === dateKey();   /* today's part is done; the next day opens tomorrow */
   const allowed = (day) => !GATED || F.fin || festDay() > day || (festDay() === day && !festWaiting());
-  function banner(a, b) { const el = $('stageBanner'); if (!el) return; el.firstElementChild.textContent = a; el.lastElementChild.textContent = b; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+  function banner(a, b, ol = '') { const el = $('stageBanner'); if (!el) return; el.dataset.ol = ol; el.firstElementChild.textContent = a; el.lastElementChild.textContent = b; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
   function festCheck() { if (!GATED || F.fin || F.on) return; const d = festDay(), td = today();
     const ok = d === 1 ? !!save.oiled : d === 2 ? !!save.alpana : d === 3 ? save.ch >= 5 : d === 4 ? !!td.jale : !!td.fish; if (!ok) return;
     F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday(); if (C.festDone) C.festDone(d);
-    setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!')); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
-      else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow')); } }, d === 3 ? 6500 : 2600); }
+    setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!'), 'ᱥᱚᱦᱨᱟᱭ'); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
+      else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow'), OLD[d - 1]); } }, d === 3 ? 6500 : 2600); }
   // A free world: nothing is locked. But do a thing on the wrong day and the Majhi or a village elder tells you off first
   // (once a day per thing), then lets you get on with it. Only the right day's part moves the festival on.
   const scolded = {};
@@ -55,7 +59,7 @@ export function initStory(C) {
     say([[hi ? (elder ? 'बुज़ुर्ग' : 'माझी') : (elder ? 'Elder' : 'Majhi'), line], [hi ? (elder ? 'बुज़ुर्ग' : 'माझी') : (elder ? 'Elder' : 'Majhi'), hi ? 'जा, कर ले। पर याद रखना।' : 'Go on then. But remember it.']], go); }
   const TAILS = [['Do not mix up the days of Sohrai, boy!', 'सोहराय के दिन मत गड़बड़ाओ, लड़के!'], ['Did nobody teach you our ways? The whole village is watching.', 'किसी ने हमारी रीत नहीं सिखाई? पूरा गाँव देख रहा है।'],
     ['In my day we knew which day was which. Shame!', 'हमारे ज़माने में हमें हर दिन का पता था। शर्म करो!'], ['The ancestors see everything, child. Keep the order.', 'पुरखे सब देखते हैं, बच्चे। क्रम का मान रखो।']];
-  function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist(); setTimeout(() => { if (S.on && !S.dlg) banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1])); else F.seen = 0; }, 1800); }
+  function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist(); setTimeout(() => { if (S.on && !S.dlg) banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1]), OLD[d - 1]); else F.seen = 0; }, 1800); }
 
   /* ---------- words (one table, ready to translate) ---------- */
   const T_EN = {
@@ -583,7 +587,7 @@ export function initStory(C) {
   function say(lines, then) {
     S.dlg = { lines, i: 0, then, t: now() }; $('dlg').hidden = false; showLine();
   }
-  function showLine() { const d = S.dlg, l = d.lines[d.i]; $('dlgWho').textContent = l[0]; $('dlgText').textContent = l[1]; $('dlgNext').textContent = tr(d.i < d.lines.length - 1 ? (C.isTouch ? 'Tap to go on' : 'Enter to go on') : (C.isTouch ? 'Tap to close' : 'Enter to close')); d.t = now(); }
+  function showLine() { const d = S.dlg, l = d.lines[d.i]; $('dlgWho').textContent = l[0]; if (OLWHO[l[0]]) { const o = document.createElement('span'); o.className = 'olname'; o.lang = 'sat'; o.textContent = OLWHO[l[0]]; $('dlgWho').appendChild(o); } $('dlgText').textContent = l[1]; $('dlgNext').textContent = tr(d.i < d.lines.length - 1 ? (C.isTouch ? 'Tap to go on' : 'Enter to go on') : (C.isTouch ? 'Tap to close' : 'Enter to close')); d.t = now(); }
   function nextLine() {
     const d = S.dlg; if (!d || now() - d.t < 0.25) return;
     if (++d.i < d.lines.length) { showLine(); return; }
@@ -1350,6 +1354,7 @@ export function initStory(C) {
     peer: (k, n, r) => { if (!S.on || S.inside) return; if (k === 'drum') { dance.peer = (dance.peer || 0) + 1; dance.peerT = now(); const ctx = C.audio.ctx, v = C.sfx.near(W.drumStand, 30); if (ctx && !C.audio.muted && v > 0) { const t = ctx.currentTime; if (n === 0) C.sfx.dhamsa(t); else C.sfx.madalHi(t); } dance.energy = Math.min(1.5, dance.energy + 0.12); } },
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
+    dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
     debug: { rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
