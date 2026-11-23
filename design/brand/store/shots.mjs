@@ -1,0 +1,20 @@
+// node design/brand/store/shots.mjs  (tests/serve.mjs running) -> 1080x1920 Play Store phone screenshots
+import puppeteer from 'puppeteer';
+const OUT = new URL('./', import.meta.url).pathname; const sleep = ms => new Promise(r => setTimeout(r, ms));
+const browser = await puppeteer.launch({ protocolTimeout: 240000, args: ['--no-sandbox', '--mute-audio'] });
+const page = await browser.newPage();
+await page.emulate({ viewport: { width: 360, height: 640, deviceScaleFactor: 3, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13) Mobile' });
+await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-story', JSON.stringify({ ch: 3, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); localStorage.setItem('khuntau-seen-tips', '1'); });
+await page.goto('http://127.0.0.1:8791/?debug&q=high', { waitUntil: 'domcontentloaded' });
+await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 120000 });
+let n = 0; const shot = async (name) => { await page.screenshot({ path: `${OUT}${++n}-${name}.png` }); console.log(name); };
+await sleep(2500); await shot('home');
+await page.evaluate(() => document.getElementById('startBtn').click()); await sleep(5000); await shot('yard');
+await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(0, 0, 13); d.S.camYaw = 0; d.snapCam(); }); await sleep(3000); await shot('village');
+await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.copy(d.W.drumStand); d.S.camYaw = Math.atan2(d.W.drumStand.x, d.W.drumStand.z); d.snapCam(); }); await sleep(3000); await shot('akhra');
+await page.evaluate(() => { const d = __k.story.debug, g = d.W.gStand; __k.game.p.pos.copy(g); d.S.camYaw = Math.atan2(g.x, g.z); d.snapCam(); }); await sleep(3000); await shot('goda');
+await page.evaluate(() => { const d = __k.story.debug; __k.game.p.pos.set(-24, 0, -8); d.S.camYaw = Math.atan2(-24, -8) + 0.6; d.snapCam(); }); await sleep(3000); await shot('fields');
+await page.keyboard.press('Escape'); await sleep(400); await page.evaluate(() => { const b = document.getElementById('quitBtn'); b && b.click(); }); await sleep(800);
+await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(4000); await shot('ring');
+await page.evaluate(() => { const g = __k.game; g.b.pos.set(0, 0, 4.2); g.b.state = 'watch'; g.p.pos.set(1.6, 0, 7.5); }); await sleep(1500); await shot('bull');
+await browser.close();

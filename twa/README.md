@@ -40,3 +40,6 @@ The store listing (name, description, screenshots, category) currently describes
 Sohrai's. A big change of what an app is can draw a Play review; describe the app honestly.
 Data safety form: the game collects no personal data; it stores a random player id, a chosen display name and
 village, and anonymous step counts.
+
+## Store listing
+Text, graphics list and the App content answers (ads, rating, data safety): `twa/store-listing.md`. Privacy policy: `public/privacy.html`.
