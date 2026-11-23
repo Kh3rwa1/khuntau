@@ -1443,12 +1443,24 @@ Object.assign(sfx, {
     for (let i = 0; i < n; i++) { const d = rand(0.07, 0.15), a = f0 * rand(0.92, 1.22), F1 = rand(420, 820), F2 = rand(1100, 2100);
       voiced(at, 'sawtooth', a, a * rand(0.82, 0.96), d, 0.05 * v, F1, 4, 0, 6, 0.015); voiced(at, 'sawtooth', a, a * rand(0.82, 0.96), d, 0.022 * v, F2, 6, 0, 6, 0.015);
       if (Math.random() < 0.5) noise(at, 0.045, 0.02 * v, 'bandpass', rand(2500, 4200), 2, SB()); /* not 0.03 s: that length is the drum's beat click, and drum.mjs tells clicks by it */ at += d + rand(0.02, 0.09) + (Math.random() < 0.2 ? rand(0.1, 0.25) : 0); } },
+  cough(v = 1, hi = false) { const t = AT(); if (t < 0) return; for (let i = 0; i < 2; i++) { const d = i * 0.24; noise(t + d, 0.1, 0.2 * v, 'bandpass', hi ? 1500 : 900, 1.2, SB()); voiced(t + d, 'sawtooth', hi ? 300 : 170, hi ? 220 : 120, 0.11, 0.07 * v, hi ? 1200 : 700, 2, 0, 6, 0.005); } }, /* a caught-out cough; hi = her */
   laugh(v = 1) { const t = AT(); if (t < 0) return; const f = rand(190, 280); for (let i = 0; i < 4; i++) voiced(t + i * 0.13, 'sawtooth', f * (1 - i * 0.05), f * 0.8, 0.09, 0.045 * v * (1 - i * 0.15), 900, 3, 0, 6, 0.01); }, /* a short laugh in a crowd */
   slowmo() { const t = AT(); if (t < 0) return; tone(t, 'sine', 170, 38, 0.9, 0.32, SB()); noise(t, 0.6, 0.16, 'lowpass', 300, 1, SB()); },
   near(pos, R) { const p = game.p.pos, d = Math.hypot(pos.x - p.x, pos.z - p.z); return d >= R ? 0 : 1 - d / R; }, // loudness by distance from you
   gate,
 });
 const synthSfx = { ...sfx };
+// The couple's low talk is Dulor's recording (audio/couple.mp3, 50 s, looped). Loaded the first time you come near, so it
+// costs nothing at launch. coupleVoice(v): how loud it is (0 = they have stopped; the file pauses, and goes on from
+// the same place when they think nobody is about again).
+const coupleTalk = { el: null, g: null, v: 0, t: 0 };
+function coupleVoice(v) {
+  const c = coupleTalk; if (!audio.ctx || audio.muted) v = 0;
+  if (v > 0 && !c.el) { const el = new Audio('audio/couple.mp3'); el.loop = true; el.preload = 'auto'; el.playsInline = true; c.g = audio.ctx.createGain(); c.g.gain.value = 0; audio.ctx.createMediaElementSource(el).connect(c.g); c.g.connect(audio.master); c.el = el; }
+  if (!c.el) return; c.v = v; clearTimeout(c.t);
+  c.g.gain.cancelScheduledValues(audio.ctx.currentTime); c.g.gain.setTargetAtTime(v, audio.ctx.currentTime, v > 0 ? 0.25 : 0.05); /* caught: cut off almost at once */
+  if (v > 0) { if (c.el.paused) c.el.play().catch(() => {}); } else c.t = setTimeout(() => { if (c.v <= 0) c.el.pause(); }, 350);
+}
 const voiceOnNow = () => { try { return voice.on; } catch (e) { return false; } };
 function crowdCheer(vol = 0.9, rate = 1, when = 0, quiet = 'whistle') {
   if (voiceOnNow()) { if (quiet === 'whistle') synthSfx.whistle(vol > 0.6 ? 2 : 1, 0.28); else if (quiet === 'clap') play('clap', { vol: 0.5, when }); return; }
@@ -3584,7 +3596,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3697,8 +3709,9 @@ function frame() {
       if (vis) a.mixer.update(dt); if (W.head) { a.root.updateMatrixWorld(true); W.head.getWorldPosition(W.pot.position); W.pot.position.y += 0.33 - 1.62 * (loaded.woman.userData.headDrop || 0); W.pot.rotation.y = a.wrap.rotation.y; } } /* the pot follows her head even off screen, so it never pops */
     if (market.couple) { const Cc = market.couple, pp = game.p.pos, dist = Math.hypot(pp.x - Cc.x, pp.z - Cc.z), inStory = game.mode === 'story', near = inStory && dist < 6.5;
       Cc.away = near ? 0 : Cc.away + dt; const want = near || Cc.away < 4 ? 1 : 0; Cc.k += clamp(want - Cc.k, -dt * 0.6, dt * 3.2); const k = Cc.k, e = k * k * (3 - 2 * k);
-      if (near && !Cc.seenBy) { Cc.seenBy = true; sfx.laugh(sfx.near({ x: Cc.x, z: Cc.z }, 9)); if (!Cc.told) { Cc.told = true; setTimeout(() => { if (game.mode === 'story') hint(L('They jump apart and study the paddy very hard.'), 2600); }, 500); } } if (!near && Cc.k < 0.05) Cc.seenBy = false;
-      if (inStory && dist < 9 && !near && Cc.k < 0.1 && Math.random() < dt * 0.5 && gate('chatter', 1.5)) sfx.chatter(sfx.near({ x: Cc.x, z: Cc.z }, 9) * 0.6); /* low talk while they think nobody is about */
+      if (near && !Cc.seenBy) { Cc.seenBy = true; { const cv = sfx.near({ x: Cc.x, z: Cc.z }, 9); sfx.cough(cv); setTimeout(() => sfx.cough(cv * 0.8, true), 520); } /* caught: the talk stops dead, he coughs, then she does */ if (!Cc.told) { Cc.told = true; setTimeout(() => { if (game.mode === 'story') hint(L('They jump apart and study the paddy very hard.'), 2600); }, 500); } } if (!near && Cc.k < 0.05) Cc.seenBy = false;
+      { const tv = inStory && !near && Cc.k < 0.1 ? Math.min(1, sfx.near({ x: Cc.x, z: Cc.z }, 15) * 1.25) : 0; /* their talk: only close by, louder the nearer you creep; silent the moment they see you and until they drift back together */
+        if ((tv > 0) !== (Cc.tv > 0) || Math.abs(tv - (Cc.tv || 0)) > 0.04) { Cc.tv = tv; coupleVoice(tv); } }
       [[Cc.boy, 1], [Cc.girl, -1]].forEach(([a, sd]) => { const off = 0.3 + 0.75 * e, p = a.wrap.position; p.set(Cc.x + Cc.tan[0] * sd * off + Cc.out[0] * 0.25 * e * (sd > 0 ? 1 : -0.6), 0, Cc.z + Cc.tan[1] * sd * off + Cc.out[1] * 0.25 * e * (sd > 0 ? 1 : -0.6));
         const toOther = Math.atan2(-Cc.tan[0] * sd, -Cc.tan[1] * sd), awayYaw = sd > 0 ? Math.atan2(Cc.out[0], Cc.out[1]) : Math.atan2(-Cc.out[0] + Cc.tan[0] * -0.6, -Cc.out[1] + Cc.tan[1] * -0.6); /* he: the field; she: half turned to the village */
         let dy = awayYaw - toOther; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); a.wrap.rotation.y = toOther + dy * e;

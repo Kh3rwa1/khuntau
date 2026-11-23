@@ -99,9 +99,17 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x * 0.5, 0, c.z * 0.5); __k.story.debug.snapCam(); c.away = 9; c.k = 0; }); await sleep(600);
   const g0 = await gap(), where = await page.evaluate(() => { const c = __k.market.couple; return { r: Math.hypot(c.x, c.z), field: __k.paddyFields.plots.some(p => { const a = Math.atan2(c.z, c.x); return p.gold && a > p.a0 && a < p.a1 && p.r0 < 45; }) }; });
   check(g0 < 0.75 && where.r > 28 && where.r < 30.5, `a couple stands close together at the village edge (${g0.toFixed(2)} m apart, ${where.r.toFixed(1)} m out)`);
+  // their talk (Dulor's recording): silent far away, heard when you creep close, louder the closer you are
+  const talk = () => page.evaluate(() => { const t = __k.coupleTalk; return { v: t.v, playing: !!t.el && !t.el.paused, at: t.el ? t.el.currentTime : 0 }; });
+  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 20, 0, c.z - c.out[1] * 20); }); await sleep(900); const far = await talk();
+  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 12, 0, c.z - c.out[1] * 12); });
+  await page.waitForFunction(() => { const t = __k.coupleTalk; return t.el && !t.el.paused && t.el.currentTime > 0.3; }, { timeout: 30000, polling: 100 }).catch(() => {}); const mid = await talk();
+  await page.evaluate(() => { const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 8, 0, c.z - c.out[1] * 8); }); await sleep(700); const close = await talk();
+  check(far.v === 0 && !far.playing && mid.playing && mid.v > 0.05 && close.v > mid.v + 0.1, `the couple's talk is heard only close by, louder the nearer you are (20 m: ${far.v.toFixed(2)}, 12 m: ${mid.v.toFixed(2)}, 8 m: ${close.v.toFixed(2)})`);
   await page.evaluate(() => { window.__sfxLog.length = 0; const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 3, 0, c.z - c.out[1] * 3); __k.story.debug.snapCam(); });
   const apart = await page.waitForFunction(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position) > 1.7; }, { timeout: 30000, polling: 100 }).then(() => true, () => false);
-  check(apart && await page.evaluate(() => window.__sfxLog.includes('laugh')), `when you walk up they jump apart with a giggle (${(await gap()).toFixed(2)} m)`);
+  check(apart && await page.evaluate(() => window.__sfxLog.includes('cough')), `when you walk up they jump apart with a cough (${(await gap()).toFixed(2)} m)`);
+  await sleep(700); { const t = await talk(); check(t.v === 0 && !t.playing, 'caught, their talk stops dead'); }
   await page.screenshot({ path: 'tests/out/cam-couple.jpg', type: 'jpeg', quality: 70 });
   await page.evaluate(() => { __k.game.p.pos.set(0, 0, 13); __k.story.debug.snapCam(); });
   check(await page.waitForFunction(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position) < 0.75; }, { timeout: 60000, polling: 200 }).then(() => true, () => false), 'and drift back together once you have gone'); }
