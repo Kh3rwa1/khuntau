@@ -1,0 +1,25 @@
+// Sohrai as a packed Android app: the whole of public/ is copied into the APK and served to a WebView under the
+// game's real address, so it starts with no network. No libraries; only the Android framework.
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.skyward.ascent'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.skyward.ascent'
+        minSdk 24
+        targetSdk 35
+        versionCode((project.findProperty('vc') ?: '2') as int)
+        versionName(project.findProperty('vn') ?: '1.1.0')
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    sourceSets { main { assets.srcDirs = [layout.buildDirectory.dir('webassets').get().asFile] } }
+    androidResources { noCompress 'mp3', 'woff2', 'jpg', 'png' }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+tasks.register('copyWeb', Copy) {
+    from '../../public'
+    into layout.buildDirectory.dir('webassets/www')
+    exclude '.well-known/**'
+}
+preBuild.dependsOn 'copyWeb'

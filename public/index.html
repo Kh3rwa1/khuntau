@@ -2290,6 +2290,8 @@ $('restoreBtn').addEventListener('click', async () => { const code = $('restoreI
     $('keepNote').textContent = 'Restored. Reloading…'; setTimeout(() => location.reload(), 700);
   } catch (e) { $('keepNote').textContent = 'Could not restore. Check your connection.'; } });
 // daily reminder (web push). Phones only allow it after a tap, and iPhones only once the game is on the home screen.
+// inside the Android app (a WebView) there is no navigator.share: hand the text to the app's own share sheet
+if (window.SohraiApp && !navigator.share) navigator.share = d => { try { window.SohraiApp.share([d && d.text, d && d.url].filter(Boolean).join(' ')); } catch (e) {} return Promise.resolve(); };
 const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 // the offline copy (about 7 MB) is fetched only after the game is up, so it never competes with the first load
 const registerSW = () => { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {}); };

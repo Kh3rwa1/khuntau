@@ -1,40 +1,57 @@
-# Builds the unsigned Android app (APK + AAB) from twa/twa-manifest.json. Signing happens off CI with the upload key,
-# which is never stored here.
+# Builds the packed Android app (android/, with public/ inside it) unsigned, boots it on an emulator with the network
+# off, and publishes the files to the apk-build branch. Signing happens off CI with the upload key, never stored here.
 name: apk
 on:
   workflow_dispatch:
   push:
     branches: [main-y500hu]
-    paths: ['.github/workflows/apk.yml', 'twa/twa-manifest.json', 'tools/twa-gen.mjs']
+    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh']
 permissions:
   contents: write
+concurrency:
+  group: apk
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
-      - name: Generate the Android project
-        run: npm i --no-save @bubblewrap/core && node tools/twa-gen.mjs twa/twa-manifest.json build-twa
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.11.1' }
       - name: Build
         run: |
-          cd build-twa && chmod +x gradlew && ./gradlew --no-daemon assembleRelease bundleRelease
+          VC=$(sed -n 's/.*"appVersionCode": *\([0-9]*\).*/\1/p' twa/twa-manifest.json)
+          VN=$(sed -n 's/.*"appVersionName": *"\([^"]*\)".*/\1/p' twa/twa-manifest.json)
+          gradle -p android --no-daemon assembleRelease bundleRelease assembleDebug -Pvc=$VC -Pvn=$VN
       - name: Align and collect
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          mkdir out
-          "$BT/zipalign" -p -f 4 build-twa/app/build/outputs/apk/release/app-release-unsigned.apk out/sohrai-unsigned-aligned.apk
-          cp build-twa/app/build/outputs/bundle/release/app-release.aab out/sohrai-unsigned.aab
+          mkdir -p out
+          "$BT/zipalign" -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk out/sohrai-unsigned-aligned.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab out/sohrai-unsigned.aab
           cp "$BT/lib/apksigner.jar" out/
+          sed -n 3p public/sw.js > out/web-version.txt
           ls -la out
-      - uses: actions/upload-artifact@v4
-        with: { name: android, path: out, retention-days: 7 }
-      # The cloud session that signs the app cannot download artifacts, so the unsigned output also goes to a branch.
-      - name: Publish the unsigned build to the apk-build branch
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Boot the app offline on an emulator
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: sh tools/apk-smoke.sh
+      # The cloud session that signs the app cannot download artifacts, so the output goes to a branch.
+      - name: Publish to the apk-build branch
         run: |
           cd out && git init -q -b apk-build && git config user.name ci && git config user.email ci@users.noreply.github.com
           git add -A && git commit -q -m "unsigned Android build of ${GITHUB_SHA::7}"
