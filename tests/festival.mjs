@@ -26,6 +26,7 @@ check(await until(() => { const c = document.getElementById('dayCard'), i = c &&
 await sleep(700); await page.screenshot({ path: 'tests/out/fest-daycard.jpg', type: 'jpeg', quality: 75 });
 await ev(() => document.getElementById('dayCard').click());
 check(await until(() => document.getElementById('dayCard').hidden, 3000), 'a tap puts the day card away');
+check(await until(() => /Today is Um Hilok, the first day of Sohrai/.test(document.getElementById('dlgText').textContent), 8000), `under it Gogo names the right day (${(await page.$eval('#dlgText', e => e.textContent)).slice(0, 110)})`);
 check(await ev(() => __k.story.debug.GATED && __k.story.debug.fest.day === 1 && !__k.story.debug.festWaiting()), 'the festival is on: day 1, open');
 // day 1 (Um Hilok): wake, paint, choose the animal and oil its horns. Oiling closes the day.
 await ev(() => { const d = __k.story.debug; d.S.inside = false; d.W.room.visible = false; d.save.painted = [1, 1, 1]; d.setChapter(2); });

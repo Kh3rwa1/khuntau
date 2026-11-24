@@ -77,6 +77,7 @@ export function initStory(C) {
   /* ---------- words (one table, ready to translate) ---------- */
   const T_EN = {
     wake: [['Gogo', 'Johar! Wake up, the sun is already over the sal trees. Today is Khuntau, the big day of Sohrai.'], ['Gogo', 'First a sip of handi for strength. The pot is by the back wall.']],
+    wakeFest: [['Gogo', 'Johar! Wake up, the sun is already over the sal trees. Today is Um Hilok, the first day of Sohrai.'], ['Gogo', 'First a sip of handi for strength. The pot is by the back wall.']],
     drank: [['Gogo', 'Good. Now go out and finish the wall. We painted it on the first day of Sohrai, but three motifs are still waiting for you.']],
     gogoIdle: [['Gogo', 'Eat a pitha if you are hungry. And do not let that animal horn you today.']],
     painted: [['Gogo', 'Now that is a Sohrai wall. Go to the goda, the Majhi is waiting for you.']],
@@ -92,6 +93,7 @@ export function initStory(C) {
   };
   const T_HI = {
     wake: [['गोगो', 'जोहार! उठो, सूरज साल के पेड़ों के ऊपर आ गया है। आज खुंटाउ है, सोहराय का बड़ा दिन।'], ['गोगो', 'पहले ताक़त के लिए हँड़िया का एक घूँट। घड़ा पीछे की दीवार के पास है।']],
+    wakeFest: [['गोगो', 'जोहार! उठो, सूरज साल के पेड़ों के ऊपर आ गया है। आज उम हिलोक है, सोहराय का पहला दिन।'], ['गोगो', 'पहले ताक़त के लिए हँड़िया का एक घूँट। घड़ा पीछे की दीवार के पास है।']],
     drank: [['गोगो', 'शाबाश। अब बाहर जाकर दीवार पूरी करो। सोहराय के पहले दिन हमने इसे रंगा था, पर तीन चित्र अभी तुम्हारा इंतज़ार कर रहे हैं।']],
     gogoIdle: [['गोगो', 'भूख लगे तो पीठा खा लेना। और आज उस जानवर के सींग से बचकर रहना।']],
     painted: [['गोगो', 'अब हुई न सोहराय की दीवार। गोड़ा जाओ, माझी तुम्हारा इंतज़ार कर रहे हैं।']],
@@ -1075,7 +1077,7 @@ export function initStory(C) {
     if (fromRing) return;
     setTimeout(() => { if (S.on && !S.dlg) hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.'), 4500); }, 600);
     S.hintAfterDlg = true;
-    if (save.ch === 0) { S.inside = true; W.room.visible = true; game.p.pos.copy(W.inside.bedSide); game.p.yaw = 0.4; setTimeout(() => { if (S.on && save.ch === 0) say(T.wake); }, 700); }
+    if (save.ch === 0) { S.inside = true; W.room.visible = true; game.p.pos.copy(W.inside.bedSide); game.p.yaw = 0.4; setTimeout(() => { if (S.on && save.ch === 0) say(GATED && !F.fin ? T.wakeFest : T.wake); }, 700); } /* lived over five days, the first morning is Um Hilok; Khuntau is day 3 */
     else { S.inside = false; W.room.visible = false; game.p.pos.copy(YARD); game.p.yaw = H.rot; S.camYaw = H.rot; }
     snapCam();
   }
