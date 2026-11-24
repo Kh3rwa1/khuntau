@@ -21,8 +21,8 @@ async function open(query, vp = { width: 390, height: 780 }, store = {}) {
 const quick = async (P) => { await P.ev(() => document.getElementById('quickBtn').click()); await P.until(() => __k.game.mode === 'play'); await P.ev(() => { __k.hs.next = 999; }); };
 // how long his next warning lasts and how fast he then comes, with the player out of harm's way
 const charge = (P) => P.ev(async () => { const g = __k.game; g.p.invuln = 999; g.p.state = 'free'; g.p.pos.set(0, 0, 6); g.b.pos.set(0, 0, -4); g.b.feinted = true; g.b.state = 'watch'; g.b.t = 99;
-  for (let i = 0; i < 400 && g.b.state !== 'windup'; i++) await new Promise(r => setTimeout(r, 15)); const wind = g.b.dur;
-  for (let i = 0; i < 600 && g.b.state !== 'charge'; i++) await new Promise(r => setTimeout(r, 15)); return { wind, speed: g.b.speed, state: g.b.state }; });
+  for (let i = 0; i < 4000 && g.b.state !== 'windup'; i++) await new Promise(r => setTimeout(r, 15)); const wind = g.b.dur; /* generous waits: on CI's software renderer game time crawls */
+  for (let i = 0; i < 8000 && g.b.state !== 'charge'; i++) await new Promise(r => setTimeout(r, 15)); return { wind, speed: g.b.speed, state: g.b.state }; });
 
 { // ---- the rules themselves, with the old tests' settings (?debug: no festival days, no beginner's warning)
   const P = await open('debug&q=low', undefined, { 'khuntau-played': '1' });
@@ -42,7 +42,7 @@ const charge = (P) => P.ev(async () => { const g = __k.game; g.p.invuln = 999; g
   await P.page.keyboard.press('Escape'); await sleep(300); await P.ev(() => { const b = document.getElementById('quitBtn'); b && b.click(); }); await sleep(600);
   await P.ev(() => __k.setAnimal('redcow')); await P.until(() => __k.animal && true, 3000); await sleep(2500); await quick(P);
   const sly = await P.ev(async () => { Math.__r = Math.random; Math.random = () => 0.01; const g = __k.game; g.p.invuln = 999; g.charges = 1; g.feints = 0; g.b.feinted = false; g.p.pos.set(0, 0, 6); g.b.pos.set(0, 0, -4); g.b.state = 'watch'; g.b.t = 99;
-    for (let i = 0; i < 500 && !g.feints; i++) await new Promise(r => setTimeout(r, 15)); Math.random = Math.__r; return { feints: g.feints || 0, stage: g.stage || 1 }; });
+    for (let i = 0; i < 8000 && !g.feints; i++) { g.p.invuln = 999; await new Promise(r => setTimeout(r, 15)); } Math.random = Math.__r; /* up to two minutes: a 1.25 s warning can take that long at 1-3 fps */ return { feints: g.feints || 0, stage: g.stage || 1 }; });
   check(sly.feints >= 1 && sly.stage === 1, 'the red cow is sly: she feints in stage 1, before any other animal would');
   await P.page.keyboard.press('Escape'); await sleep(300); await P.ev(() => { const b = document.getElementById('quitBtn'); b && b.click(); }); await sleep(600);
   await P.ev(() => __k.setAnimal('brown')); await sleep(600);
