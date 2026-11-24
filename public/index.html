@@ -78,9 +78,11 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 #joyzone { position: absolute; left: 0; bottom: 0; width: 58%; height: 100%; }
 #joy { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(246, 238, 221, .35); background: rgba(20, 10, 6, .25); display: none; pointer-events: none; }
 #knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(246, 238, 221, .85); box-shadow: 0 4px 14px rgba(0, 0, 0, .4); }
-.acts { position: absolute; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: auto auto; grid-template-areas: "hide ." "roll grab"; gap: 14px; align-items: end; }
+.acts { position: absolute; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: auto auto; grid-template-areas: "hide leave" "roll grab"; gap: 14px; align-items: end; }
 #hideBtn { grid-area: hide; width: 74px; height: 74px; background: #b8915e; font-size: 14px; box-shadow: 0 6px 0 #7a5d38; }
+.seenlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13px; text-align: left; width: min(320px, 100%); } .seenlist li { opacity: .92; } .seenlist li.no { opacity: .5; font-style: italic; }
 #hideBtn.cool { opacity: .45; }
+#leaveBtn { grid-area: leave; justify-self: end; width: 60px; height: 60px; background: #5f8a45; color: #f6eedd; font-size: 11px; box-shadow: 0 5px 0 #3d5c2a; }
 #rollBtn { grid-area: roll; } #grabBtn { grid-area: grab; }
 .act { border: 0; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-ui); font-weight: 800; letter-spacing: .06em; color: var(--ink); cursor: pointer; touch-action: none; }
 #rollBtn { width: 74px; height: 74px; background: var(--paste); font-size: 14px; box-shadow: 0 6px 0 #bfb39b; }
@@ -329,6 +331,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
   <div id="joyzone"><div id="joy"><div id="knob"></div></div></div>
   <div class="acts">
     <button class="act" id="hideBtn" aria-label="Wave the dried hide at the bull">HIDE</button>
+    <button class="act" id="leaveBtn" hidden aria-label="Walk out of the ring with your pitha">LEAVE</button>
     <button class="act" id="rollBtn" aria-label="Dodge roll">ROLL</button>
     <button class="act" id="grabBtn" aria-label="Grab the pitha">GRAB</button>
     <button class="act off" id="actBtn" aria-label="Do the nearest thing">·</button>
@@ -447,6 +450,8 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <button class="btn" id="resumeBtn">Resume</button>
     <button class="btn ghost small" id="fsBtn2" hidden>Full screen</button>
     <button class="btn ghost small" id="langBtn" type="button" hidden>हिन्दी</button>
+    <button class="linkbtn" id="seenBtn" type="button" hidden></button>
+    <ul class="seenlist" id="seenList" hidden></ul>
     <button class="linkbtn" id="quitBtn" type="button">Quit to menu</button>
   </div>
 </div>
@@ -1932,11 +1937,11 @@ const garland = new THREE.Group();
 
 // The animal at the khunt can be changed: three bulls and two cows. Cows use a second model, fetched only when picked.
 const ANIMALS = [
-  { id: 'brown', name: 'Brown bull', model: 'bull', h: 1.75, tint: { Main: 0x6b4a33, Main_Light: 0xcbb69a, Horns: 0xb8633f, Hooves: 0x2a2420, Muzzle: 0x3a2a22 } },
-  { id: 'white', name: 'White bull', model: 'bull', h: 1.75, tint: { Main: 0xe4dac8, Main_Light: 0xf5efe3, Horns: 0x6f5c46, Hooves: 0x2a2420, Muzzle: 0xc49a8c } },
-  { id: 'black', name: 'Black bull', model: 'bull', h: 1.8, tint: { Main: 0x25201d, Main_Light: 0x4a413a, Horns: 0xdbd0b6, Hooves: 0x14110e, Muzzle: 0x191513 } },
-  { id: 'redcow', name: 'Red cow', model: 'cow', h: 1.6, tint: { Main: 0x9b4f2a, Main_Light: 0xe6cfae, Horns: 0xd9cfb8, Hooves: 0x2a2420, Muzzle: 0xc98f7c } },
-  { id: 'whitecow', name: 'White cow', model: 'cow', h: 1.6, tint: { Main: 0xece4d4, Main_Light: 0xf7f2e8, Horns: 0x8a7458, Hooves: 0x2a2420, Muzzle: 0xd3a79a } },
+  { id: 'brown', temper: { tag: 'Steady', line: 'Steady: the one you know', wind: 1, speed: 1, stun: 1, wait: 1, feint: 0 }, name: 'Brown bull', model: 'bull', h: 1.75, tint: { Main: 0x6b4a33, Main_Light: 0xcbb69a, Horns: 0xb8633f, Hooves: 0x2a2420, Muzzle: 0x3a2a22 } },
+  { id: 'white', temper: { tag: 'Quick', line: 'Quick: short warning, fast charge, but he tires', wind: 0.82, speed: 1.1, stun: 1.2, wait: 1, feint: 0 }, name: 'White bull', model: 'bull', h: 1.75, tint: { Main: 0xe4dac8, Main_Light: 0xf5efe3, Horns: 0x6f5c46, Hooves: 0x2a2420, Muzzle: 0xc49a8c } },
+  { id: 'black', temper: { tag: 'Heavy', line: 'Heavy: a long warning, then he comes hard and is up again fast', wind: 1.3, speed: 1.15, stun: 0.85, wait: 1, feint: 0 }, name: 'Black bull', model: 'bull', h: 1.8, tint: { Main: 0x25201d, Main_Light: 0x4a413a, Horns: 0xdbd0b6, Hooves: 0x14110e, Muzzle: 0x191513 } },
+  { id: 'redcow', temper: { tag: 'Sly', line: 'Sly: she fakes from the very first charge', wind: 1, speed: 0.95, stun: 1, wait: 1, feint: 0.3 }, name: 'Red cow', model: 'cow', h: 1.6, tint: { Main: 0x9b4f2a, Main_Light: 0xe6cfae, Horns: 0xd9cfb8, Hooves: 0x2a2420, Muzzle: 0xc98f7c } },
+  { id: 'whitecow', temper: { tag: 'Restless', line: 'Restless: she gives you no rest between charges', wind: 0.9, speed: 0.97, stun: 1.12, wait: 0.55, feint: 0 }, name: 'White cow', model: 'cow', h: 1.6, tint: { Main: 0xece4d4, Main_Light: 0xf7f2e8, Horns: 0x8a7458, Hooves: 0x2a2420, Muzzle: 0xd3a79a } },
 ];
 let animal = ANIMALS[0]; try { animal = ANIMALS.find(a => a.id === localStorage.getItem('khuntau-animal')) || ANIMALS[0]; } catch (e) {}
 const animalActors = {};
@@ -1957,7 +1962,7 @@ async function setAnimal(id, keep = true) {
   }
   const a = makeAnimal(next.model);
   if (bull !== a) { a.wrap.position.copy(bull.wrap.position); a.wrap.rotation.y = bull.wrap.rotation.y; scene.remove(bull.wrap); scene.add(a.wrap); a.blob.visible = bull.blob.visible; a.play(bull.curName || 'Idle', { fade: 0 }); bull = a; if (perf.cheapen) perf.cheapen(); }
-  tint(bull, next.tint); animal = next; $('animalName').textContent = next.name;
+  tint(bull, next.tint); animal = next; $('animalName').textContent = next.name + ' · ' + next.temper.tag;
   if (keep) try { localStorage.setItem('khuntau-animal', next.id); } catch (e) {}
   return animal;
 }
@@ -2006,7 +2011,7 @@ const nCrowd = [6, 8, 12][QUALITY];
 // the ring is playable with just the bull and the player; the villagers arrive a moment later
 function onCoreLoaded() {
   bull = makeAnimal('bull'); scene.add(bull.wrap); tint(bull, animal.tint);
-  if (animal.model !== 'bull') setAnimal(animal.id); $('animalName').textContent = animal.name;
+  if (animal.model !== 'bull') setAnimal(animal.id); $('animalName').textContent = animal.name + ' · ' + animal.temper.tag;
 
   player = actor(loaded.man, 1.72, false);
   tint(player, { Skin: 0x7a5038, Shirt: 0xf3ede2, Pants: 0x2f6b3a, Belt: 0xc8372d, Hair: 0x15100c, Gamchha: 0xc8372d });
@@ -2087,12 +2092,15 @@ function onCrowdLoaded() {
     story = m.initStory({ props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
-      villageRing: () => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
+      villageRing: (src) => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
           if (net.host === net.id) { leaveSharedVillage(); showLobby(); netSend({ t: 'start' }); } else { leaveSharedVillage(); showLobby(); toast('Waiting for the host to start', 1800); } return; }
-        track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; startGame(); },
+        track('play'); track('play.khunt'); game.storyRun = false; game.villageRun = true; game.online = false; game.mod = buildMod(src); startGame(); },
       festDone: async (d) => { try { const r = await fetch('/api/fest', { method: 'POST', body: JSON.stringify({ pid: meta.pid, d }) }); if (!r.ok) return; const j = await r.json();
           if (j.n > 1 && meta.vil) setTimeout(() => toast(L(j.n + ' from your village kept the festival today'), 2800), 5200); loadVillages(); } catch (e) {} }, /* the village's festival count */
       netVev: (k, n) => { if (net.village && net.ws) netSend({ t: 'vev', k, n }); }, shared: () => !!(net.village && net.ws),
+      // the small scenes that already live in the village, for the story's journal of things seen
+      sights: () => ({ couple: market.couple ? { x: market.couple.x, z: market.couple.z, caught: !!market.couple.seenBy } : null, stall: market.spot ? { x: market.spot[0], z: market.spot[1] } : null,
+        carrier: market.carrier ? market.carrier.a.wrap.position : null, dogs: life && life.dogPos ? life.dogPos : null }),
       track, startRing: () => { game.storyRun = true; game.storyWon = false; startGame(); setTimeout(() => { if (game.mode === 'play') toast('Snatch 3 pitha!', 1500); }, 900); },
       toMenu: () => { if (net.village && net.ws) { leaveSharedVillage(); showLobby(); return; } /* quitting the shared village goes back to the room */ game.mode = 'menu'; resetGame(); $('startScreen').hidden = false; renderBestLine(); renderToday(); applyShirt(); setMusic('intro'); renderStoryBtn(); },
     });
@@ -2445,8 +2453,39 @@ function renderRival() {
 //   3 Twice: after a charge he may wheel round and come straight back
 //   4 Hunter: he bends his charge toward you, so the roll has to be late
 //   5 Legend: all of it, more often
-const STAGES = [[0, 'Stage 1', ''], [5, 'Stage 2: The Feint', 'He fakes now. Wait for the real charge!'], [10, 'Stage 3: Twice', 'He can charge twice in a row!'],
-  [16, 'Stage 4: The Hunter', 'His charge bends toward you. Roll late!'], [24, 'Stage 5: Sohrai Legend', 'Everything he has. Hold on!']];
+// ---- What makes one round differ from the next (24 Nov). All of it applies to solo scored rounds only: never online
+// (the server runs that bull) and never the story's 3-pitha finale. A brown bull with no help from the village and no
+// day rule is exactly the old game. Nothing here changes what a pitha is worth, so the shared board stays fair.
+const soloRun = () => !game.online && !game.storyRun;
+const NEUTRAL = { wind: 1, speed: 1, stun: 1, wait: 1, feint: 0 };
+const temper = () => (soloRun() && animal.temper) || NEUTRAL; // each animal fights differently (ANIMALS)
+const BASE_MOD = { lamps: 3, calm: 2, handi: 12, handiGap: 1, stun: 1, wind: 1, roll: 1, notes: [] };
+const mod = () => (soloRun() && game.mod) || BASE_MOD; // today's rule + what you did in the village today
+// RULES: a beginner's first hit costs no lamp (first mercyRounds rounds, while under mercyScore points); walking out is
+// offered from leaveMin points and pays leaveLamp per lamp still lit plus leavePct of the score.
+const RULES = { mercyRounds: 4, mercyScore: 3, leaveMin: 3, leaveLamp: 3, leavePct: 0.15 };
+const MERCY = !/[?&]debug\b/.test(location.search) || /[?&]mercy\b/.test(location.search); // off under plain ?debug: the older tests count three hits to a game over
+let roundsPlayed = 0; try { roundsPlayed = +localStorage.getItem('khuntau-rounds') || 0; } catch (e) {}
+// One rule for each festival day, and one thing each daily activity gives you in the ring: [what changes, the line shown].
+// calm: how many of his first charges are slow; handi: seconds to the first pot; handiGap, stun, wind, roll: multipliers.
+const DAY_RULES = [null, [{ stun: 1.25 }, 'Today he tires sooner'], [{ handi: 5, handiGap: 0.6 }, 'Today the handi comes early and often'], [{ wind: 0.85, lamps: 1 }, 'Today he is wild, and you carry one more lamp'],
+  [{ roll: 0.75 }, 'Today your feet are light: roll again sooner'], [{ calm: 5 }, 'Today he starts slow']];
+const HELP = { fish: [{ lamps: 1 }, 'You fished today: one more lamp'], arch: [{ calm: 4 }, 'You shot today: his first charges are slow'],
+  drum: [{ handi: 5, handiGap: 0.7 }, 'You drummed today: the handi comes early'], jale: [{ roll: 0.8 }, 'You sang today: roll again sooner'] };
+function buildMod(src) { // src from the village: { day: 1..5 or 0, fish, arch, drum, jale }
+  const m = { ...BASE_MOD, notes: [] }, add = ([d, line]) => { for (const k in d) { if (k === 'lamps') m.lamps += d[k]; else if (k === 'calm') m.calm = Math.max(m.calm, d[k]); else if (k === 'handi') m.handi = Math.min(m.handi, d[k]); else m[k] *= d[k]; } m.notes.push(line); };
+  if (src && DAY_RULES[src.day]) add(DAY_RULES[src.day]); for (const k of ['fish', 'arch', 'drum', 'jale']) if (src && src[k]) add(HELP[k]);
+  m.lamps = Math.min(5, m.lamps); return m; }
+const leaveShow = () => { $('leaveBtn').hidden = !(soloRun() && game.mode === 'play' && game.score >= RULES.leaveMin && game.p.state !== 'dead' && !game.left); };
+// Walk out with what you have: the round ends, every lamp still lit pays, and you are not horned. Or stay for more.
+function leaveRing() { const b = game.b, p = game.p;
+  if (!soloRun() || game.mode !== 'play' || game.score < RULES.leaveMin || p.state === 'dead' || game.left) return;
+  if (b.state === 'windup' || b.state === 'charge') { toast(L('Not now!'), 800); return; }
+  const cap = Math.min(300, Math.floor(3 + game.t * 1.2)), bonus = Math.max(0, Math.min(game.lives * RULES.leaveLamp + Math.round(game.score * RULES.leavePct), cap - game.score)); /* the server refuses a score that came too fast */
+  game.left = true; game.leftBonus = bonus; game.leftLamps = game.lives; if (bonus > 0) award(bonus, L('Walked out'));
+  p.state = 'celebrate'; p.t = 0; p.celebKind = 0; p.vel.set(0, 0, 0); p.invuln = 9; player.play('Victory', { once: true, fade: 0.1 }); crowdCheer(0.9); buzz([30, 30, 60]); track('leave'); gameOver(); }
+const STAGES = [[0, 'Stage 1', ''], [3, 'Stage 2: The Feint', 'He fakes now. Wait for the real charge!'], [8, 'Stage 3: Twice', 'He can charge twice in a row!'],
+  [14, 'Stage 4: The Hunter', 'His charge bends toward you. Roll late!'], [22, 'Stage 5: Sohrai Legend', 'Everything he has. Hold on!']]; // were 5/10/16/24: most rounds ended under 5, so players never met the feint. Online keeps 5/10/16/24 (worker.js)
 const stageOf = (score) => { let n = 1; for (let i = 1; i < STAGES.length; i++) if (score >= STAGES[i][0]) n = i + 1; return n; };
 const stage = () => (game.online || game.storyRun ? 1 : game.stage || 1);
 function stageShow(n) { const st = STAGES[n - 1], el = $('stageBanner'); if (!st) return; el.dataset.ol = ''; el.firstElementChild.textContent = L(st[1]); el.lastElementChild.textContent = L(st[2]); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -2462,7 +2501,8 @@ function award(pts, label) {
     if (boardData && boardData.top) for (const r of boardData.top) if (!r.me && r.p >= before && r.p < game.score && !rival.passed.has(r.n)) { rival.passed.add(r.n); setTimeout(() => { toast(`You passed ${r.n}!`, 1500); crowdCheer(0.6); buzz([20, 30, 20]); }, 650); }
     if (best > 0 && before <= best && game.score > best && !rival.bestSaid) { rival.bestSaid = true; setTimeout(() => { toast('New personal best! Keep going', 1700); }, 1300); }
     if (!game.storyRun) { const n = stageOf(game.score); if (n > (game.stage || 1)) stageUp(n); }
-    renderRival();
+    renderRival(); leaveShow();
+    if (game.score >= RULES.leaveMin && !game.hintsShown.leave && !game.left && soloRun()) { game.hintsShown.leave = true; tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(L(isTouch ? 'LEAVE walks you out: every lamp still lit pays. Or stay for more' : 'Press L to walk out: every lamp still lit pays. Or stay for more'), 3200); }, 2600)); }
   }
   if (challenge && !game.beaten && game.score > challenge.beat) { game.beaten = true; setTimeout(() => { toast(`You beat ${challenge.from || 'your friend'}!`, 1500); sfx.cheer(); }, 700); }
 }
@@ -2470,7 +2510,7 @@ function award(pts, label) {
 let tipTimers = [];
 const lampSvg = '<svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 5 0 8-3-3-2-5 0-8z" fill="#ffb347"/><path d="M3 14h18c-1 4-5 6-9 6s-8-2-9-6z" fill="#b5462a"/></svg>';
 let livesShown = -1;
-function renderLives() { if (livesShown === game.lives) return; livesShown = game.lives; $('lamps').innerHTML = [0, 1, 2].map(i => lampSvg.replace('<svg', `<svg class="${i < game.lives ? '' : 'out'}"`)).join(''); }
+function renderLives() { if (livesShown === game.lives) return; livesShown = game.lives; $('lamps').innerHTML = Array.from({ length: Math.max(3, mod().lamps) }, (_, i) => i).map(i => lampSvg.replace('<svg', `<svg class="${i < game.lives ? '' : 'out'}"`)).join(''); }
 
 let toastTimer;
 function toast(text, ms = 1100) { const t = $('toast'); t.textContent = L(text); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
@@ -2478,21 +2518,22 @@ let hintTimer;
 function hint(text, ms = 2600) { const h = $('hint'); h.textContent = L(text); h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
 
 function resetGame() {
-  if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.stage = 1; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = 12; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = 3; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
+  if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.stage = 1; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = mod().handi; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = mod().lamps; game.mercyUsed = false; game.left = false; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
   tipTimers.forEach(clearTimeout); tipTimers = [];
   Object.assign(game.p, { state: 'free', t: 0, invuln: 0, rollCd: 0, teaseCd: 0, teaseT: -9 }); game.p.pos.set(0, 0, 7.5); game.p.yaw = Math.PI; game.p.vel.set(0, 0, 0);
   Object.assign(game.b, { state: 'watch', t: 0, dur: 2.2 }); game.b.pos.set(0, 0, -3.5); game.b.yaw = 0;
   game.pithaReady = true; pitha.visible = true; pitha.scale.setScalar(1);
-  $('score').textContent = '0'; renderLives(); renderCombo();
+  $('score').textContent = '0'; renderLives(); renderCombo(); $('leaveBtn').hidden = true;
   player.play('Idle'); bull.play('Idle');
   game.hintsShown = {};
 }
 // ring buttons speak the story's language only during the story finale (online and normal rounds stay English)
-function ringLabels() { game.ringLang = !!(game.storyRun || game.villageRun); for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB']]) $(id).textContent = L(w); }
+function ringLabels() { game.ringLang = !!(game.storyRun || game.villageRun); for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB'], ['leaveBtn', 'LEAVE']]) $(id).textContent = L(w); }
 function startGame() {
   view.yaw = 0; /* each round starts looking at the post; your tilt and zoom are kept */
   game.menuOpen = false; $('pauseScreen').hidden = true;
   ringLabels();
+  if (!game.villageRun || game.storyRun || game.online) game.mod = null; /* day rules and village help belong to rounds started at the khunt */
   initAudio(); resetGame(); applyShirt(); getTicket(); runGain.xp = 0; runGain.notes = []; game.mode = 'play'; MUSIC_VOL.game = BED.ring; refreshMusicVol(); setMusic('game'); setTimeout(() => sfx.bellow(), 300);
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hudScore').hidden = false;
   $('bestChip').hidden = best === 0 || innerWidth < 560; $('best').textContent = best; renderRival();
@@ -2502,13 +2543,16 @@ function startGame() {
     : ['Move with WASD or the arrow keys', 'Press Q to wave the hide, then Space to roll aside', 'Stun him on the post, then press E to grab'];
   if (!played) tips.forEach((t, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(t, 3000); }, 300 + i * 3600)));
   else hint(isTouch ? 'HIDE to bait, ROLL to dodge, GRAB at the post' : 'Q bait · Space roll · E grab', 2200);
+  if (soloRun()) { const notes = [...(animal.id !== 'brown' ? [animal.name + '. ' + animal.temper.line] : []), ...mod().notes]; /* what is different about this round */
+    notes.forEach((n, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(L(n), 2500); }, (played ? 2600 : 11500) + i * 2800))); /* the hint bubble wraps; these lines are too long for the big toast */ if (animal.id !== 'brown') track('temper'); if (mod().notes.length) track('help'); }
   if (challenge) tipTimers.push(setTimeout(() => { if (game.mode === 'play') toast(`Beat ${challenge.beat}!`, 1200); }, played ? 2400 : 11200));
 }
 function gameOver() {
   game.mode = 'over'; audio.intensity = 0;
   tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
   if (game.storyRun && story) { const won = game.pitha >= 3; setTimeout(() => { if (game.storyRun) story.afterRing(won); }, 1700); return; }
-  const pts = game.score, isBest = pts > best;
+  const pts = game.score, isBest = pts > best; $('leaveBtn').hidden = true;
+  roundsPlayed++; try { localStorage.setItem('khuntau-rounds', roundsPlayed); } catch (e) {}
   track('round_end'); track('score.' + (pts === 0 ? '0' : pts < 5 ? '1_4' : pts < 15 ? '5_14' : pts < 30 ? '15_29' : '30p'));
   setTimeout(() => { setMusic('intro'); if (isBest && pts > 0) sfx.cheer(); }, 1500);
   if (isBest) { best = pts; try { localStorage.setItem('khuntau-best', best); } catch (e) {} }
@@ -2516,9 +2560,9 @@ function gameOver() {
   setTimeout(() => { try { draw(); lastShot = renderer.domElement.toDataURL('image/jpeg', 0.85); } catch (e) { lastShot = null; } }, 500);
   setTimeout(() => {
     const beat = challenge && pts > challenge.beat;
-    $('overTitle').textContent = beat ? `You beat ${challenge.from || 'them'}!` : isBest && pts > 0 ? 'New best!' : 'Horned!';
+    $('overTitle').textContent = beat ? `You beat ${challenge.from || 'them'}!` : isBest && pts > 0 ? 'New best!' : game.left ? L('You walked out!') : 'Horned!';
     $('overScore').textContent = pts;
-    $('overLine').textContent = `points · ${game.pitha} pitha` + (!game.online && !game.storyRun && (game.stage || 1) > 1 ? ` · ${L('stage')} ${game.stage}` : '') + (!isBest && best ? ` · best ${best}` : '');
+    $('overLine').textContent = `points · ${game.pitha} pitha` + (!game.online && !game.storyRun && (game.stage || 1) > 1 ? ` · ${L('stage')} ${game.stage}` : '') + (!isBest && best ? ` · best ${best}` : '') + (game.left && game.leftBonus ? ' · ' + L('+# for walking out').replace('#', game.leftBonus) : '');
     $('overRank').hidden = false; $('overRank').textContent = rankOf(pts);
     const nx = nextRank(pts); $('overNext').hidden = false;
     $('overNext').textContent = nx ? `${nx[0] - pts} more to ${nx[1]}` : 'Top rank. Legend of the ring.';
@@ -2606,6 +2650,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') { input.roll = true; e.preventDefault(); }
   if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'KeyJ') input.grab = true;
   if (e.code === 'KeyQ' || e.code === 'KeyF' || e.code === 'KeyK') input.tease = true;
+  if (e.code === 'KeyL') leaveRing();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
@@ -2626,6 +2671,7 @@ joyzone.addEventListener('pointerup', joyEnd); joyzone.addEventListener('pointer
 $('rollBtn').addEventListener('pointerdown', e => { e.preventDefault(); input.roll = true; });
 $('grabBtn').addEventListener('pointerdown', e => { e.preventDefault(); input.grab = true; });
 $('hideBtn').addEventListener('pointerdown', e => { e.preventDefault(); input.tease = true; });
+$('leaveBtn').addEventListener('pointerdown', e => { e.preventDefault(); leaveRing(); });
 function readMove() {
   if (game.menuOpen) { input.x = input.y = 0; input.roll = input.grab = input.tease = false; return; }
   let x = joy.x, y = joy.y;
@@ -2679,10 +2725,10 @@ function updateBull(dt) {
         b.yaw = turnTo(b.yaw, yawToP, 3.2, dt);
         const urgent = p.state === 'grab' || p.pos.length() < GRAB_R + 0.2;
         const provoked = game.t - (p.teaseT ?? -9) < 1.4;
-        const wait = provoked ? 0.15 : urgent ? b.dur * 0.35 : b.dur;
+        const wait = provoked ? 0.15 : (urgent ? b.dur * 0.35 : b.dur) * temper().wait;
         if (playing && b.t > wait) {
-          const gentle = game.charges < 2; // first charges of a round are slow and readable
-          setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0)); sfx.snort(); crowdReact('flinch');
+          const gentle = game.charges < mod().calm; // first charges of a round are slow and readable
+          setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0) * temper().wind * mod().wind); sfx.snort(); crowdReact('flinch');
           b.provoked = provoked; b.again = false; /* a fresh attack: he may double again (a bonk on the post used to leave this set) */
         }
       }
@@ -2697,7 +2743,7 @@ function updateBull(dt) {
       }
       b.yaw = turnTo(b.yaw, yawToP, 4.5, dt);
       arrow.material.opacity = 0.35 + 0.45 * Math.abs(Math.sin(b.t * 14));
-      if (b.t > b.dur && !b.feinted && stage() >= 2 && game.charges >= 1 && Math.random() < (stage() >= 5 ? 0.5 : 0.35)) {
+      if (b.t > b.dur && !b.feinted && (stage() >= 2 || temper().feint > 0) && game.charges >= 1 && Math.random() < (stage() >= 5 ? 0.5 : stage() >= 2 ? 0.35 : 0) + temper().feint) {
         // the feint: a half-lunge and a stop, then a short second windup before the real charge
         b.feinted = true; b.pos.addScaledVector(tmpV2.set(Math.sin(b.yaw), 0, Math.cos(b.yaw)), 0.7); sfx.snort(); game.shake = Math.max(game.shake || 0, 0.15); crowdReact('flinch');
         for (let i = 0; i < 4; i++) emit(dustPool, tmpV2.copy(b.pos).setY(0.2), { life: 0.6, vel: new THREE.Vector3(rand(-1, 1), rand(0.4, 1), rand(-1, 1)), size: 0.5, grow: 1.2 });
@@ -2709,7 +2755,7 @@ function updateBull(dt) {
         const lead = tmpV2.copy(p.pos).addScaledVector(p.vel, 0.25 * d); lead.y = 0;
         b.dir.subVectors(lead, b.pos).setY(0).normalize();
         b.yaw = Math.atan2(b.dir.x, b.dir.z);
-        b.speed = lerp(8.5, 13.5, d) * (game.charges < 2 ? 0.82 : 1); b.dist = Math.max(distP + 2.5, 5); b.hitDone = false; b.hoof = 0;
+        b.speed = lerp(8.5, 13.5, d) * (game.charges < mod().calm ? 0.82 : 1) * temper().speed; b.dist = Math.max(distP + 2.5, 5); b.hitDone = false; b.hoof = 0;
         b.minD = 99; game.charges++;
         setBull('charge', 3);
         if (!game.hintsShown.charge) { game.hintsShown.charge = true; hint(isTouch ? 'He is charging. Hit ROLL!' : 'He is charging. Press Space to roll!', 1800); }
@@ -2731,13 +2777,13 @@ function updateBull(dt) {
       const r = b.pos.length();
       if (r < 1.0 || r > ROPE_L || b.dist <= 0) closeCall(b, p);
       if (r < 1.0) { // smacked the post
-        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d)); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; cineR.kick = 1; postWob = { t: 0, x: b.dir.z, z: -b.dir.x }; crowdReact('flinch');
+        b.pos.setLength(1.0); setBull('stunned', lerp(1.8, 1.1, d) * temper().stun * mod().stun); bull.play('Idle_HitReact1', { once: true, fade: 0.08 }); sfx.bonk(); game.shake = 0.35; cineR.kick = 1; postWob = { t: 0, x: b.dir.z, z: -b.dir.x }; crowdReact('flinch');
         toast('Bonk!', 700);
       } else if (r > ROPE_L) { // rope goes taut
-        b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d)); againMaybe(); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
+        b.pos.setLength(ROPE_L); setBull('stunned', lerp(1.5, 0.85, d) * temper().stun * mod().stun); againMaybe(); bull.play('Idle_HitReact2', { once: true, fade: 0.08 }); sfx.snap(); game.shake = 0.25;
         for (let i = 0; i < 6; i++) emit(dustPool, tmpV2.copy(b.pos).setY(0.2), { life: 0.9, vel: new THREE.Vector3(rand(-1.5, 1.5), rand(0.4, 1.4), rand(-1.5, 1.5)), size: 0.7, grow: 1.6 });
       } else if (b.dist <= 0) {
-        setBull('recover', lerp(1.7, 0.85, d)); againMaybe();
+        setBull('recover', lerp(1.7, 0.85, d) * temper().stun * mod().stun); againMaybe();
       }
       break;
     }
@@ -2775,13 +2821,17 @@ function closeCall(b, p) {
 }
 function hitPlayer() {
   const p = game.p, b = game.b;
+  if (soloRun() && MERCY && !game.mercyUsed && game.score < RULES.mercyScore && roundsPlayed < RULES.mercyRounds) { // a beginner's first hit is a warning, not a lamp
+    game.mercyUsed = true; sfx.hit(); game.shake = 0.5; cineR.kick = 1; buzz([40, 30, 40]); crowdReact('groan'); p.vel.copy(b.dir).multiplyScalar(7).setY(0); p.state = 'hit'; p.t = 0; p.invuln = 2.4;
+    player.play('RecieveHit', { once: true, fade: 0.06 }); toast(L('A warning!'), 1200); hint(L('He lets you off this once. No lamp lost'), 2000); track('mercy');
+    setTimeout(() => { if (game.mode === 'play') hint(L(isTouch ? 'Next time, ROLL sideways when the arrow flashes' : 'Next time, roll sideways (Space) when the arrow flashes'), 2800); }, 2300); return; }
   game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; cineR.kick = 1.4; buzz([60, 40, 90]); crowdReact('groan');
   if (!game.online && game.combo >= 2) setTimeout(() => pop('Combo lost', ''), 250);
   game.combo = 0; renderCombo();
   p.vel.copy(b.dir).multiplyScalar(9).setY(0);
   p.state = game.lives <= 0 ? 'dead' : 'hit'; p.t = 0; p.invuln = 2.2;
   player.play(game.lives <= 0 ? 'Death' : 'RecieveHit', { once: true, fade: 0.06 });
-  toast(game.lives <= 0 ? 'Horned!' : 'Ouch!', 900);
+  toast(game.lives <= 0 ? 'Horned!' : 'Ouch!', 900); leaveShow();
   for (let i = 0; i < 8; i++) emit(dustPool, tmpV2.copy(p.pos).setY(0.4), { life: 0.9, vel: new THREE.Vector3(rand(-2, 2), rand(0.5, 2), rand(-2, 2)), size: 0.5, grow: 1.4 });
   if (game.online) { netSend({ t: 'hit' }); if (game.lives <= 0) hint('You are out. Watch, or go back to the lobby.', 3000); return; }
   if (game.lives <= 0) { const pp = p.pos.clone(), bp = b.pos.clone(), sd = new THREE.Vector3(b.dir.z, 0, -b.dir.x), sgn = Math.sign(sd.dot(tmpV.copy(camera.position).sub(pp))) || 1, a0 = Math.atan2(sd.x * sgn, sd.z * sgn); // off to the side of his charge: he thunders across the frame, not into the lens
@@ -2801,7 +2851,7 @@ function updatePlayer(dt) {
 
   if (p.state === 'free' && game.mode === 'play') {
     if (input.roll && p.rollCd <= 0) {
-      p.state = 'roll'; p.t = 0; p.rollCd = 0.35; sfx.roll();
+      p.state = 'roll'; p.t = 0; p.rollCd = 0.35 * mod().roll; sfx.roll();
       p.rollDir.copy(mag > 0.1 ? move.normalize() : fwdOf(p.yaw, new THREE.Vector3()));
       p.yaw = Math.atan2(p.rollDir.x, p.rollDir.z);
       player.play('Roll', { once: true, fade: 0.06, ts: 1.5 }); sfx.whoosh();
@@ -2943,7 +2993,7 @@ function updateHandi(dt) {
   if (!game.online) {
     if (game.mode !== 'play') { handi.visible = false; hs.on = false; return; }
     if (!hs.on) { hs.next -= dt; if (hs.next <= 0) { const a = rand(0, 6.283), r = rand(3.2, 9.5); hs.on = true; hs.life = HANDI_LIFE; spawnHandiAt(Math.cos(a) * r, Math.sin(a) * r); } }
-    else { hs.life -= dt; if (hs.life <= 0) { hs.on = false; handi.visible = false; hs.next = rand(14, 20); } }
+    else { hs.life -= dt; if (hs.life <= 0) { hs.on = false; handi.visible = false; hs.next = mod().handiGap * rand(14, 20); } }
   }
   if (!handi.visible) return;
   const u = handi.userData; u.pop = Math.min(1, (u.pop || 0) + dt * 3);
@@ -2954,7 +3004,7 @@ function updateHandi(dt) {
   const p = game.p;
   if (game.mode === 'play' && !game.spectator && p.state !== 'dead' && p.pos.distanceTo(tmpV.set(handi.position.x, 0, handi.position.z)) < HANDI_R) {
     if (game.online) { if (game.t - hs.sentAt > 0.3) { hs.sentAt = game.t; netSend({ t: 'handi', x: +p.pos.x.toFixed(2), z: +p.pos.z.toFixed(2) }); } }
-    else { const full = game.lives >= 3; if (!full) { game.lives++; renderLives(); } handiEffectLocal(full); drinkHandi(full, handi.position); hs.on = false; handi.visible = false; hs.next = rand(14, 20); }
+    else { const full = game.lives >= mod().lamps; if (!full) { game.lives++; renderLives(); } handiEffectLocal(full); drinkHandi(full, handi.position); hs.on = false; handi.visible = false; hs.next = mod().handiGap * rand(14, 20); }
   }
 }
 
@@ -3613,12 +3663,13 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
   if ((game.mode !== 'play' && game.mode !== 'story') || game.menuOpen) return;
   game.menuOpen = true; $('hint').classList.remove('show'); game.pausedFrom = game.mode;
+  $('seenList').hidden = true; $('seenBtn').hidden = true; if (game.mode === 'story' && story && story.seenUi) story.seenUi();
   if (!game.online) { game.mode = 'paused'; gallop(false); if (music.cur === 'game') music.game.pause(); }
   $('pauseNote').hidden = !game.online;
   $('quitBtn').textContent = game.online ? 'Leave room' : 'Quit to menu';

@@ -124,6 +124,20 @@ export function initStory(C) {
     'Sohrai complete!': 'सोहराय पूरा!', 'You lived all five days. Johar!': 'तुमने पाँचों दिन जिए। जोहार!', 'Sohrai complete': 'सोहराय पूरा',
     'Your friends are in the village with you.': 'तुम्हारे दोस्त गाँव में तुम्हारे साथ हैं।', 'Friends who join the room appear here.': 'जो दोस्त कमरे में आएँगे, यहीं दिखेंगे।',
     'Together!': 'साथ-साथ!', 'You and a friend on the drums': 'तुम और तुम्हारा दोस्त ढोल पर', 'Drummed together': 'साथ में ढोल बजाया', '# from your village kept the festival today': 'तुम्हारे गाँव के # लोगों ने आज पर्व निभाया',
+    'A warning!': 'चेतावनी!', 'He lets you off this once. No lamp lost': 'इस बार छोड़ दिया। कोई दीया नहीं गया', 'Next time, ROLL sideways when the arrow flashes': 'अगली बार तीर चमके तो बगल में लुढ़को', 'Next time, roll sideways (Space) when the arrow flashes': 'अगली बार तीर चमके तो बगल में लुढ़को (Space)',
+    'LEAVE': 'निकलो', 'Not now!': 'अभी नहीं!', 'Walked out': 'बाहर निकले', 'You walked out!': 'तुम बाहर निकल आए!', '+# for walking out': 'बाहर निकलने के +#',
+    'LEAVE walks you out: every lamp still lit pays. Or stay for more': 'निकलो दबाओ: हर जलता दीया अंक देगा। या और के लिए रुको', 'Press L to walk out: every lamp still lit pays. Or stay for more': 'L दबाकर निकलो: हर जलता दीया अंक देगा। या और के लिए रुको',
+    'Today he tires sooner': 'आज वह जल्दी थकता है', 'Today the handi comes early and often': 'आज हँड़िया जल्दी और बार-बार आएगी', 'Today he is wild, and you carry one more lamp': 'आज वह बेकाबू है, और तुम्हारे पास एक दीया ज़्यादा है',
+    'Today your feet are light: roll again sooner': 'आज पाँव हल्के हैं: जल्दी फिर लुढ़को', 'Today he starts slow': 'आज वह धीरे शुरू करता है',
+    'You fished today: one more lamp': 'आज मछली पकड़ी: एक दीया ज़्यादा', 'You shot today: his first charges are slow': 'आज तीर चलाया: उसके पहले हमले धीमे', 'You drummed today: the handi comes early': 'आज ढोल बजाया: हँड़िया जल्दी आएगी', 'You sang today: roll again sooner': 'आज गाया: जल्दी फिर लुढ़को',
+    'White bull. Quick: short warning, fast charge, but he tires': 'सफ़ेद बैल। तेज़: कम चेतावनी, तेज़ हमला, पर जल्दी थकता है', 'Black bull. Heavy: a long warning, then he comes hard and is up again fast': 'काला बैल। भारी: लंबी चेतावनी, फिर ज़ोर से आता है और जल्दी सँभल जाता है',
+    'Red cow. Sly: she fakes from the very first charge': 'लाल गाय। चालाक: पहले हमले से ही झाँसा देती है', 'White cow. Restless: she gives you no rest between charges': 'सफ़ेद गाय। बेचैन: हमलों के बीच दम नहीं लेने देती',
+    'Seen:': 'देखा:', 'Seen in the village:': 'गाँव में देखा:', 'Seen in the village': 'गाँव में देखा', 'You know this village': 'तुम यह गाँव जानते हो', 'You know every corner of this village': 'तुम इस गाँव का कोना-कोना जानते हो',
+    'A nest with three eggs': 'तीन अंडों वाला घोंसला', 'Something is hidden in the shade tree': 'छायादार पेड़ में कुछ छिपा है', 'A kite caught on the thatch': 'छप्पर में फँसी पतंग', 'Something bright is caught on a roof': 'किसी छत पर कुछ चमकीला फँसा है',
+    'A tortoise on the bank': 'किनारे पर कछुआ', 'Something is sunning itself by the pond': 'तालाब के पास कोई धूप सेंक रहा है', 'A cat asleep in the sun': 'धूप में सोई बिल्ली', 'Somebody is asleep by a wall': 'दीवार के पास कोई सो रहा है',
+    'A clay bullock on wheels': 'पहियों वाला मिट्टी का बैल', 'A child left something in a yard': 'किसी आँगन में बच्चा कुछ छोड़ गया है', 'A wild honeycomb': 'जंगली मधुमक्खी का छत्ता', 'Something hangs under an eave': 'किसी छज्जे के नीचे कुछ लटका है',
+    'Two who thought nobody was looking': 'दो लोग, जिन्हें लगा कोई नहीं देख रहा', 'Someone whispers behind a tree by the paddy': 'धान के पास पेड़ के पीछे कोई फुसफुसा रहा है', 'The dogs asleep in the square': 'चौक में सोए कुत्ते', 'Somebody is asleep in the square': 'चौक में कोई सो रहा है',
+    'The woman with the water pot': 'पानी का घड़ा लिए औरत', 'Somebody walks to the pump and back all day': 'कोई दिन भर नल तक आता-जाता है', 'The pork stall behind the house': 'घर के पीछे मांस की दुकान', 'There is a crowd behind a house': 'किसी घर के पीछे भीड़ है',
     'Bonk!': 'धड़ाम!', 'Ouch!': 'आह!', 'Horned!': 'सींग लग गया!', 'Snatched!': 'झपट लिया!', 'Hoy!': 'होय!', 'Got it!': 'मिल गया!',
     '×# combo · Hoy!': '×# कॉम्बो · होय!', '×# combo · Johar!': '×# कॉम्बो · जोहार!', '×# combo · Got it!': '×# कॉम्बो · मिल गया!', '×# combo · Snatched!': '×# कॉम्बो · झपट लिया!',
     'Golden pitha! +#': 'सुनहरा पीठा! +#', 'Golden pitha!': 'सुनहरा पीठा!', 'Golden pitha! Worth # extra points.': 'सुनहरा पीठा! # अंक ज़्यादा।', 'Combo lost': 'कॉम्बो टूट गया',
@@ -395,7 +409,7 @@ export function initStory(C) {
       const pathGap = (q) => Math.min(...C.houses.map(h => { const dx = h.x + Math.sin(h.rot) * (h.d / 2 + 0.8), dz = h.z + Math.cos(h.rot) * (h.d / 2 + 0.8), L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, al = q.x * ux + q.z * uz;
         return al < 12.5 ? Math.hypot(q.x - ux * 12.5, q.z - uz * 12.5) : al > L ? Math.hypot(q.x - dx, q.z - dz) : Math.abs(q.x * uz - q.z * ux); }));
       const tree = [[3.9, -1.2], [3.4, -1.7], [4.4, -0.8], [3.0, -2.2], [-4.4, -1.8], [-3.8, -2.4]].map(([a, b]) => AC.clone().addScaledVector(W.aR, a).addScaledVector(W.aIn, b)).reduce((best, q) => pathGap(q) > pathGap(best) + 0.01 ? q : best);
-      put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
+      W.akTree = tree.clone(); put(new THREE.CylinderGeometry(0.3, 0.5, 5.6, 8), 0x4a3f33, tree, 2.8);
       for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, o = tree.clone().add(V(Math.cos(a) * rand(0.6, 1.5), 0, Math.sin(a) * rand(0.6, 1.5))); const cg = new THREE.SphereGeometry(rand(1.4, 2.1), 16, 11).scale(1, 0.86, 1), cm = put(cg, [0x3e6b2c, 0x4f7d35, 0x355a26][k % 3], o, 5.9 + rand(-0.3, 1.1)), cc = cg.attributes.color, cn = cg.attributes.normal;
         for (let i = 0; i < cc.count; i++) { const f = 0.5 + 0.5 * (cn.getY(i) * 0.5 + 0.5); cc.setXYZ(i, cc.getX(i) * f, cc.getY(i) * f, cc.getZ(i) * f); } cm.userData.smooth = true; (W.akhraBalls = W.akhraBalls || []).push({ x: o.x, y: cm.position.y, z: o.z, r: cg.parameters.radius }); } /* soft canopy, darker underneath */
       for (let k = 0; k < 5; k++) { const side = k % 2 ? 1 : -1, q = AC.clone().addScaledVector(W.aIn, 2.2 + rand(-0.4, 0.4)).addScaledVector(W.aR, side * (3.3 + k * 0.25)), yw = rand(0, 6.28), col = [0x2e241a, 0x5a3a22, 0x7a2a22][k % 3];
@@ -514,6 +528,29 @@ export function initStory(C) {
       { const fg = new THREE.SphereGeometry(0.2, 10, 8).scale(0.42, 0.6, 1.3), pa = fg.attributes.position; // one fish shape, tail pinched flat and fanned
         for (let i = 0; i < pa.count; i++) { const k = Math.min(1, Math.max(0, (-pa.getZ(i) - 0.1) / 0.14)); pa.setX(i, pa.getX(i) * (1 - 0.85 * k)); pa.setY(i, pa.getY(i) * (1 + 1.2 * k * k)); } fg.computeVertexNormals();
         W.catchIM = new THREE.InstancedMesh(fg, Mat({ color: 0xc9d3d8, roughness: 0.35 }), 6); W.catchIM.count = 0; W.catchIM.visible = false; W.catchIM.frustumCulled = false; scene.add(W.catchIM); }
+      // ---- small things to find around the village (the journal in the pause menu lists them). Everyday things only.
+      // Six are new and static, baked into one mesh (one draw); the rest are scenes that already live here.
+      { const fp = [], at = (g, hex, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(vcol(g, hex)); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); fp.push(o); scene.add(o); return o; };
+        const H = C.houses, front = (h, out, side) => [h.x + Math.sin(h.rot) * out + Math.cos(h.rot) * side, h.z + Math.cos(h.rot) * out - Math.sin(h.rot) * side], F = W.finds = {};
+        if (W.akTree) { const x = W.akTree.x + 0.55, z = W.akTree.z + 0.2; F.nest = V(W.akTree.x, 0, W.akTree.z); // a nest in the fork of the shade tree, three eggs
+          at(new THREE.TorusGeometry(0.2, 0.08, 5, 10).rotateX(Math.PI / 2), 0x6a5236, x, 2.25, z); at(new THREE.CylinderGeometry(0.2, 0.14, 0.06, 8), 0x4f3d28, x, 2.2, z);
+          for (let k = 0; k < 3; k++) at(new THREE.SphereGeometry(0.055, 6, 5).scale(1, 1.25, 1), 0xdfe8ea, x + Math.cos(k * 2.1) * 0.07, 2.27, z + Math.sin(k * 2.1) * 0.07); }
+        { const h = H[4 % H.length], [x, z] = front(h, h.d / 2 - 0.2, 1.2); { const [gx, gz] = front(h, h.d / 2 + 1.6, 1.2); F.kite = V(gx, 0, gz); } // a paper kite caught on the thatch, its tail hanging
+          at(new THREE.PlaneGeometry(0.5, 0.5).rotateZ(Math.PI / 4), 0xd8482e, x, 3.25, z, -0.7, h.rot, 0.2); at(new THREE.PlaneGeometry(0.5, 0.5).rotateZ(Math.PI / 4).rotateY(Math.PI), 0xd8482e, x, 3.25, z, 0.7, h.rot + Math.PI, 0.2);
+          for (let k = 0; k < 4; k++) at(new THREE.BoxGeometry(0.05, 0.14, 0.01), k % 2 ? 0xf2d04a : 0xf6eedd, x + Math.sin(h.rot) * 0.22, 2.9 - k * 0.17, z + Math.cos(h.rot) * 0.22, 0, h.rot, 0.25 * (k % 2 ? 1 : -1)); }
+        { const a = Math.atan2(W.fIn.z, W.fIn.x) + 2.7, x = POND.x + Math.cos(a) * 3.5, z = POND.z + Math.sin(a) * 3.5; F.tortoise = V(x, 0, z); // a tortoise sunning on the far bank
+          at(new THREE.SphereGeometry(0.2, 9, 6).scale(1, 0.55, 1.2), 0x4a5a2c, x, 0.11, z, 0, a); at(new THREE.SphereGeometry(0.2, 9, 3, 0, 6.28, 0, 1.1).scale(0.85, 0.6, 1.02), 0x6b7a38, x, 0.13, z, 0, a);
+          at(new THREE.SphereGeometry(0.06, 6, 5).scale(1, 0.9, 1.3), 0x7d8a4a, x + Math.sin(a) * 0.27, 0.1, z + Math.cos(a) * 0.27); for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) at(new THREE.SphereGeometry(0.05, 5, 4), 0x5a6a34, x + Math.cos(a) * sx * 0.17 + Math.sin(a) * sz * 0.16, 0.04, z - Math.sin(a) * sx * 0.17 + Math.cos(a) * sz * 0.16); }
+        { const h = H[6 % H.length], [x, z] = front(h, h.d / 2 + 0.55, -1.5); F.cat = V(x, 0, z); // a cat asleep in the sun by the wall, curled round
+          at(new THREE.TorusGeometry(0.16, 0.085, 6, 12, Math.PI * 1.75).rotateX(Math.PI / 2), 0xc9853c, x, 0.09, z, 0, h.rot); at(new THREE.SphereGeometry(0.09, 7, 6), 0xc9853c, x + 0.15, 0.1, z + 0.05);
+          at(new THREE.ConeGeometry(0.03, 0.06, 4), 0xa86a2c, x + 0.19, 0.19, z + 0.02); at(new THREE.ConeGeometry(0.03, 0.06, 4), 0xa86a2c, x + 0.12, 0.19, z + 0.09); }
+        { const h = H[2 % H.length], [x, z] = front(h, h.d / 2 + 2.3, 1.7); F.toy = V(x, 0, z); // a child's clay bullock on wheels, left in the yard
+          at(new THREE.BoxGeometry(0.34, 0.03, 0.16), 0x7a5a36, x, 0.07, z, 0, h.rot); for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) at(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 8).rotateX(Math.PI / 2), 0x4a3524, x + Math.cos(h.rot) * sx * 0.12 + Math.sin(h.rot) * sz * 0.09, 0.05, z - Math.sin(h.rot) * sx * 0.12 + Math.cos(h.rot) * sz * 0.09, 0, h.rot);
+          at(new THREE.SphereGeometry(0.09, 7, 6).scale(1.5, 1, 0.9), 0xa8552e, x, 0.18, z, 0, h.rot); at(new THREE.SphereGeometry(0.055, 6, 5), 0xa8552e, x + Math.cos(h.rot) * 0.15, 0.24, z - Math.sin(h.rot) * 0.15);
+          for (const sg of [1, -1]) at(new THREE.ConeGeometry(0.014, 0.07, 4), 0xe8dcc0, x + Math.cos(h.rot) * 0.16 + Math.sin(h.rot) * sg * 0.035, 0.31, z - Math.sin(h.rot) * 0.16 + Math.cos(h.rot) * sg * 0.035); }
+        { const h = H[8 % H.length], [x, z] = front(h, h.d / 2 + 0.12, 1.5); { const [gx, gz] = front(h, h.d / 2 + 1.4, 1.5); F.hive = V(gx, 0, gz); } // a wild honeycomb hanging under the eave
+          at(new THREE.SphereGeometry(0.2, 9, 7).scale(1, 1.35, 0.55), 0xc98a1e, x, 2.35, z, 0, h.rot); at(new THREE.SphereGeometry(0.13, 8, 6).scale(1, 1.2, 0.5), 0x8a5a14, x, 2.2, z, 0, h.rot); }
+        scene.updateMatrixWorld(true); const fm = C.bakeStatic(fp, Mat({ vertexColors: true, flatShading: true, roughness: 0.85, side: THREE.DoubleSide })); if (fm) fm.castShadow = false; }
     }
     W.float = new THREE.Group(); mesh(new THREE.SphereGeometry(0.09, 8, 6), red, 0, 0.05, 0, W.float); mesh(new THREE.SphereGeometry(0.07, 8, 6), paste, 0, 0.13, 0, W.float); W.float.visible = false; scene.add(W.float);
     W.floatHome = POND.clone().addScaledVector(W.fIn, 1.3).setY(0.03);
@@ -975,7 +1012,10 @@ export function initStory(C) {
 
   /* ---------- the ring ---------- */
   function startRing() { fade(() => { stop(true); C.startRing(); }, 250); }
-  function villageRound() { fade(() => { stop(true); C.villageRing(); }, 250); }
+  // what today gives you in the ring: the festival day's rule (after the festival, the days keep turning) and one thing
+  // for each of today's activities you have done. index.html turns this into the round's rules (buildMod).
+  function ringHelp() { const td = today(), d0 = Math.floor(Date.now() / 864e5 + 5.5 / 24); return { day: GATED ? (F.fin ? d0 % 5 + 1 : festDay()) : 0, fish: !!td.fish, arch: !!td.arch, drum: !!td.drum, jale: !!td.jale }; }
+  function villageRound() { const help = ringHelp(); fade(() => { stop(true); C.villageRing(help); }, 250); }
   // after a round started in the village: back on the village ground, next to the khunt
   function back() {
     game.villageRun = false; $('hudScore').hidden = true; $('overScreen').hidden = true;
@@ -1073,7 +1113,22 @@ export function initStory(C) {
     for (let i = 0; i < n; i++) { const a = i * 2.4, f = i === n - 1 && flopT > 0 ? Math.sin(flopT * 30) * Math.min(1, flopT) * 0.5 : 0;
       pondE.set(0.25 + f, a, 1.45 + f * 0.6); pondQ.setFromEuler(pondE); W.catchIM.setMatrixAt(i, pondM.compose(pondP.set(W.basket.x + Math.cos(a) * 0.08, 0.24 + i * 0.035 + Math.abs(f) * 0.25, W.basket.z + Math.sin(a) * 0.08), pondQ, pondS.setScalar(0.6))); }
     W.catchIM.instanceMatrix.needsUpdate = true; }
+  // ---- the journal of small things seen in the village: walk close and it is noted (+5 XP each, +30 for all of them).
+  // [id, name, the clue shown until it is found, how close, where: a point, or a function for things that move]
+  const SIGHTS = [['nest', 'A nest with three eggs', 'Something is hidden in the shade tree', 2.4], ['kite', 'A kite caught on the thatch', 'Something bright is caught on a roof', 2.6], ['tortoise', 'A tortoise on the bank', 'Something is sunning itself by the pond', 2.2],
+    ['cat', 'A cat asleep in the sun', 'Somebody is asleep by a wall', 2.2], ['toy', 'A clay bullock on wheels', 'A child left something in a yard', 2.0], ['hive', 'A wild honeycomb', 'Something hangs under an eave', 2.4],
+    ['couple', 'Two who thought nobody was looking', 'Someone whispers behind a tree by the paddy', 0], ['dogs', 'The dogs asleep in the square', 'Somebody is asleep in the square', 2.4], ['carrier', 'The woman with the water pot', 'Somebody walks to the pump and back all day', 2.6], ['stall', 'The pork stall behind the house', 'There is a crowd behind a house', 5]];
+  let sightT = 0;
+  function sightAt(id) { const st = C.sights ? C.sights() : {}; if (W.finds && W.finds[id]) return [W.finds[id]]; if (id === 'dogs') return (st.dogs || []).map(d => Array.isArray(d) ? { x: d[0], z: d[1] } : d); if (id === 'couple') return st.couple && st.couple.caught ? [st.couple] : []; return st[id] ? [st[id]] : []; }
+  function sightsCheck(dt) { sightT -= dt; if (sightT > 0 || S.dlg || S.mode !== 'walk') return; sightT = 0.3; const seen = save.seen || (save.seen = {}), p = game.p.pos;
+    for (const [id, name, , r] of SIGHTS) { if (seen[id]) continue; const R = r || 7; if (!sightAt(id).some(q => Math.hypot(q.x - p.x, q.z - p.z) < R)) continue;
+      seen[id] = 1; persist(); const n = SIGHTS.filter(s => seen[s[0]]).length; C.addXp(5, 'Seen in the village'); C.hint(tr('Seen:') + ' ' + tr(name) + ' (' + n + '/' + SIGHTS.length + ')', 3000); /* the hint bubble wraps; the big toast ran off both edges of a phone */ C.sfx.clink && C.sfx.clink(0.8); C.buzz(25); if (C.track) C.track('found');
+      if (n === SIGHTS.length) setTimeout(() => { C.addXp(30, 'You know this village'); pop('+30 XP', 'You know every corner of this village'); C.crowdCheer(0.5); }, 2800); seenUi(); break; } }
+  function seenUi() { const b = $('seenBtn'), l = $('seenList'); if (!b || !l) return; const seen = save.seen || {}, n = SIGHTS.filter(s => seen[s[0]]).length;
+    b.hidden = !S.on; b.textContent = tr('Seen in the village:') + ' ' + n + '/' + SIGHTS.length; l.innerHTML = ''; for (const [id, name, clue] of SIGHTS) { const li = document.createElement('li'); li.className = seen[id] ? '' : 'no'; li.textContent = seen[id] ? '✓ ' + tr(name) : '? ' + tr(clue); l.appendChild(li); } }
+  if ($('seenBtn')) $('seenBtn').addEventListener('click', () => { seenUi(); $('seenList').hidden = !$('seenList').hidden; });
   function pondUpdate(dt, tn) {
+    sightsCheck(dt);
     { const n = save.td && save.td.fishN || 0; if (fish.flop > 0) { fish.flop = Math.max(0, fish.flop - dt); basketFish(n, fish.flop); W.catchN = n; if (fish.flop > 0.3 && C.sfx.flop && C.sfx.gate('flop', 0.3)) C.sfx.flop(0.8); } else if (n !== W.catchN) { W.catchN = n; basketFish(n); } }
     if (W.waves) { W.waves.material.map.offset.set(tn * 0.012, tn * 0.007); }
     if (W.ducks) for (let i = 0; i < 3; i++) { const [r, w, a0] = W.duckS[i], a = a0 + tn * w, x = POND.x + Math.cos(a) * r, z = POND.z + Math.sin(a) * r;
@@ -1354,8 +1409,9 @@ export function initStory(C) {
     peer: (k, n, r) => { if (!S.on || S.inside) return; if (k === 'drum') { dance.peer = (dance.peer || 0) + 1; dance.peerT = now(); const ctx = C.audio.ctx, v = C.sfx.near(W.drumStand, 30); if (ctx && !C.audio.muted && v > 0) { const t = ctx.currentTime; if (n === 0) C.sfx.dhamsa(t); else C.sfx.madalHi(t); } dance.energy = Math.min(1.5, dance.energy + 0.12); } },
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
+    seenUi, // the journal of things seen, for the pause menu
     dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
-    debug: { rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    debug: { SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }

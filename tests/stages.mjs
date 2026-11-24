@@ -17,7 +17,7 @@ await ev(() => document.getElementById('quickBtn').click()); await until(() => _
 // the player cannot be hurt and the handi stays out of the way while we watch the bull
 const safe = () => ev(() => { const g = __k.game; g.p.invuln = 999; g.p.state = 'free'; });
 await ev(() => { __k.hs.next = 999; window.__rnd = Math.random; }); await safe();
-check(await ev(() => __k.stageOf(0) === 1 && __k.stageOf(5) === 2 && __k.stageOf(10) === 3 && __k.stageOf(16) === 4 && __k.stageOf(24) === 5 && (__k.game.stage || 1) === 1), 'stages start at 5, 10, 16 and 24 pitha points');
+check(await ev(() => __k.stageOf(0) === 1 && __k.stageOf(5) === 2 && __k.stageOf(10) === 3 && __k.stageOf(16) === 4 && __k.stageOf(24) === 5 && (__k.game.stage || 1) === 1), 'stages are reached by 5, 10, 16 and 24 pitha points');
 // stage 1: no feint even when the dice say yes
 await ev(() => { Math.random = () => 0.01; const g = __k.game; g.charges = 2; g.feints = 0; g.p.pos.set(0, 0, 5); g.b.pos.set(0, 0, -4); g.b.state = 'watch'; g.b.t = 9; });
 await until(() => __k.game.b.state === 'charge'); check(await ev(() => (__k.game.feints || 0) === 0), 'stage 1: the bull never feints');

@@ -215,5 +215,5 @@ export function initLife(C) {
   }
   update(0);
   const active = () => ({ prints: prints.visible, breath: breath.visible, petals: petals.visible });
-  return { update, fx, active, dogs, counts: { chickens: nChick, goats: nGoat, birds: nBird, butterflies: nFly, smoke: puffs.length } };
+  return { update, fx, active, dogs, dogPos, counts: { chickens: nChick, goats: nGoat, birds: nBird, butterflies: nFly, smoke: puffs.length } };
 }
