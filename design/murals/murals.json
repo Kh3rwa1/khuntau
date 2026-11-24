@@ -1,7 +1,131 @@
 {
  "out": "public/art",
  "cuts": [
-  { "name": "three dancers", "src": "dancers.jpg", "box": [0, 80, 1024, 925] },
-  { "name": "two dancers", "src": "dancers.jpg", "box": [360, 80, 1024, 925] }
+  {
+   "name": "diya for the bull",
+   "src": "bull-diya.jpg",
+   "box": [
+    40,
+    30,
+    1000,
+    960
+   ],
+   "use": "motif"
+  },
+  {
+   "name": "three dancers",
+   "src": "dancers.jpg",
+   "box": [
+    0,
+    80,
+    1024,
+    925
+   ],
+   "use": "motif"
+  },
+  {
+   "name": "madal drummer",
+   "src": "drummer.jpg",
+   "box": [
+    170,
+    30,
+    670,
+    1130
+   ],
+   "use": "motif"
+  },
+  {
+   "name": "khuntau",
+   "src": "khuntau.jpg",
+   "box": [
+    0,
+    40,
+    1376,
+    768
+   ]
+  },
+  {
+   "name": "two dancers",
+   "src": "dancers.jpg",
+   "box": [
+    360,
+    80,
+    1024,
+    925
+   ]
+  },
+  {
+   "name": "the bull and the cloth",
+   "src": "khuntau.jpg",
+   "box": [
+    430,
+    45,
+    1376,
+    768
+   ]
+  },
+  {
+   "name": "tamak drummer",
+   "src": "khuntau.jpg",
+   "box": [
+    10,
+    50,
+    350,
+    768
+   ]
+  },
+  {
+   "name": "women dancing bent forward",
+   "src": "bent.jpg",
+   "box": [
+    60,
+    80,
+    860,
+    990
+   ]
+  },
+  {
+   "name": "sprinkling by the shed",
+   "src": "sprinkle.jpg",
+   "box": [
+    0,
+    70,
+    1200,
+    880
+   ]
+  },
+  {
+   "name": "Gogo",
+   "src": "portraits.jpg",
+   "box": [
+    112,
+    188,
+    428,
+    650
+   ],
+   "use": "face"
+  },
+  {
+   "name": "Majhi",
+   "src": "portraits.jpg",
+   "box": [
+    543,
+    188,
+    859,
+    650
+   ],
+   "use": "face"
+  },
+  {
+   "name": "Elder",
+   "src": "portraits.jpg",
+   "box": [
+    972,
+    188,
+    1288,
+    650
+   ],
+   "use": "face"
+  }
  ]
 }

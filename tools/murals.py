@@ -5,7 +5,9 @@
 # and the boxes to cut from them, in source pixels: {"src": "dancers.png", "box": [x0, y0, x1, y1]}.
 # Each cut: the dark background that touches its edges is repainted the band's own charcoal (#2c2e30, as drawn by
 # houseWallTex in index.html) with the same grit, its edges fade out, and it is packed into rows of one atlas.
-# The game reads cell rectangles in UV space (v up, as three.js flips images) and each cell's width/height.
+# The game reads cell rectangles in UV space (v up, as three.js flips images), each cell's width/height and its use:
+# "wall" (house murals), "motif" (also one of the story's three wall motifs), "face" (a dialogue portrait: written as its
+# own face-<name>.webp and listed under "faces", never on a wall or in the atlas).
 import json, os, random, sys
 from PIL import Image, ImageDraw
 
@@ -16,18 +18,25 @@ PAD = 6               # transparent gap between cells, so mip levels do not blee
 FEATHER = 0.07        # share of the width/height over which a cell's edges fade out
 
 
-def cut(src_path, box, tol):
+def cut(src_path, box, tol, raw=False):
     """One cell: repaint the dark background connected to the cut's border (inner dark outlines are kept), scale,
     fade the edges."""
     im = Image.open(src_path).convert('RGB').crop(box)
+    if raw:  # a portrait for the dialogue box: kept as painted, opaque, no fade
+        return im.resize((round(im.width * CELL_H / im.height), CELL_H), Image.LANCZOS).convert('RGBA')
     w, h = im.size
     probe = im.copy()
     key = (255, 0, 255)
+    # the painting's own background colour: the median of its four corners (grass or a figure touching an edge is
+    # never a seed, so it is never repainted)
+    corners = sorted(im.getpixel((x, y)) for x in (2, w - 3) for y in (2, h - 3))
+    bg = tuple(sorted(c[i] for c in corners)[1] for i in range(3))
+    near_bg = lambda p: all(abs(p[i] - bg[i]) < 24 for i in range(3)) and sum(p) < 3 * 90
     seeds = [(x, y) for x in range(0, w, 6) for y in (0, h - 1)] + [(x, y) for y in range(0, h, 6) for x in (0, w - 1)]
     for s in seeds:
         p = probe.getpixel(s)
-        if p != key and sum(p) < 3 * 80:
-            ImageDraw.floodfill(probe, s, key, thresh=tol)
+        if p != key and near_bg(p):
+            ImageDraw.floodfill(probe, s, key, thresh=tol)  # thresh: summed difference over R, G, B from the seed
     px, pp = im.load(), probe.load()
     rnd = random.Random(7)
     for y in range(h):
@@ -51,7 +60,19 @@ def cut(src_path, box, tol):
 def main(spec_path):
     spec = json.load(open(spec_path))
     base = os.path.dirname(spec_path)
-    cells = [cut(os.path.join(base, c['src']), c['box'], c.get('tol', 38)) for c in spec['cuts']]
+    out_dir = spec.get('out', 'public/art')
+    os.makedirs(out_dir, exist_ok=True)
+    # portraits are shown in the HTML dialogue box, not drawn in 3D: each its own small file, kept off the GPU atlas
+    faces = {}
+    for c in spec['cuts']:
+        if c.get('use') != 'face':
+            continue
+        im = cut(os.path.join(base, c['src']), c['box'], 0, raw=True).convert('RGB')
+        fn = 'face-' + c['name'].lower() + '.webp'
+        im.save(os.path.join(out_dir, fn), 'WEBP', quality=84, method=6)
+        faces[c['name']] = {'file': fn, 'aspect': round(im.width / im.height, 4)}
+    wall_cuts = [c for c in spec['cuts'] if c.get('use') != 'face']
+    cells = [cut(os.path.join(base, c['src']), c['box'], c.get('tol', 38)) for c in wall_cuts]
     # shelf packing
     x = y = row_h = 0
     places = []
@@ -63,20 +84,17 @@ def main(spec_path):
         x += im.width + PAD
         row_h = max(row_h, im.height)
     used_h = y + row_h
-    atlas_h = 1
-    while atlas_h < used_h:
-        atlas_h *= 2
+    atlas_h = -(-used_h // 16) * 16  # WebGL2 needs no power of two: no empty rows on the GPU
     atlas = Image.new('RGBA', (ATLAS_W, atlas_h), BAND + (0,))
     out_cells = []
-    for im, (cx, cy), c in zip(cells, places, spec['cuts']):
+    for im, (cx, cy), c in zip(cells, places, wall_cuts):
         atlas.paste(im, (cx, cy))
         out_cells.append({'u0': round(cx / ATLAS_W, 5), 'u1': round((cx + im.width) / ATLAS_W, 5),
                           'v0': round(1 - (cy + im.height) / atlas_h, 5), 'v1': round(1 - cy / atlas_h, 5),
-                          'aspect': round(im.width / im.height, 4), 'name': c.get('name', c['src'])})
-    out_dir = spec.get('out', 'public/art')
-    os.makedirs(out_dir, exist_ok=True)
+                          'aspect': round(im.width / im.height, 4), 'name': c.get('name', c['src']),
+                          'use': c.get('use', 'wall')})  # wall: house murals; motif: also the story's wall motifs; face: portraits only
     atlas.save(os.path.join(out_dir, 'murals.webp'), 'WEBP', quality=82, method=6)
-    json.dump({'image': 'murals.webp', 'w': ATLAS_W, 'h': atlas_h, 'cells': out_cells},
+    json.dump({'image': 'murals.webp', 'w': ATLAS_W, 'h': atlas_h, 'cells': out_cells, 'faces': faces},
               open(os.path.join(out_dir, 'murals.json'), 'w'), indent=1)
     print(f"{len(out_cells)} cells, atlas {ATLAS_W}x{atlas_h}, {os.path.getsize(os.path.join(out_dir, 'murals.webp')) // 1024} KB")
 

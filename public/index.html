@@ -241,6 +241,10 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 #fade.on { opacity: 1; }
 #dlg { position: fixed; inset: 0; z-index: 8; display: grid; align-items: end; justify-items: center; padding: 0 max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); cursor: pointer; }
 #dlgBox { width: min(560px, 100%); background: rgba(20, 10, 6, .9); border: 1px solid rgba(255, 179, 71, .45); border-radius: 18px; padding: 12px 16px 12px; box-sizing: border-box; zoom: var(--ui, 1); }
+#dlgBox { position: relative; }
+#dlgFace { position: absolute; left: 14px; bottom: calc(100% - 18px); width: 92px; aspect-ratio: .683; border-radius: 46px 46px 10px 10px; border: 2px solid #eaa2a6; box-shadow: 0 6px 18px rgba(0, 0, 0, .55); background: #2c2e30 center / cover no-repeat; pointer-events: none; } /* painted portraits (Gogo, Majhi, Elder) from art/face-*.webp */
+#dlgBox.has-face #dlgWho { margin-left: 108px; min-height: 22px; }
+@media (max-height: 460px) { #dlgFace { width: 64px; bottom: calc(100% - 14px); border-radius: 32px 32px 8px 8px; } #dlgBox.has-face #dlgWho { margin-left: 80px; } } /* landscape phones: keep the view clear */
 #dlgWho { font-family: var(--font-display); font-size: 22px; color: var(--saffron); line-height: 1; margin-bottom: 4px; }
 #dlgText { margin: 0; font-size: 17px; line-height: 1.35; min-height: 2.7em; text-wrap: pretty; }
 .olname { font-family: var(--font-olchiki); font-size: 15px; color: var(--paste); opacity: .85; margin-left: 10px; letter-spacing: .06em; vertical-align: middle; }
@@ -308,7 +312,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 </div>
 <div id="prompt" hidden></div>
 <div id="fade"></div>
-<div id="dlg" hidden><div id="dlgBox"><div id="dlgWho"></div><p id="dlgText"></p><div id="dlgNext">Tap to go on</div></div></div>
+<div id="dlg" hidden><div id="dlgBox"><div id="dlgFace" hidden></div><div id="dlgWho"></div><p id="dlgText"></p><div id="dlgNext">Tap to go on</div></div></div>
 <div id="pick" hidden>
   <div class="prow"><button class="arrow" id="pickPrev" type="button" aria-label="Previous animal">&#8249;</button><div><div id="pickName">Brown bull</div><div id="pickSub">1 of 5</div></div><button class="arrow" id="pickNext" type="button" aria-label="Next animal">&#8250;</button></div>
   <button class="btn small" id="pickOk" type="button">Tie this one to the khunt</button>
@@ -1123,28 +1127,43 @@ for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoo
    and carries the story's motifs. Lit exactly like the wall (same shading, eave, shadows) so each panel's charcoal
    background disappears into the band. Neighbouring panels use different cells, and every other one is mirrored. */
 const MURAL = { y0: 0.88, y1: 1.94, door: 0.72, edge: 0.2, off: 0.012 };
-let murals = null;
+let murals = null, muralsP = null;
+// a plane showing one atlas cell (optionally mirrored), and the lit, wall-matched material that draws it; the story
+// uses both for the motifs you paint on your own house
+function muralPlane(c, w, h, flip) { const g = new THREE.PlaneGeometry(w, h), uv = g.attributes.uv;
+  for (let j = 0; j < uv.count; j++) { const u = uv.getX(j); uv.setXY(j, c.u0 + (flip ? 1 - u : u) * (c.u1 - c.u0), c.v0 + uv.getY(j) * (c.v1 - c.v0)); }
+  return g; }
+const muralMat = (tex, offset = -2) => shade(Mat({ map: tex, transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: offset }), { eave: true });
 function loadMurals() {
   return fetch('art/murals.json').then(r => r.json()).then(spec => new THREE.TextureLoader().loadAsync('art/' + spec.image).then(tex => {
     tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    const cells = spec.cells, geos = [], slots = [], full = MURAL.y1 - MURAL.y0, M = new THREE.Matrix4();
-    let k = 0;
-    houses.forEach((h, i) => { if (!i) return;
+    const all = spec.cells, cells = all.filter(c => c.use !== 'face'), geos = [], slots = [], full = MURAL.y1 - MURAL.y0, M = new THREE.Matrix4();
+    // each wall gets the least-used painting that suits its width (a lone narrow figure on a wide wall, or a wide scene
+    // squeezed small onto a narrow one, both look wrong), never the same one twice in a row, so all of them get used
+    let prev = null; const used = new Map(), n = c => used.get(c) || 0;
+    const fits = (c, avail) => { const w = full * c.aspect; return w <= avail * 1.15 && w >= avail * 0.33; };
+    // house widths are random per load: when only as many walls are left as paintings not yet shown, those get them
+    // whether they suit the width or not (shrunk or left narrow), so every painting is always somewhere
+    const walls = houses.slice(1).reduce((s, h) => s + (h.w / 2 - MURAL.edge - MURAL.door >= 0.6 ? 2 : 0), 0);
+    const pick = (avail, at) => { const order = cells.map((c, t) => cells[(at + t) % cells.length]);
+      const unused = order.filter(c => !n(c) && c !== prev), left = walls - slots.length;
+      const fitting = order.filter(c => c !== prev && fits(c, avail));
+      const pool = unused.length && unused.length >= left ? unused : fitting.length ? fitting : order.filter(c => c !== prev || cells.length === 1);
+      let best = pool[0]; for (const c of pool) if (n(c) < n(best)) best = c;
+      used.set(best, n(best) + 1); return best; };
+    houses.forEach((h, i) => { if (!i) return; // house 0 is yours: the story's motifs go there
       for (const side of [-1, 1]) {
         const avail = h.w / 2 - MURAL.edge - MURAL.door; if (avail < 0.6) continue;
-        const c = cells[k % cells.length], flip = k % 2 === 1; k++;
+        const c = pick(avail, slots.length * 3), flip = slots.length % 2 === 1; prev = c;
         let pw = full * c.aspect, ph = full; if (pw > avail) { pw = avail; ph = pw / c.aspect; }
-        const g = new THREE.PlaneGeometry(pw, ph), uv = g.attributes.uv;
-        for (let j = 0; j < uv.count; j++) { const u = uv.getX(j); uv.setXY(j, c.u0 + (flip ? 1 - u : u) * (c.u1 - c.u0), c.v0 + uv.getY(j) * (c.v1 - c.v0)); }
-        const lx = side * (MURAL.door + avail / 2), y = (MURAL.y0 + MURAL.y1) / 2;
+        const g = muralPlane(c, pw, ph, flip), lx = side * (MURAL.door + avail / 2), y = (MURAL.y0 + MURAL.y1) / 2;
         g.translate(lx, y, h.d / 2 + MURAL.off); g.applyMatrix4(M.makeRotationY(h.rot).setPosition(h.x, 0, h.z));
-        geos.push(g); slots.push({ house: i, side, cell: c.name, flip, lx, y, w: pw, h: ph });
+        geos.push(g); slots.push({ house: i, side, cell: c.name, flip, lx, y, w: pw, h: ph, avail });
       } });
-    const mat = shade(Mat({ map: tex, transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 }), { eave: true });
-    const mesh = new THREE.Mesh(mergeGeometries(geos, false), mat); mesh.receiveShadow = true; mesh.renderOrder = 1;
+    const mesh = new THREE.Mesh(mergeGeometries(geos, false), muralMat(tex)); mesh.receiveShadow = true; mesh.renderOrder = 1;
     geos.forEach(g => g.dispose()); scene.add(mesh);
-    return (murals = { mesh, slots, cells: cells.length });
-  })).catch(e => console.warn('murals:', e.message));
+    return (murals = { mesh, slots, cells: cells.length, all, tex, faces: spec.faces || {}, plane: muralPlane, mat: off => muralMat(tex, off) });
+  })).catch(e => { console.warn('murals:', e.message); return null; });
 }
 // Leaves: the canopies were smooth green balls. Each ball carries a coat of leaf sprays (alpha-cut cards facing outward,
 // lit like the ball under them, lighter on top), one instanced draw per call. Not on budget phones.
@@ -2152,10 +2171,10 @@ function onCrowdLoaded() {
     for (const a of [boy, girl]) { scene.add(a.wrap); a.play('Idle'); a.actions.Idle.time = rand(0, 2); }
     market.couple = { boy, girl, x: cx, z: cz, tan, out: [Math.cos(ang), Math.sin(ang)], k: 0, away: 9, seenBy: false }; }
   setTimeout(registerSW, 1500);
-  loadMurals(); // painted figures on the houses' wall bands (one draw)
+  muralsP = loadMurals(); // painted figures on the houses' wall bands (one draw); the story's wall motifs use them too
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
-    story = m.initStory({ props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+    story = m.initStory({ murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: (src) => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
@@ -2668,6 +2687,18 @@ async function scoreCard(pts, rank) {
   const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   try { await Promise.all([document.fonts.load('120px "Rubik Dirt"'), document.fonts.load('800 40px "Baloo 2"')]); } catch (e) {}
   const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3a1d10'); g.addColorStop(1, '#1a0c06'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  // the Khuntau painted on a Santal house wall (art/card.webp, made from Dulor's photos): title on the plain wall at
+  // the top, the painted strip across the middle, the score below it. Without it (offline, not cached): the old card
+  // with the last frame of the round.
+  const art = new Image(); art.src = 'art/card.webp'; const painted = await art.decode().then(() => true, () => false);
+  if (painted) { const s2 = Math.max(W / art.width, H / art.height); x.drawImage(art, (W - art.width * s2) / 2, (H - art.height * s2) / 2, art.width * s2, art.height * s2);
+    x.textAlign = 'center'; x.fillStyle = '#ffb347'; x.font = '600 34px "Noto Sans Ol Chiki", sans-serif'; x.fillText('ᱠᱷᱩᱱᱴᱟᱣ', W / 2, 110);
+    x.font = '120px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText('Sohrai', W / 2, 238); x.fillStyle = '#f6eedd'; x.fillText('Sohrai', W / 2, 231);
+    x.font = '200px "Rubik Dirt", "Baloo 2", sans-serif'; x.fillStyle = '#b5462a'; x.fillText(String(pts), W / 2, 1100); x.fillStyle = '#ffb347'; x.fillText(String(pts), W / 2, 1092);
+    x.font = '800 44px "Baloo 2", sans-serif'; x.fillStyle = '#f6eedd'; x.fillText('points · ' + rank, W / 2, 1160);
+    x.font = '800 54px "Baloo 2", sans-serif'; x.fillStyle = '#ffb347'; x.fillText('Can you beat me?', W / 2, 1245);
+    x.font = '600 34px "Baloo 2", sans-serif'; x.fillStyle = 'rgba(246,238,221,.75)'; x.fillText(location.host, W / 2, 1310);
+    return await new Promise(r => c.toBlob(r, 'image/png')); }
   if (lastShot) {
     const img = new Image(); img.src = lastShot; await img.decode().catch(() => {});
     const ih = 780, s2 = Math.max(W / img.width, ih / img.height);
@@ -3729,7 +3760,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

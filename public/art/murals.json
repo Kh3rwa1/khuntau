@@ -1,23 +1,102 @@
 {
  "image": "murals.webp",
  "w": 1024,
- "h": 512,
+ "h": 1232,
  "cells": [
   {
    "u0": 0.0,
-   "u1": 0.35547,
-   "v0": 0.41406,
+   "u1": 0.30273,
+   "v0": 0.75649,
    "v1": 1.0,
-   "aspect": 1.2133,
-   "name": "three dancers"
+   "aspect": 1.0333,
+   "name": "diya for the bull",
+   "use": "motif"
   },
   {
-   "u0": 0.36133,
-   "u1": 0.5918,
-   "v0": 0.41406,
+   "u0": 0.30859,
+   "u1": 0.66406,
+   "v0": 0.75649,
    "v1": 1.0,
+   "aspect": 1.2133,
+   "name": "three dancers",
+   "use": "motif"
+  },
+  {
+   "u0": 0.66992,
+   "u1": 0.80273,
+   "v0": 0.75649,
+   "v1": 1.0,
+   "aspect": 0.4533,
+   "name": "madal drummer",
+   "use": "motif"
+  },
+  {
+   "u0": 0.0,
+   "u1": 0.55371,
+   "v0": 0.50812,
+   "v1": 0.75162,
+   "aspect": 1.89,
+   "name": "khuntau",
+   "use": "wall"
+  },
+  {
+   "u0": 0.55957,
+   "u1": 0.79004,
+   "v0": 0.50812,
+   "v1": 0.75162,
    "aspect": 0.7867,
-   "name": "two dancers"
+   "name": "two dancers",
+   "use": "wall"
+  },
+  {
+   "u0": 0.0,
+   "u1": 0.38379,
+   "v0": 0.25974,
+   "v1": 0.50325,
+   "aspect": 1.31,
+   "name": "the bull and the cloth",
+   "use": "wall"
+  },
+  {
+   "u0": 0.38965,
+   "u1": 0.52832,
+   "v0": 0.25974,
+   "v1": 0.50325,
+   "aspect": 0.4733,
+   "name": "tamak drummer",
+   "use": "wall"
+  },
+  {
+   "u0": 0.53418,
+   "u1": 0.79199,
+   "v0": 0.25974,
+   "v1": 0.50325,
+   "aspect": 0.88,
+   "name": "women dancing bent forward",
+   "use": "wall"
+  },
+  {
+   "u0": 0.0,
+   "u1": 0.43359,
+   "v0": 0.01136,
+   "v1": 0.25487,
+   "aspect": 1.48,
+   "name": "sprinkling by the shed",
+   "use": "wall"
   }
- ]
+ ],
+ "faces": {
+  "Gogo": {
+   "file": "face-gogo.webp",
+   "aspect": 0.6833
+  },
+  "Majhi": {
+   "file": "face-majhi.webp",
+   "aspect": 0.6833
+  },
+  "Elder": {
+   "file": "face-elder.webp",
+   "aspect": 0.6833
+  }
+ }
 }

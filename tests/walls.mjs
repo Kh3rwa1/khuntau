@@ -1,7 +1,8 @@
 // Outside house walls follow Dulor's photos of a Santal house (24 Nov): white lime on top, a charcoal-black painted
 // band in the middle edged with pink scallops, red ochre at the foot. Checks the bands' colours, both borders, the
 // texture's seam (it repeats every 2.5 m), that the story's wall motifs sit inside the black band, and that the inside
-// of the house kept its own wall; the murals on the other houses. Screenshots: walls-phone*.jpg, walls-laptop.jpg.
+// of the house kept its own wall; the murals on the other houses; dialogue portraits; the painted share card.
+// Screenshots: walls-phone*.jpg, walls-laptop.jpg.
 //   node tests/walls.mjs     (static server on 8791)
 import puppeteer from 'puppeteer';
 import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
@@ -78,9 +79,39 @@ if (loaded) {
   check(!bad.length, 'every panel sits in the band between its borders, clear of the door, on the wall' + (bad.length ? ': ' + [...new Set(bad)].join('; ') : ''));
   check(sl.every((p, i) => !i || p.cell !== sl[i - 1].cell || p.flip !== sl[i - 1].flip), 'no two panels in a row are the same painting the same way round');
   check(m.litLikeWall, 'murals are shaded and shadowed exactly like the wall (their background melts into the band)');
+  const shown = new Set(sl.map(p => p.cell));
+  check(shown.size === m.cells, `every painting is on some wall (${shown.size} of ${m.cells})`);
+  // your own house: the three motifs you paint are the photo-based paintings, and none covers the side wall's window
+  await page.waitForFunction(() => __k.story.debug.W.spots.every(s => s.art.userData.cell), { timeout: 10000 }).catch(() => {});
+  const mo = await page.evaluate(() => { const nMotif = __k.murals.all.filter(c => c.use === 'motif').length;
+    return { nMotif, spots: __k.story.debug.W.spots.map(s => ({ cell: s.art.userData.cell || null, side: Math.abs(s.art.rotation.y) > 0.1,
+      z: s.art.position.z, w: s.art.geometry.parameters ? s.art.geometry.parameters.width : 0, lit: !!(s.art.material.userData.fx || {}).eave })) }; });
+  const want = Math.min(3, mo.nMotif);
+  check(mo.spots.filter(s => s.cell && s.lit).length >= want, `your house's wall motifs are the paintings, lit like the wall (${mo.spots.map(s => s.cell || 'clip art').join(', ')})`);
+  const side = mo.spots.filter(s => s.side);
+  check(side.every(s => Math.abs(s.z) - s.w / 2 > 0.33), `the side-wall motif stays clear of the window (${side.map(s => (Math.abs(s.z) - s.w / 2).toFixed(2) + ' m from its middle').join(', ')})`);
 }
 
-// 4. look at it: the home house with its painted motifs, a painted neighbour, one from an angle, and on a laptop
+// 4. portraits over the dialogue box for Gogo, the Majhi and the Elder (and none for anyone else); the share card
+//    drawn on the painting of the Khuntau, title above the painted strip and score below it
+const faces = [];
+for (const who of ['Gogo', 'Majhi', 'Elder', 'Someone']) {
+  await page.evaluate(w => __k.story.debug.say([[w, 'Johar! The bull is ready.']]), who); await sleep(500);
+  faces.push(await page.evaluate(() => { const f = document.getElementById('dlgFace'), b = f.getBoundingClientRect();
+    return { shown: !f.hidden && b.width > 40, img: (getComputedStyle(f).backgroundImage.match(/face-(\w+)/) || [])[1], top: b.top, w: b.width }; }));
+}
+await page.screenshot({ path: 'tests/out/walls-phone-portrait.jpg', type: 'jpeg', quality: 75 }).catch(() => {});
+check(['gogo', 'majhi', 'elder'].every((n, i) => faces[i].shown && faces[i].img === n) && !faces[3].shown,
+  `dialogue portraits: Gogo, Majhi, Elder each show their own painting, nobody else gets one (${faces.map(f => f.shown ? f.img : '-').join(', ')})`);
+check(faces.slice(0, 3).every(f => f.top >= 0), 'the portraits are fully on screen');
+await page.evaluate(() => { __k.story.debug.S.dlg = null; document.getElementById('dlg').hidden = true; });
+const card = await page.evaluate(async () => { const bl = await __k.scoreCard(27, 'Khunt Hero'), im = await createImageBitmap(bl), c = new OffscreenCanvas(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0);
+  const at = (px, py) => Array.from(x.getImageData(px, py, 1, 1).data.slice(0, 3)); // the painted bull's white body sits in the middle strip
+  let white = 0; for (let yy = 560; yy < 800; yy += 8) for (let xx = 380; xx < 700; xx += 8) { const [r, g, b] = at(xx, yy); if (r > 200 && g > 200 && b > 200) white++; }
+  return { w: im.width, h: im.height, white, art: (await fetch('art/card.webp')).ok }; });
+check(card.w === 1080 && card.h === 1350 && card.art && card.white > 40, `share card: 1080x1350 on the Khuntau painting (${card.white} white bull pixels in the strip)`);
+
+// 5. look at it: the home house with its painted motifs, a painted neighbour, one from an angle, and on a laptop
 await faceHouse(page, 1, 5); await sleep(300);
 await page.screenshot({ path: 'tests/out/walls-phone-murals.jpg', type: 'jpeg', quality: 75 });
 await faceHouse(page, 0, 4.5); await sleep(300);

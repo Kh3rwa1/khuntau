@@ -248,13 +248,22 @@ export function initStory(C) {
     /* --- the wall to paint: two motifs by the door, one on the side wall --- */
     W.spots = [];
     const hg = new THREE.Group(); hg.position.set(H.x, 0, H.z); hg.rotation.y = H.rot; scene.add(hg);
-    const defs = [[-(H.w / 2 - 1.05), H.d / 2 + 0.03, 0], [H.w / 2 - 1.05, H.d / 2 + 0.03, 0], [H.w / 2 + 0.03, 0, Math.PI / 2]];
+    const defs = [[-(H.w / 2 - 1.05), H.d / 2 + 0.03, 0], [H.w / 2 - 1.05, H.d / 2 + 0.03, 0], [H.w / 2 + 0.03, 1.05, Math.PI / 2]]; /* the side one toward the yard: the side wall's window is at its middle */
     defs.forEach(([lx, lz, ry], i) => {
       const geo = new THREE.PlaneGeometry(1.25, 1.25);
       const mk = (map, op) => { const m = mesh(geo, new THREE.MeshBasicMaterial({ map, transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), lx, 1.4, lz, hg); m.rotation.y = ry; return m; }; /* inside the black band of the house wall (0.74-2.06 m) */
       const outline = mk(outlineTex, 0.75), art = mk(motifTex(i), 0); art.visible = false; art.renderOrder = 1;
-      const stand = ry ? homeW(lx + 0.95, 0) : homeW(lx, lz + 0.95), look = ry ? homeW(lx, 0) : homeW(lx, lz);
+      const stand = ry ? homeW(lx + 0.95, lz) : homeW(lx, lz + 0.95), look = homeW(lx, lz);
       W.spots.push({ outline, art, stand, look, k: 0 });
+    });
+    // the motifs themselves: paintings made from Dulor's photos of a Santal wall (the "motif" cells of the murals
+    // atlas), once it has loaded; the clip art above stays if it never does. Lit like the wall, so the painting's
+    // charcoal background melts into the band. (The outline shares the old geometry: only the art gets a new one.)
+    if (C.murals) Promise.resolve(C.murals()).then(m => { if (!m) return; const cells = m.all.filter(c => c.use === 'motif');
+      W.spots.forEach((s, i) => { const c = cells[i]; if (!c) return;
+        const w = Math.min(1.25, 1.1 * c.aspect), h = w / c.aspect, op = s.art.material.opacity;
+        if (s.art.material.map) s.art.material.map.dispose(); s.art.material.dispose();
+        s.art.geometry = m.plane(c, w, h, false); s.art.material = m.mat(-3); s.art.material.opacity = op; s.art.receiveShadow = true; s.art.userData.cell = c.name; });
     });
 
     /* --- inside the mud house (kept under the ground, shown only when you are in it) --- */
@@ -624,7 +633,13 @@ export function initStory(C) {
   function say(lines, then) {
     S.dlg = { lines, i: 0, then, t: now() }; $('dlg').hidden = false; showLine();
   }
-  function showLine() { const d = S.dlg, l = d.lines[d.i]; $('dlgWho').textContent = l[0]; if (OLWHO[l[0]]) { const o = document.createElement('span'); o.className = 'olname'; o.lang = 'sat'; o.textContent = OLWHO[l[0]]; $('dlgWho').appendChild(o); } $('dlgText').textContent = l[1]; $('dlgNext').textContent = tr(d.i < d.lines.length - 1 ? (C.isTouch ? 'Tap to go on' : 'Enter to go on') : (C.isTouch ? 'Tap to close' : 'Enter to close')); d.t = now(); }
+  // a painted portrait over the dialogue box for the three who speak: Gogo, the Majhi and the Elder (art/face-*.webp,
+  // made from Dulor's photos of a Santal wall); anyone else speaks without one
+  const FACE = { Gogo: 'Gogo', 'गोगो': 'Gogo', 'ᱜᱚᱜᱚ': 'Gogo', Majhi: 'Majhi', 'माझी': 'Majhi', 'ᱢᱟᱹᱡᱷᱤ': 'Majhi', Elder: 'Elder', 'बुज़ुर्ग': 'Elder' };
+  let faces = {}; if (C.murals) Promise.resolve(C.murals()).then(m => { if (m && m.faces) faces = m.faces; });
+  function showFace(who) { const f = faces[FACE[who]], el = $('dlgFace'); $('dlgBox').classList.toggle('has-face', !!f); el.hidden = !f;
+    if (f) { el.style.backgroundImage = `url(art/${f.file})`; el.dataset.who = FACE[who]; } }
+  function showLine() { const d = S.dlg, l = d.lines[d.i]; $('dlgWho').textContent = l[0]; showFace(l[0]); if (OLWHO[l[0]]) { const o = document.createElement('span'); o.className = 'olname'; o.lang = 'sat'; o.textContent = OLWHO[l[0]]; $('dlgWho').appendChild(o); } $('dlgText').textContent = l[1]; $('dlgNext').textContent = tr(d.i < d.lines.length - 1 ? (C.isTouch ? 'Tap to go on' : 'Enter to go on') : (C.isTouch ? 'Tap to close' : 'Enter to close')); d.t = now(); }
   function nextLine() {
     const d = S.dlg; if (!d || now() - d.t < 0.25) return;
     if (++d.i < d.lines.length) { showLine(); return; }
