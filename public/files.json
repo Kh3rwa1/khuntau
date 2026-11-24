@@ -1,5 +1,5 @@
 {
- "v": "025c6e7ea4",
+ "v": "80940581e6",
  "files": {
   "art/card.webp": "01f2eaba4df92ba8d31fbceaf205d7dc43eb5cb76498d1064f77614343c01be7",
   "art/face-elder.webp": "103f4de539cfe682dc18fbb9c7e71e12bdeb385c947aac55e9cc99f685725730",
@@ -71,7 +71,7 @@
   "models/casual_male.json": "1dfff4bccfc5169a0fd6dc26435aefae4acee4663a45c9db1a95047f1bca1a94",
   "models/cow.json": "5ce93eeed0eb99b8f9993f758cab288a74fb4852a683b04f3673b37d9a0ba136",
   "models/worker_female.json": "af5df0ccfdce570d29fb6f623b5d51500e613eeacad90baa58d1d8a2a19aa2a5",
-  "og.jpg": "15d478d3255d6f69c236f1728450484c89c25bdf8804b60afbb5eb3f15f21125",
+  "og.jpg": "0713299030e3032db551cb1ff19e71644e945de467ceea93f2f379ef37783dd3",
   "privacy.html": "a100d68a996fed44488e3194858d6e9edf24b086a0f6b0f79b3ee11fc57a91c6",
   "stats.html": "6899fe012fbbf38c9fa6a226c53c562b6869694fe4da654d0d179a54bf659e3c",
   "story.js": "a9ea332452158d2b5931e3cab0612b3586bbb05157ceec4fecaa2f967ea7cc7c",
