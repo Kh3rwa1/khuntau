@@ -112,6 +112,7 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
   await page.evaluate(() => { window.__sfxLog.length = 0; const c = __k.market.couple; __k.game.p.pos.set(c.x - c.out[0] * 3, 0, c.z - c.out[1] * 3); __k.story.debug.snapCam(); });
   const apart = await page.waitForFunction(() => { const c = __k.market.couple; return c.boy.wrap.position.distanceTo(c.girl.wrap.position) > 1.7; }, { timeout: 30000, polling: 100 }).then(() => true, () => false);
   check(apart && await page.evaluate(() => window.__sfxLog.includes('cough')), `when you walk up they jump apart with a cough (${(await gap()).toFixed(2)} m)`);
+  check(await page.evaluate(() => { const b = __k.audio.buf; return !!(b['cough-m'] && b['cough-f']) && b['cough-m'].duration > 0.5 && b['cough-f'].duration > 0.5; }), 'the coughs are real recordings, loaded and ready (his and hers)');
   await sleep(700); { const t = await talk(); check(t.v === 0 && !t.playing, 'caught, their talk stops dead'); }
   await page.screenshot({ path: 'tests/out/cam-couple.jpg', type: 'jpeg', quality: 70 });
   await page.evaluate(() => { __k.game.p.pos.set(0, 0, 13); __k.story.debug.snapCam(); });

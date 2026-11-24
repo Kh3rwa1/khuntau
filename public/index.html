@@ -1331,7 +1331,7 @@ function setMusic(which) {
     }
   }
 }
-const SFX_FILES = ['snort', 'bellow', 'gallop', 'hit', 'punch', 'whoosh', 'bonk', 'snap', 'bells', 'cheer1', 'cheer2', 'highfive', 'clap'];
+const SFX_FILES = ['snort', 'bellow', 'gallop', 'hit', 'punch', 'whoosh', 'bonk', 'snap', 'bells', 'cheer1', 'cheer2', 'highfive', 'clap', 'cough-m', 'cough-f'];
 audio.buf = {};
 function loadSamples() {
   for (const n of SFX_FILES) fetch('audio/' + n + '.mp3').then(r => r.arrayBuffer()).then(b => audio.ctx.decodeAudioData(b)).then(d => { audio.buf[n] = d; }).catch(() => {});
@@ -1477,6 +1477,7 @@ Object.assign(sfx, {
   grab() { if (!play('bells', { vol: 0.9 })) return synthSfx.grab(); crowdCheer(0.85, 1, 0.05); },
   bellow() { play('bellow', { vol: 0.8 }); },
   cheer() { crowdCheer(0.9); },
+  cough(v = 1, hi = false) { if (!play(hi ? 'cough-f' : 'cough-m', { vol: 1.3 * v })) synthSfx.cough(v, hi); }, /* real recordings (Freesound, CC0: ckvoiceover, OwlStorm); the synthesized cough only until they have loaded */
   highfive() { if (!play('highfive', { vol: 1 })) play('clap', { vol: 1 }); },
   tease() { if (!play('whoosh', { vol: 0.8, rate: 0.7 })) synthSfx.whoosh(); play('whoosh', { vol: 0.6, rate: 0.85, when: 0.18 }); crowdCheer(0.35, 1.1, 0.1, 'none'); },
 });

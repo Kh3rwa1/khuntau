@@ -1,5 +1,5 @@
 {
- "v": "17e02d449c",
+ "v": "bfb92f47d4",
  "files": {
   "audio/bellow.mp3": "974facb3a639a219dbb5db381a3ad237cee0e6c235127da97feb5acec13ed9bf",
   "audio/bells.mp3": "67d154be495a3ffcd5add0503da1c6908112ac81582aed12f8b6c933322a38d5",
@@ -7,6 +7,8 @@
   "audio/cheer1.mp3": "56ac201b71ea912944d033c949c8b4790c38faa4fa53f512f25fb37994ea54e0",
   "audio/cheer2.mp3": "f61309d3859061e54abb3deb2f5433bd2205e0eaaf28400a1c472b8761238c24",
   "audio/clap.mp3": "edbbb4f136abc565667920ba30e5025a4d07988c8ae6a22d425c67c5cc2d20f4",
+  "audio/cough-f.mp3": "89314aa9438f3a3f8be9e65dfb53e6a866fe2aad9d06744793aee188414c7793",
+  "audio/cough-m.mp3": "f1904c251b1ab154db74d5c3dff9622f36caf92db6a0aee8bd4438fdc942d505",
   "audio/couple.mp3": "f2d01d0b3d7da7c3e06d7e7e400f74112e56cbaec6d53a14f670d6f67bf3d95f",
   "audio/gallop.mp3": "5989b67277adb1b791bd474c8ac0146e52374bd65a02c34567004d7e469839eb",
   "audio/highfive.mp3": "4cb7a5f1c19195f5494556a5b29ab097d7ea1053a967975af5b5167dc23fec26",
@@ -28,7 +30,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "60ccadf52d73f8621eeb2a96ca8da036f55214862bf2be2a0d3559b127c07a25",
+  "index.html": "6171f61dbf1c570316922f92987d329af10deac93fbd74451886dae538237d81",
   "life.js": "dc9cec57f93b52cdd345ba8d8b24ced134aae2a33a049e5099ae0d3b5be3abc8",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
