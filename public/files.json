@@ -1,5 +1,5 @@
 {
- "v": "28ebf36d50",
+ "v": "66dc427999",
  "files": {
   "art/card.webp": "01f2eaba4df92ba8d31fbceaf205d7dc43eb5cb76498d1064f77614343c01be7",
   "art/day1.webp": "186b993866951b081b4e5184a5340ff3f6d04361aba66c413020cba7981dae3e",
@@ -65,6 +65,7 @@
   "fonts/noto-sans-ol-chiki-ol-chiki.woff2": "41a31c01adc4096e6fcd8d13516abfeff46ecdde55933c28ec1cbab4dd5884a8",
   "fonts/rubik-dirt-latin-ext.woff2": "9186f2be83ed4a46b0aa9f921c0cd5324419c07a52bdd8383f99288df2f805b7",
   "fonts/rubik-dirt-latin.woff2": "5da855645dcecc34b6d4edef569e98be422edaa3dfbc72005d1dcfe8907c0464",
+  "hul.html": "9e6aebae315e5329bec3e7fce8508fc98f59a417c7b214623828c43305391dde",
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
