@@ -33,7 +33,7 @@ export function initStory(C) {
   const FEST = [['Um Hilok', 'Wake, paint the wall, choose your animal and oil its horns'], ['Dakay Din', 'Draw the alpana before your door'], ['Khuntau', 'Garland the animal, beat the tamak, face the bull'],
     ['Jale', 'Join the Sarpa enej at three houses'], ['Hako Katkom', 'Catch fish at the pond for the feast']];
   // Ol Chiki for the Santali names the game already uses (the five days, the people). Names only, never sentences:
-  // Santali text waits for a Santali speaker. Dulor confirmed ᱥᱚᱦᱨᱟᱭ; the rest are Claude's spellings and need Dulor's eye.
+  // Santali text waits for a Santali speaker. Dulor confirmed these spellings (24 Nov).
   const OLD = ['ᱩᱢ ᱦᱤᱞᱚᱜ', 'ᱫᱟᱠᱟᱭ ᱫᱤᱱ', 'ᱠᱷᱩᱱᱴᱟᱣ', 'ᱡᱟᱞᱮ', 'ᱦᱟᱠᱚ ᱠᱟᱴᱠᱚᱢ'];
   const OLWHO = { Gogo: 'ᱜᱚᱜᱚ', 'गोगो': 'ᱜᱚᱜᱚ', Majhi: 'ᱢᱟᱹᱡᱷᱤ', 'माझी': 'ᱢᱟᱹᱡᱷᱤ' };
   const GATED = !/[?&]debug\b/.test(location.search) || /[?&]fest\b/.test(location.search);
