@@ -59,6 +59,20 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 #stageBanner { position: fixed; z-index: 6; left: 0; right: 0; top: 15%; text-align: center; pointer-events: none; opacity: 0; padding: 14px 10px; background: linear-gradient(90deg, rgba(42,20,12,0), rgba(42,20,12,.82) 25%, rgba(42,20,12,.82) 75%, rgba(42,20,12,0)); }
 #stageBanner b { display: block; font-family: var(--font-display); font-size: clamp(30px, 8.5vw, 58px); color: #ffb347; text-shadow: 0 3px 0 #7a2a14; line-height: 1.1; }
 #stageBanner span { display: block; margin-top: 4px; font-size: clamp(14px, 4vw, 19px); color: #f6eedd; font-weight: 700; }
+/* a festival day opens with its painting (art/day1-5.webp, made from Dulor's photos): title on the painting's plain
+   wall at the top, the day's task under it; tap anywhere to begin */
+#dayCard { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; align-content: center; gap: 10px; padding: 16px; background: rgba(10, 6, 4, .78); cursor: pointer; opacity: 0; transition: opacity .45s; }
+#dayCard.show { opacity: 1; }
+#dayCard figure { position: relative; margin: 0; width: min(92vw, calc(70vh * .8), 460px); aspect-ratio: .8; border-radius: 14px; overflow: hidden; border: 2px solid #eaa2a6; box-shadow: 0 10px 40px rgba(0, 0, 0, .6); background: #2c2e30; transform: scale(.96); transition: transform .6s; }
+#dayCard.show figure { transform: none; }
+#dayCard img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#dayCard figcaption { position: absolute; left: 0; right: 0; top: 4%; text-align: center; }
+#dayCard figcaption i { display: block; font: normal clamp(16px, 4.4vw, 24px) var(--font-olchiki); color: #f6eedd; letter-spacing: .08em; }
+#dayCard figcaption b { display: block; margin-top: 2px; font-family: var(--font-display); font-size: clamp(26px, 7.4vw, 44px); line-height: 1.05; color: #ffb347; text-shadow: 0 3px 0 #7a2a14; padding: 0 6%; }
+#dayCard p { margin: 0; max-width: min(92vw, 460px); text-align: center; color: #f6eedd; font-weight: 700; font-size: clamp(15px, 4vw, 19px); }
+#dayCard small { color: rgba(246, 238, 221, .7); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
+@media (orientation: landscape) and (max-height: 520px) { #dayCard { grid-template-columns: auto minmax(0, 300px); justify-content: center; text-align: left; } #dayCard figure { width: calc(84vh * .8); grid-row: span 2; } #dayCard p { text-align: left; } }
+@media (prefers-reduced-motion: reduce) { #dayCard, #dayCard figure { transition: none; } }
 #stageBanner::before { content: attr(data-ol); display: block; font-family: var(--font-olchiki); font-size: clamp(16px, 4.6vw, 26px); color: #f6eedd; letter-spacing: .08em; margin-bottom: 2px; }
 #stageBanner.show { animation: stageIn 2.6s ease-out both; }
 @keyframes stageIn { 0% { opacity: 0; transform: scale(1.5); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(.96); } }
@@ -328,6 +342,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 <div id="tapzone" hidden><div id="tapScore" class="chip"></div><div id="tapHint"></div><button class="btn small ghost" id="tapQuit" type="button">Leave</button></div>
 <div id="toast"></div>
 <div id="stageBanner"><b></b><span></span></div>
+<div id="dayCard" hidden><figure><img alt=""><figcaption><i lang="sat"></i><b></b></figcaption></figure><p></p><small></small></div>
 <div id="pop"><b id="popBig"></b><span id="popSmall"></span></div>
 <div id="hint"></div>
 

@@ -59,7 +59,17 @@ export function initStory(C) {
     say([[hi ? (elder ? 'बुज़ुर्ग' : 'माझी') : (elder ? 'Elder' : 'Majhi'), line], [hi ? (elder ? 'बुज़ुर्ग' : 'माझी') : (elder ? 'Elder' : 'Majhi'), hi ? 'जा, कर ले। पर याद रखना।' : 'Go on then. But remember it.']], go); }
   const TAILS = [['Do not mix up the days of Sohrai, boy!', 'सोहराय के दिन मत गड़बड़ाओ, लड़के!'], ['Did nobody teach you our ways? The whole village is watching.', 'किसी ने हमारी रीत नहीं सिखाई? पूरा गाँव देख रहा है।'],
     ['In my day we knew which day was which. Shame!', 'हमारे ज़माने में हमें हर दिन का पता था। शर्म करो!'], ['The ancestors see everything, child. Keep the order.', 'पुरखे सब देखते हैं, बच्चे। क्रम का मान रखो।']];
-  function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist(); setTimeout(() => { if (S.on && !S.dlg) banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1]), OLD[d - 1]); else F.seen = 0; }, 1800); }
+  function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist();
+    const img = new Image(); img.src = 'art/day' + d + '.webp'; const ready = img.decode().then(() => true, () => false); /* fetched while the village settles */
+    setTimeout(async () => { if (!S.on || S.dlg) { F.seen = 0; return; }
+      if (await ready) dayCard(d, img.src); else banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1]), OLD[d - 1]); }, 1800); }
+  // the day's painting, title and task; tap anywhere to begin (the old banner is the fallback when it cannot load)
+  function dayCard(d, src) { const el = $('dayCard'); if (!el) return; el.querySelector('img').src = src; el.querySelector('i').textContent = OLD[d - 1] || '';
+    el.querySelector('b').textContent = tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]); el.querySelector('p').textContent = tr(FEST[d - 1][1]); el.querySelector('small').textContent = tr('Tap to begin');
+    el.hidden = false; requestAnimationFrame(() => el.classList.add('show')); S.dayCard = true;
+    const close = () => { el.classList.remove('show'); S.dayCard = false; removeEventListener('keydown', key); setTimeout(() => { if (!el.classList.contains('show')) el.hidden = true; }, 450); };
+    const key = e => { if (['Enter', ' ', 'Escape', 'e', 'E'].includes(e.key)) { e.preventDefault(); close(); } }; /* laptops */
+    el.onclick = close; addEventListener('keydown', key); }
 
   /* ---------- words (one table, ready to translate) ---------- */
   const T_EN = {
@@ -106,7 +116,7 @@ export function initStory(C) {
     'Tap to cast': 'काँटा डालने के लिए दबाओ', 'Wait for the bite…': 'मछली का इंतज़ार…', 'PULL!': 'खींचो!', 'Too early': 'बहुत जल्दी', 'It got away': 'निकल गई', 'Got one!': 'पकड़ ली!', '# fish': '# मछली', 'A good catch': 'अच्छा शिकार', 'Fishing': 'मछली पकड़ना',
     'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'The women sing it back': 'औरतें गीत दोहराती हैं', 'The road dances with you': 'पूरी सड़क तुम्हारे साथ नाचती है', 'The song goes down the road': 'गीत सड़क पर आगे बढ़ता है', 'Sarpa enej sung': 'सरपा एनेज गा लिया', 'Tamak played': 'तामाक बजा लिया',
     'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: Sarpa enej on the village road (#/#)': 'आज: गाँव की सड़क पर सरपा एनेज (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
-    'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
+    'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Tap to begin': 'शुरू करने के लिए टैप करें', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
     // the ring finale (lines that live in index.html, translated while the story's ring runs)
     'Stage 2: The Feint': 'चरण 2: झाँसा', 'He fakes now. Wait for the real charge!': 'अब वह झाँसा देता है। असली हमले का इंतज़ार करो!', 'Stage 3: Twice': 'चरण 3: दो बार', 'He can charge twice in a row!': 'वह लगातार दो बार दौड़ सकता है!',
     'Stage 4: The Hunter': 'चरण 4: शिकारी', 'His charge bends toward you. Roll late!': 'उसकी दौड़ तुम्हारी ओर मुड़ती है। देर से लुढ़को!', 'Stage 5: Sohrai Legend': 'चरण 5: सोहराय वीर', 'Everything he has. Hold on!': 'उसकी पूरी ताक़त। डटे रहो!',
