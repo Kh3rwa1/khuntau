@@ -4,7 +4,7 @@ name: apk
 on:
   workflow_dispatch:
   push:
-    branches: [main-y500hu]
+    branches: [main, 'main-*'] # was only main-y500hu, an earlier session's branch: pushes to main built no app from 24 Nov morning on
     paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh', 'public/**', 'twa/twa-manifest.json']
 permissions:
   contents: write
