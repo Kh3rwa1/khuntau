@@ -63,8 +63,15 @@ const charge = (P) => P.ev(async () => { const g = __k.game; g.p.invuln = 999; g
   // walking out
   await P.ev(() => { __k.hs.next = 999; const g = __k.game; g.lives = 3; g.p.invuln = 999; g.b.state = 'watch'; g.b.t = 0; g.b.dur = 99; });
   check(await P.ev(() => document.getElementById('leaveBtn').hidden), 'no LEAVE before you have anything to lose');
-  await P.ev(() => { __k.game.t = 80; __k.award(5, 'test'); });
+  // a long name on today's board: the 'pass <name>' chip lay on the lamps (seen on the live site, 24 Nov), and with a combo on the score too
+  await P.ev(() => { __k.boardData = { top: [{ n: 'Paritosh Hembr', p: 40 }] }; __k.game.t = 80; __k.award(5, 'test'); });
   check(await P.ev(() => !document.getElementById('leaveBtn').hidden), 'LEAVE appears once you hold 3 points');
+  const hud = await P.ev(() => { const $ = (id) => document.getElementById(id); $('comboChip').hidden = false; $('combo').textContent = '5';
+    const R = (e) => e.getBoundingClientRect(), c = R($('rivalChip')), over = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+    const others = [...document.querySelectorAll('#hudScore .chip, #pauseBtn, #muteBtn, #talkHud, #leaveBtn, #hideBtn, #rollBtn, #grabBtn')].filter(e => e.offsetParent !== null || getComputedStyle(e).position === 'fixed').filter(e => R(e).width > 0);
+    const r = { shown: !$('rivalChip').hidden && c.width > 40, text: $('rivalName').textContent + ' ' + $('rivalPts').textContent, lamps: $('lamps').children.length, n: others.length, hit: others.filter(e => over(c, R(e))).map(e => e.id || e.className), inside: c.left >= 0 && c.right <= innerWidth && c.top >= 0 };
+    $('comboChip').hidden = true; return r; });
+  check(hud.shown && hud.lamps === 4 && hud.n >= 6 && hud.hit.length === 0 && hud.inside, `phone: the 'pass' chip (${hud.text}) covers no lamp, score, combo or button, with four lamps and a combo showing` + (hud.hit.length ? ' - on ' + hud.hit.join(', ') : ''));
   await P.page.screenshot({ path: 'tests/out/rules-leave-portrait.jpg', type: 'jpeg', quality: 72 });
   const box = await P.ev(() => { const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; const l = r('leaveBtn'), over = (a, b) => a[0] < b[2] - 1 && b[0] < a[2] - 1 && a[1] < b[3] - 1 && b[1] < a[3] - 1; return { l, hit: ['hideBtn', 'rollBtn', 'grabBtn'].filter(id => over(l, r(id))), inside: l[0] >= 0 && l[2] <= innerWidth && l[3] <= innerHeight }; });
   check(box.hit.length === 0 && box.inside, 'LEAVE covers none of HIDE, ROLL or GRAB and sits on the screen');

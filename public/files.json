@@ -1,5 +1,5 @@
 {
- "v": "405defa50d",
+ "v": "00499d2753",
  "files": {
   "art/card.webp": "01f2eaba4df92ba8d31fbceaf205d7dc43eb5cb76498d1064f77614343c01be7",
   "art/day1.webp": "186b993866951b081b4e5184a5340ff3f6d04361aba66c413020cba7981dae3e",
@@ -68,7 +68,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "924fe3aed83bd7b1500c09b59534bfd53b6e839b6d2b32e4886a720cabbd0ba5",
+  "index.html": "ea77d2c4f3f14889a4f14dce56656d80eecfc2b1a27cc0f86475ea97277923ba",
   "life.js": "dbc9aac62a2125808ed03c01acfb1aed245c7c19275371456cf298728d315ac1",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
@@ -79,7 +79,7 @@
   "og.jpg": "0713299030e3032db551cb1ff19e71644e945de467ceea93f2f379ef37783dd3",
   "privacy.html": "9ab1c476a21ffb1d84fbd44d7a88355dc2333f13fa2a4085328a0110450fcf74",
   "stats.html": "6899fe012fbbf38c9fa6a226c53c562b6869694fe4da654d0d179a54bf659e3c",
-  "story.js": "6b56a058e0b70e69ef51b0278cee0d00685153b43033d8e5458028299c40018d",
+  "story.js": "faa77f92983cc4765fc80b2abe41cddf1296702631fa2e9be44229f65320ed2c",
   "talk.js": "24524280ee8123915e38591e411d9790d378d2c4550632f604cf133a59acebbc",
   "vendor/three/LICENSE": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
   "vendor/three/build/three.module.min.js": "08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb13c39e7",

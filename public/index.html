@@ -308,6 +308,10 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 #tapQuit { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: calc(60px + env(safe-area-inset-top, 0px)); min-width: 0; }
 .storyrow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 460px) { .hud-tl .chip small, #timerChip small { display: none; } .hud .chip { padding: 5px 9px; } .lamps svg { width: 18px; height: 18px; } }
+/* The 'pass <name>' chip has no room in the top row of a phone: with a long name it lay on the lamps, with a combo on the
+   score as well. Below 760 px it sits under the pause button (the village's talk button uses that place, never in a round). */
+#rivalName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+@media (max-width: 760px) { #rivalChip { position: fixed; top: calc(58px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); max-width: 64vw; box-sizing: border-box; } }
 </style>
 
 </head>

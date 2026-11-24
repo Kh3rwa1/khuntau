@@ -188,7 +188,7 @@ export function initStory(C) {
   }
   const langName = (l) => ({ en: 'English', hi: 'हिन्दी', sat: SAT['Santali'] || 'Santali' })[l];
   const toast = (a, ms) => C.toast(tr(a), ms), pop = (a, b) => C.pop(tr(a), tr(b)), hint = (a, ms) => C.hint(tr(a), ms);
-  const walkTip = () => C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.');
+  const walkTip = () => C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। बटन नारंगी हो जाए तो उसे दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the button when it turns orange.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। बटन नारंगी हो जाए तो E दबाओ या उस पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. When the button turns orange, press E or click it.');
   function applyLang() {
     $('pickOk').textContent = tr('Tie this one to the khunt'); $('padDone').textContent = tr('Done'); $('tapQuit').textContent = tr('Leave');
     $('padT').firstElementChild.firstChild.nodeValue = tr('TAMAK'); $('padU').firstElementChild.firstChild.nodeValue = tr('TUMDAK');
