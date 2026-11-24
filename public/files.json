@@ -1,5 +1,5 @@
 {
- "v": "96b3ead22c",
+ "v": "a21b798b5b",
  "files": {
   "audio/bellow.mp3": "974facb3a639a219dbb5db381a3ad237cee0e6c235127da97feb5acec13ed9bf",
   "audio/bells.mp3": "67d154be495a3ffcd5add0503da1c6908112ac81582aed12f8b6c933322a38d5",
@@ -57,7 +57,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "d3df2124b8f3a3c0f36b0b13ddd7e26ac63592d4ddf131f4541754de5a6d0411",
+  "index.html": "95fd126a141eddab40c766e769e1e6853f9b00d29af7bbdd79d1fbd9875bd54b",
   "life.js": "dc9cec57f93b52cdd345ba8d8b24ced134aae2a33a049e5099ae0d3b5be3abc8",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
