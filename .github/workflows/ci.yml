@@ -49,6 +49,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::warning::CLOUDFLARE_API_TOKEN secret not set: tests passed, nothing deployed."; exit 0; fi
+          # Never deploy a commit that main has already moved past: a slow run used to finish after a newer deploy and put old code back on the live site.
+          tip=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$tip" != "$GITHUB_SHA" ]; then echo "::notice::main is now at ${tip:0:7}; this run tested ${GITHUB_SHA:0:7}. Not deploying older code."; exit 0; fi
           npx wrangler deploy
           sleep 5
           v=$(grep -o "VERSION = '[a-f0-9]*'" public/sw.js)

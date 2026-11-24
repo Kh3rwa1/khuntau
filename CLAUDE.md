@@ -75,7 +75,7 @@ Run tests from the repo root. Screenshots land in `tests/out/`; look at them, do
 
 ## Deploy checklist
 GitHub CI deploys: every push to `main` runs the full suite, and if it is green and the repo secret
-`CLOUDFLARE_API_TOKEN` exists, it runs `wrangler deploy` and checks the live `sw.js` VERSION. So merging to `main`
+`CLOUDFLARE_API_TOKEN` exists, it runs `wrangler deploy` and checks the live `sw.js` VERSION. It deploys only if its commit is still the tip of `main` (since 24 Nov: a slow run for an older commit once finished after a newer deploy and put old code back live). So merging to `main`
 means going live about 20 minutes later. Before merging:
 1. Run `node tests/serve.mjs` + `npm test` (and `wrangler dev --local` + `npm run test:online` for Worker changes);
    look at the screenshots in `tests/out/`.
