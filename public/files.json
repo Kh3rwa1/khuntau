@@ -1,5 +1,5 @@
 {
- "v": "4db128e539",
+ "v": "3fb346677d",
  "files": {
   "audio/bellow.mp3": "974facb3a639a219dbb5db381a3ad237cee0e6c235127da97feb5acec13ed9bf",
   "audio/bells.mp3": "67d154be495a3ffcd5add0503da1c6908112ac81582aed12f8b6c933322a38d5",
@@ -57,7 +57,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "8685b3a4dea1b5a2834cecc1e08e84dae7581f3064ef4f7ae12ce78f5cede3b0",
+  "index.html": "6573fdfcff7c8ff924ba217dbcad59373bdd13c124632ef3a81d46497237f8f9",
   "life.js": "dbc9aac62a2125808ed03c01acfb1aed245c7c19275371456cf298728d315ac1",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
@@ -68,7 +68,7 @@
   "og.jpg": "15d478d3255d6f69c236f1728450484c89c25bdf8804b60afbb5eb3f15f21125",
   "privacy.html": "a100d68a996fed44488e3194858d6e9edf24b086a0f6b0f79b3ee11fc57a91c6",
   "stats.html": "6899fe012fbbf38c9fa6a226c53c562b6869694fe4da654d0d179a54bf659e3c",
-  "story.js": "776381412d3c13c613e89fe76d7ba39557506cbeb455e4329844a63a8c861b02",
+  "story.js": "a330ae718fd26e7f3e8f2c13c3d0d1d06e03e25b5d13fe0cae94c0abfc843e33",
   "vendor/three/LICENSE": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
   "vendor/three/build/three.module.min.js": "08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb13c39e7",
   "vendor/three/examples/jsm/loaders/GLTFLoader.js": "45139faddd5aaf48ed2d62203d976e5cbd703db1a592de40527f9f6cf58abd44",

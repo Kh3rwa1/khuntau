@@ -762,6 +762,41 @@ const wallTex = canvasTex(256, 128, (ctx, w, h) => {
   for (let x = 8; x < w; x += 32) { ctx.beginPath(); ctx.arc(x, h * 0.48, 4, 0, 7); ctx.fill(); }
   speckle(ctx, w, h, 1600, ['#000', '#fff', '#7a6a55'], 2);
 });
+/* Outside walls, from Dulor's photos of a Santal house (24 Nov): white lime on top, a charcoal-black painted band
+   in the middle edged with pink scallops, red ochre at the foot. Canvas height = the 2.6 m wall (top of the canvas
+   at the eave); the band runs 0.74-2.06 m so the story's wall motifs sit inside it. Everything repeats every 512 px
+   (one 2.5 m tile), so every wobble and pattern has a whole number of periods across the width. The inside of the
+   house keeps wallTex. */
+const houseWallTex = canvasTex(512, 512, (c, w, h) => {
+  const Y = m => (1 - m / 2.6) * h, yTop = Y(2.06), yBot = Y(0.74);
+  const wob = (x, k) => Math.sin(x / w * 6.283 * 3 + k) * 1.2 + Math.sin(x / w * 6.283 * 7 + k * 2.3) * 0.7; // hand-painted edges
+  const band = (y0, y1, col, k0, k1) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, y0 + wob(0, k0));
+    for (let x = 0; x <= w; x += 8) c.lineTo(x, y0 + wob(x, k0)); for (let x = w; x >= 0; x -= 8) c.lineTo(x, y1 + wob(x, k1)); c.closePath(); c.fill(); };
+  c.fillStyle = '#e8e3d8'; c.fillRect(0, 0, w, h);                      // lime wash
+  band(yBot, h + 4, '#bd5630', 2.1, 0);                                  // red ochre
+  band(yTop, yBot, '#2c2e30', 0.7, 2.1);                                 // charcoal panel
+  const pink = '#eaa2a6', white = '#f1ece2';
+  // bottom border: a pink strip with a white wave through it, scallops rising from it into the black
+  const s0 = yBot - 15; band(s0, yBot + 1, pink, 4.0, 2.1);
+  c.strokeStyle = white; c.lineWidth = 2; c.beginPath();
+  for (let x = 0; x <= w; x += 2) { const y = s0 + 8 + Math.sin(x / 16 * 3.1416) * 3 + wob(x, 4.0) * 0.5; x ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+  for (let x = 8; x < w; x += 16) { const y = s0 + wob(x, 4.0); c.fillStyle = pink; c.beginPath(); c.arc(x, y + 1, 7, Math.PI, 0); c.fill();
+    c.strokeStyle = white; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y + 1, 7, Math.PI, 0); c.stroke(); c.fillStyle = white; c.beginPath(); c.arc(x, y - 2, 1.6, 0, 7); c.fill(); }
+  // top border: a narrower pink strip with white dots, scallops hanging from it
+  const t1 = yTop + 11; band(yTop - 1, t1, pink, 0.7, 5.2);
+  c.fillStyle = white; for (let x = 4; x < w; x += 8) { c.beginPath(); c.arc(x, yTop + 5 + wob(x, 0.7) * 0.5, 1.4, 0, 7); c.fill(); }
+  for (let x = 8; x < w; x += 16) { const y = t1 + wob(x, 5.2); c.fillStyle = pink; c.beginPath(); c.arc(x, y - 1, 6, 0, Math.PI); c.fill();
+    c.strokeStyle = white; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y - 1, 6, 0, Math.PI); c.stroke(); }
+  // brush strokes and grit, so the bands read as paint on mud and not as flat plastic
+  for (let i = 0; i < 700; i++) { const y = Math.random() * h, x = Math.random() * w, L = 10 + Math.random() * 30;
+    c.strokeStyle = Math.random() < 0.5 ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)'; c.lineWidth = 1 + Math.random() * 2;
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + L, y + (Math.random() - 0.5) * 2); c.stroke();
+    if (x + L > w) { c.beginPath(); c.moveTo(x - w, y); c.lineTo(x + L - w, y); c.stroke(); } }
+  // rain splash and dust darken the foot of the ochre; a faint grey stain under the eave on the lime
+  let g = c.createLinearGradient(0, h - 50, 0, h); g.addColorStop(0, 'rgba(60,30,15,0)'); g.addColorStop(1, 'rgba(60,30,15,.35)'); c.fillStyle = g; c.fillRect(0, h - 50, w, 50);
+  g = c.createLinearGradient(0, 0, 0, 40); g.addColorStop(0, 'rgba(90,80,70,.25)'); g.addColorStop(1, 'rgba(90,80,70,0)'); c.fillStyle = g; c.fillRect(0, 0, w, 40);
+  speckle(c, w, h, 2600, ['#000', '#fff', '#7a6a55'], 2);
+});
 const thatchTex = canvasTex(128, 128, (ctx, w, h) => {
   ctx.fillStyle = '#9a8656'; ctx.fillRect(0, 0, w, h);
   for (let i = 0; i < 900; i++) { ctx.strokeStyle = ['#6e6040', '#c2b07c', '#857549', '#5a5038'][i % 4]; ctx.globalAlpha = 0.6; ctx.beginPath(); const x = Math.random() * w, y = Math.random() * h; ctx.moveTo(x, y); ctx.lineTo(x + rand(-2, 2), y + rand(8, 20)); ctx.stroke(); }
@@ -867,8 +902,8 @@ const doorMat = Mat({ color: 0x24160e });
 // windows, two-tier thatch with a top knot and rafter ends, or a clay-tile roof on some. Everything is baked into a few
 // shared meshes (walls in one draw; the texture tiling lives in the UVs instead of per-house materials).
 const houseWalls = [], housePlinth = [], houseWood = [], houseTiles = [];
-const wallTexR = wallTex.clone(); wallTexR.needsUpdate = true; wallTexR.wrapS = THREE.RepeatWrapping;
-const wallMat = shade(Mat({ map: wallTexR, roughness: 0.95 }), { eave: true });
+houseWallTex.wrapS = THREE.RepeatWrapping;
+const wallMat = shade(Mat({ map: houseWallTex, roughness: 0.95 }), { eave: true });
 // plinth, woodwork, doorways and windows share one vertex-coloured material: one draw call for all of them
 const houseVC = Mat({ vertexColors: true, roughness: 0.95, flatShading: true }), plinthMat = 0x8a5a3a, woodMat = 0x5e4630, holeMat = 0x24160e;
 const vc = (geo, hex) => { const c = new THREE.Color(hex), n = geo.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([c.r, c.g, c.b], i * 3); geo.setAttribute('color', new THREE.BufferAttribute(a, 3)); return geo; };

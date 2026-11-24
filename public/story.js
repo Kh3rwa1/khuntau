@@ -251,7 +251,7 @@ export function initStory(C) {
     const defs = [[-(H.w / 2 - 1.05), H.d / 2 + 0.03, 0], [H.w / 2 - 1.05, H.d / 2 + 0.03, 0], [H.w / 2 + 0.03, 0, Math.PI / 2]];
     defs.forEach(([lx, lz, ry], i) => {
       const geo = new THREE.PlaneGeometry(1.25, 1.25);
-      const mk = (map, op) => { const m = mesh(geo, new THREE.MeshBasicMaterial({ map, transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), lx, 1.32, lz, hg); m.rotation.y = ry; return m; };
+      const mk = (map, op) => { const m = mesh(geo, new THREE.MeshBasicMaterial({ map, transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), lx, 1.4, lz, hg); m.rotation.y = ry; return m; }; /* inside the black band of the house wall (0.74-2.06 m) */
       const outline = mk(outlineTex, 0.75), art = mk(motifTex(i), 0); art.visible = false; art.renderOrder = 1;
       const stand = ry ? homeW(lx + 0.95, 0) : homeW(lx, lz + 0.95), look = ry ? homeW(lx, 0) : homeW(lx, lz);
       W.spots.push({ outline, art, stand, look, k: 0 });
