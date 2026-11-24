@@ -2,7 +2,8 @@
 //   npx wrangler dev --local --port 8787 --ip 127.0.0.1    (no Cloudflare login needed)
 //   node tests/online.mjs [base]                          (default http://127.0.0.1:8787)
 // Covers score tickets (valid, replayed, forged, too fast), save codes, push subscription checks,
-// rooms (join, roster, start, grab, handi, hits, round over, scores to the board) and ask-to-join.
+// rooms (join, roster, start, grab, handi, hits, round over, scores to the board) and ask-to-join; the village talk
+// (say, read, what is refused, quick phrases, reports, limits).
 import { check, finish } from './check.mjs';
 const BASE = process.argv[2] || 'http://127.0.0.1:8787', WS = BASE.replace(/^http/, 'ws');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -79,6 +80,51 @@ const jip = async (ip, path, body) => (await fetch(BASE + path, { method: 'POST'
   check(await jip('10.8.0.' + (Math.random() * 250 | 0), '/api/restore', { code: 'QQQQQQ' }) === 404, 'other players can still restore while one address is blocked'); }
 { const ip = '10.7.' + (Math.random() * 250 | 0) + '.1'; const st = []; for (let i = 0; i < 34; i++) st.push(await jip(ip, '/api/save', { pid: rid(), data: { a: 1 } }));
   const first = st.indexOf(429); check(first >= 30 && first <= 31, `one address inventing new player ids is capped after 30 a minute (room for carrier NAT); first 429 at ${first + 1}`); }
+
+// ---------- village talk: one public chat for everyone ----------
+{ const ipA = '10.7.0.' + (1 + Math.floor(Math.random() * 250)); // its own IP, so the limits above and below do not mix
+  const cj = async (path, body, ip = ipA) => { const r = await fetch(BASE + path, { ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}), headers: { 'cf-connecting-ip': ip } }); let d = null; try { d = await r.clone().json(); } catch { d = await r.text(); } return { s: r.status, d }; };
+  const a = rid(), b = rid(), c = rid();
+  const h0 = await cj('/api/here?pid=' + a); check(h0.s === 200 && h0.d.on === 1 && h0.d.now >= 1 && h0.d.today >= 1, 'talk: a heartbeat counts you as here');
+  await cj('/api/here?pid=' + b); const h1 = await cj('/api/here?pid=' + a); check(h1.d.now >= 2 && h1.d.today >= 2, `talk: two players are here now (${h1.d.now} now, ${h1.d.today} today)`);
+  check((await cj('/api/here?pid=bad')).s === 400 && (await cj('/api/chat', { pid: 'bad', text: 'hi' })).s === 400, 'talk: a bad player id is refused');
+  const base = h1.d.last, say = (pid, body) => cj('/api/chat', { pid, name: 'Mina', after: base, ...body }), last = r => (r.d.msgs || []).at(-1) || {};
+  const word = 'johar ' + Math.random().toString(36).slice(2, 8);
+  const s1 = await say(a, { text: '  ' + word + ' \n  ok ' }); check(s1.s === 200 && last(s1).x === word + ' ok' && last(s1).me === 1 && last(s1).n === 'Mina', 'talk: a typed message is kept on one line, trimmed, and comes back as mine');
+  const id1 = last(s1).id;
+  const r1 = await cj('/api/chat?pid=' + b + '&after=' + base), m1 = r1.d.msgs.find(m => m.id === id1);
+  check(!!m1 && !m1.me && typeof m1.a === 'string' && m1.a.length === 10 && Math.abs(m1.at - Date.now()) < 60000, 'talk: another player reads it, with an author tag and a time, not as theirs');
+  check(!JSON.stringify(r1.d).includes(a), "talk: readers never get the author's player id");
+  { const h = await cj('/api/here?pid=' + c); check(h.d.last === id1 && h.d.p && h.d.p.x === word + ' ok', 'talk: the heartbeat carries the newest message for the home screen'); }
+  check((await say(a, { text: 'again so soon' })).s === 429, 'talk: a second message within three seconds is refused');
+  await sleep(3100);
+  check((await say(a, { text: word + ' ok' })).d.err === 'dup', 'talk: saying the same thing again is refused');
+  // what may not be sent (each from a fresh player, so only the rule under test can refuse it)
+  const bad = [['see http://x.y/z', 'link'], ['go to www.khel now', 'link'], ['my site khel.com', 'link'], ['call 98765 43210', 'number'], ['नंबर ९८७६५४३२१०', 'number'], ['add me @mina', 'contact'], ['come on whatsapp', 'contact'],
+    ['you b!tch', 'words'], ['fuuuuck this', 'words'], ['MADARCHOD', 'words'], ['तू चूतिया है', 'words'], ['   ', 'empty']];
+  const wrong = []; for (const [t, why] of bad) { const r = await say(rid(), { text: t }); if (r.s !== 400 || r.d.err !== why) wrong.push(`${t} -> ${r.s} ${r.d && r.d.err}`); }
+  check(!wrong.length, 'talk: links, phone numbers, handles and abuse are refused, each with its reason' + (wrong.length ? ': ' + wrong.join('; ') : ''));
+  const fine = ['wait.me too', 'I scored 25 then 30', 'grape juice in Sussex', 'ganda khel mat khelo', 'जोहार! कौन खेलेगा?', 'ᱡᱚᱦᱟᱨ', 'class of 2026'];
+  const refused = []; for (const t of fine) { const r = await say(rid(), { text: t }); if (r.s !== 200 || last(r).x !== t) refused.push(`${t} -> ${r.s} ${r.d && r.d.err}`); }
+  check(!refused.length, 'talk: ordinary lines in English, Hindi and Ol Chiki go through unchanged' + (refused.length ? ': ' + refused.join('; ') : ''));
+  { const r = await say(rid(), { text: 'x'.repeat(200) }); check(r.s === 200 && last(r).x.length === 120, 'talk: a long message is cut to 120 characters'); }
+  { const r = await cj('/api/chat', { pid: rid(), name: 'chutiya', text: 'hello there ' + word }); check(r.s === 200 && last(r).n === 'Player', 'talk: an abusive name is shown as Player'); }
+  // quick phrases travel as a key
+  const q1 = await say(b, { q: 'johar' }); check(q1.s === 200 && last(q1).q === 'johar' && last(q1).x === undefined, 'talk: a quick phrase is stored as its key');
+  check((await say(rid(), { q: 'not-a-phrase' })).d.err === 'empty', 'talk: an unknown phrase key with no text is refused');
+  await sleep(3100); check((await say(b, { q: 'johar' })).d.err === 'dup', 'talk: the same quick phrase straight away is refused');
+  // reports: you cannot report yourself; one report hides it for the reporter, two hide it for everyone
+  check((await cj('/api/chat/report', { pid: a, id: id1 })).d.err === 'own', 'talk: you cannot report your own message');
+  const rp1 = await cj('/api/chat/report', { pid: b, id: id1 }); check(rp1.s === 200 && rp1.d.hidden === 0, 'talk: one report does not hide a message for everyone');
+  check(!(await cj('/api/chat?pid=' + b + '&after=' + base)).d.msgs.some(m => m.id === id1) && (await cj('/api/chat?pid=' + c + '&after=' + base)).d.msgs.some(m => m.id === id1), 'talk: but the reporter no longer sees it, others still do');
+  await cj('/api/chat/report', { pid: b, id: id1 }); // the same player again does not count twice
+  check((await cj('/api/chat?pid=' + c + '&after=' + base)).d.msgs.some(m => m.id === id1), 'talk: the same player reporting twice counts once');
+  const rp2 = await cj('/api/chat/report', { pid: c, id: id1 }); check(rp2.d.hidden === 1 && !(await cj('/api/chat?pid=' + rid() + '&after=' + base)).d.msgs.some(m => m.id === id1), 'talk: a second player reporting hides it for everyone');
+  check((await cj('/api/chat/report', { pid: c, id: 999999999 })).s === 404, 'talk: reporting a message that is gone: 404');
+  // limits: many phones share one address on Indian mobile networks, so the per-address limit is roomy (forty a minute)
+  { const ipB = '10.8.0.' + (1 + Math.floor(Math.random() * 250)); let stopped = 0; for (let i = 0; i < 45; i++) { const r = await cj('/api/chat', { pid: rid(), name: 'N', text: 'line ' + i + ' ' + word }, ipB); if (r.s === 429) { stopped = i; break; } }
+    check(stopped >= 38 && stopped <= 41, `talk: one address is held to about forty messages a minute (stopped at ${stopped})`); }
+}
 
 // ---------- rooms ----------
 const code = 'T' + Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, 'Q');

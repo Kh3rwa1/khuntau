@@ -1,5 +1,5 @@
 {
- "v": "3abb27f10c",
+ "v": "923aa85320",
  "files": {
   "art/card.webp": "01f2eaba4df92ba8d31fbceaf205d7dc43eb5cb76498d1064f77614343c01be7",
   "art/day1.webp": "186b993866951b081b4e5184a5340ff3f6d04361aba66c413020cba7981dae3e",
@@ -68,7 +68,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "cb700066921910b8f3864a3e8f495c46fb6679d2961e34e7e5abbb0c93e93595",
+  "index.html": "cdca372c966092598e886acd47fa8ff5bc1c08dd265ef33be8b2b742f4522275",
   "life.js": "dbc9aac62a2125808ed03c01acfb1aed245c7c19275371456cf298728d315ac1",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
@@ -77,9 +77,10 @@
   "models/cow.json": "5ce93eeed0eb99b8f9993f758cab288a74fb4852a683b04f3673b37d9a0ba136",
   "models/worker_female.json": "af5df0ccfdce570d29fb6f623b5d51500e613eeacad90baa58d1d8a2a19aa2a5",
   "og.jpg": "0713299030e3032db551cb1ff19e71644e945de467ceea93f2f379ef37783dd3",
-  "privacy.html": "a100d68a996fed44488e3194858d6e9edf24b086a0f6b0f79b3ee11fc57a91c6",
+  "privacy.html": "9ab1c476a21ffb1d84fbd44d7a88355dc2333f13fa2a4085328a0110450fcf74",
   "stats.html": "6899fe012fbbf38c9fa6a226c53c562b6869694fe4da654d0d179a54bf659e3c",
-  "story.js": "d47f9aa15c85ff0c598f66dd2139dbbb22327bc47ccfb8023adf297702ae60f2",
+  "story.js": "8438e7b4049b799b7fb594b1d61e3ec1cc4ef869fa4db571251655013dbbdb96",
+  "talk.js": "89d30ddc8ba9f3731409c509661414137d79b1d1988020a084b45aa152a50127",
   "vendor/three/LICENSE": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
   "vendor/three/build/three.module.min.js": "08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb13c39e7",
   "vendor/three/examples/jsm/loaders/GLTFLoader.js": "45139faddd5aaf48ed2d62203d976e5cbd703db1a592de40527f9f6cf58abd44",

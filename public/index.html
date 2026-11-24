@@ -379,6 +379,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
       <div class="xpbar"><i id="xpFill"></i></div>
       <ul class="missions" id="missions"></ul>
       <div class="shirts" id="shirts" aria-label="Shirt colour"></div>
+      <button class="boardline" id="talkBtn" type="button" hidden><span>Village talk</span><u>Talk</u></button>
       <button class="boardline" id="animalBtn" type="button"><span>In the ring: <b id="animalName">Brown bull</b></span><u>Change</u></button>
       <button class="boardline" id="boardBtn" type="button"><span id="boardLine">Today's board</span><u>See board</u></button>
       <button class="boardline" id="villageBtn" type="button"><span id="villageLine">Play for your village</span><u id="villageCta">Choose</u></button>
@@ -969,6 +970,7 @@ for (let i = 0; i < 9; i++) {
 // village props, all in the houses' shared vertex-coloured mesh (no extra draw calls): worn paths to every door, a hand
 // pump, a bullock cart, a clothesline, fenced kitchen gardens behind some houses, rocks. Things you could walk into are in
 // villageProps, which the story's collision and the animals' wandering both respect.
+const talkSpot = { x: 0, z: 0, a: 0 }; // the talking place: the log seat between your house and the next (village talk, talk.js)
 const villageProps = [], market = { people: [] }; // market: the backyard pork stall (props here, people once the villagers load)
 {
   const gapA = (i) => 0.35 + (2 * Math.PI / 9) * i, P = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
@@ -1059,7 +1061,7 @@ const villageProps = [], market = { people: [] }; // market: the backyard pork s
     parts2.push(vc(new THREE.BoxGeometry(0.12, 0.06, 0.1).translate(-0.38, -0.39, 0), 0xb0564a)); // meat in one pan
     const sc = new THREE.Mesh(mergeGeometries(parts2), houseVC); const [x, z] = B(-1.5, LB + 0.4); sc.position.set(x, 1.62, z); sc.rotation.y = h.rot; scene.add(sc); market.scale = sc; }
   // the square: two log seats at its edge where people sit to watch
-  for (const gi of [0.5, 4.0]) { const a = gapA(gi), [x, z] = P(a, 17.4); put(new THREE.CylinderGeometry(0.2, 0.23, 1.9, 9).rotateZ(Math.PI / 2), 0x6e5238, x, 0.21, z, -a, 0, 0);
+  for (const gi of [0.5, 4.0]) { const a = gapA(gi), [x, z] = P(a, 17.4); if (gi === 0.5) Object.assign(talkSpot, { x, z, a }); put(new THREE.CylinderGeometry(0.2, 0.23, 1.9, 9).rotateZ(Math.PI / 2), 0x6e5238, x, 0.21, z, -a, 0, 0);
     for (const s4 of [-0.6, 0.6]) villageProps.push({ x: x - Math.sin(a) * s4, z: z + Math.cos(a) * s4, r: 0.45, top: 0.5 }); }
   // hand pump on a concrete pad, a bucket under the spout (gap 2.5)
   { const [x, z] = P(gapA(2.5), 22.5), ry = -gapA(2.5) + Math.PI / 2;
@@ -1144,7 +1146,10 @@ for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoo
    and carries the story's motifs. Lit exactly like the wall (same shading, eave, shadows) so each panel's charcoal
    background disappears into the band. Neighbouring panels use different cells, and every other one is mirrored. */
 const MURAL = { y0: 0.88, y1: 1.94, door: 0.72, edge: 0.2, off: 0.012 };
-let murals = null, muralsP = null;
+let murals = null, muralsP = null, talk = null;
+// where a point of the world is on the screen (CSS pixels), or null when it is behind the camera or off screen
+const toScreenV = new THREE.Vector3();
+function toScreen(x, y, z) { toScreenV.set(x, y, z).project(camera); if (toScreenV.z > 1 || Math.abs(toScreenV.x) > 1.05 || Math.abs(toScreenV.y) > 1.05) return null; return { x: (toScreenV.x + 1) / 2 * innerWidth, y: (1 - toScreenV.y) / 2 * innerHeight }; }
 // a plane showing one atlas cell (optionally mirrored), and the lit, wall-matched material that draws it; the story
 // uses both for the motifs you paint on your own house
 function muralPlane(c, w, h, flip) { const g = new THREE.PlaneGeometry(w, h), uv = g.attributes.uv;
@@ -2188,10 +2193,11 @@ function onCrowdLoaded() {
     for (const a of [boy, girl]) { scene.add(a.wrap); a.play('Idle'); a.actions.Idle.time = rand(0, 2); }
     market.couple = { boy, girl, x: cx, z: cz, tan, out: [Math.cos(ang), Math.sin(ang)], k: 0, away: 9, seenBy: false }; }
   setTimeout(registerSW, 1500);
+  import('./talk.js').then(m => { talk = m.initTalk({ $, meta, game, track, sfx, spot: talkSpot, story: () => story, project: toScreen, named: n => { if ($('nameIn') && !$('nameIn').value) $('nameIn').value = n; } }); }).catch(e => console.error(e)); // village talk
   muralsP = loadMurals(); // painted figures on the houses' wall bands (one draw); the story's wall motifs use them too
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
-    story = m.initStory({ murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+    story = m.initStory({ talk: () => talk, talkSpot, murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: (src) => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
@@ -3253,7 +3259,7 @@ function audioFrame() {
 // mouse-wheel to zoom. The village has its own (story.js), with the same feel.
 const view = { yaw: 0, pitch: null, zoom: 1, id: null, x: 0, y: 0, id2: null, x2: 0, y2: 0, d0: 1, z0: 1 };
 addEventListener('pointerdown', e => {
-  if (game.mode !== 'play' || cineR.shot || (e.target.closest && e.target.closest('#joyzone, button, .overlay, #pads, input, a'))) return;
+  if (game.mode !== 'play' || cineR.shot || (e.target.closest && e.target.closest('#joyzone, button, .overlay, #pads, input, a, #talk'))) return;
   if (view.id === null) { view.id = e.pointerId; view.x = e.clientX; view.y = e.clientY; }
   else if (view.id2 === null) { view.id2 = e.pointerId; view.x2 = e.clientX; view.y2 = e.clientY; view.d0 = Math.hypot(view.x2 - view.x, view.y2 - view.y) || 1; view.z0 = view.zoom; }
 });
@@ -3777,7 +3783,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, get talk() { return talk; }, talkSpot, toScreen, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3808,7 +3814,7 @@ $('pauseBtn').addEventListener('click', openPause);
 $('resumeBtn').addEventListener('click', closePause);
 $('quitBtn').addEventListener('click', quitToMenu);
 // the Android app's back button: pause or resume; false tells the app there was nothing to close, so it may leave
-window.__appBack = () => { if (game.menuOpen) { closePause(); return true; } if (game.mode === 'play' || game.mode === 'story') { openPause(); return true; } return false; };
+window.__appBack = () => { if (talk && talk.isOpen()) { talk.close(); return true; } if (game.menuOpen) { closePause(); return true; } if (game.mode === 'play' || game.mode === 'story') { openPause(); return true; } return false; };
 addEventListener('keydown', e => {
   if (e.code !== 'Escape' && e.code !== 'KeyP') return;
   if (document.activeElement?.tagName === 'INPUT') return;

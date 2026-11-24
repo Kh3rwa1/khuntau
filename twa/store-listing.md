@@ -133,7 +133,7 @@ Tablet screenshots and a promo video are optional; skip them for now.
 - **Content rating questionnaire** (category: Game). Answer truthfully; these are the ones that matter:
   - Violence: yes, mild and cartoon-like (a bull knocks the player over; no blood). The pork stall shows cut meat and a killed pig.
   - Alcohol: yes, the player drinks handi (rice beer) as part of the festival.
-  - Users can interact or exchange content: yes (voice chat, names on the leaderboard, village names). Not moderated.
+  - Users can interact or exchange content: yes (the village talk: a public text chat between all players; voice chat in rooms; names on the leaderboard; village names). The village talk has automatic filters (links, phone numbers, handles, abuse words), in-app Report on every message (two reports hide it) and Hide this person; voice is not moderated. Google's user-generated-content policy asks for exactly these (report, block, a way to remove content: `MUTED_TAGS` / `CHAT_ON` in `src/worker.js`).
   - Shares location: no. Purchases: no. Gambling, sexual content, drugs, bad language: no.
   - Expect a rating around 12+/Teen, not "Everyone".
 - **Data safety:** import `twa/data-safety.csv` (Data safety > Import from CSV), then check every screen before saving. It holds these answers (Claude's reading of the form against what `src/worker.js` stores; Dulor signs it):
@@ -142,5 +142,6 @@ Tablet screenshots and a promo video are optional; skip them for now.
   - Device or other IDs: collected, required, app functionality (a random player id made by the game).
   - App activity > App interactions: collected, app functionality and analytics (scores, progress backup, anonymous step counts).
   - Audio > Voice or sound recordings: collected, optional, processed ephemerally, app functionality (voice chat; never stored).
+  - Messages > Other in-app messages: collected, optional, app functionality (the village talk: what you type is public to all players and deleted after 3 days).
   - Nothing is shared with third parties. Location: not collected (village and district are typed in, not read from the phone).
 - **Government apps, financial features, health, news:** No to all.

@@ -119,7 +119,7 @@ export function initStory(C) {
     'Tap to cast': 'काँटा डालने के लिए दबाओ', 'Wait for the bite…': 'मछली का इंतज़ार…', 'PULL!': 'खींचो!', 'Too early': 'बहुत जल्दी', 'It got away': 'निकल गई', 'Got one!': 'पकड़ ली!', '# fish': '# मछली', 'A good catch': 'अच्छा शिकार', 'Fishing': 'मछली पकड़ना',
     'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'The women sing it back': 'औरतें गीत दोहराती हैं', 'The road dances with you': 'पूरी सड़क तुम्हारे साथ नाचती है', 'The song goes down the road': 'गीत सड़क पर आगे बढ़ता है', 'Sarpa enej sung': 'सरपा एनेज गा लिया', 'Tamak played': 'तामाक बजा लिया',
     'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: Sarpa enej on the village road (#/#)': 'आज: गाँव की सड़क पर सरपा एनेज (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
-    'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Tap to begin': 'शुरू करने के लिए टैप करें', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
+    'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Tap to begin': 'शुरू करने के लिए टैप करें', 'TALK': 'बात करो', 'Village talk': 'गाँव की बातचीत', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
     // the ring finale (lines that live in index.html, translated while the story's ring runs)
     'Stage 2: The Feint': 'चरण 2: झाँसा', 'He fakes now. Wait for the real charge!': 'अब वह झाँसा देता है। असली हमले का इंतज़ार करो!', 'Stage 3: Twice': 'चरण 3: दो बार', 'He can charge twice in a row!': 'वह लगातार दो बार दौड़ सकता है!',
     'Stage 4: The Hunter': 'चरण 4: शिकारी', 'His charge bends toward you. Roll late!': 'उसकी दौड़ तुम्हारी ओर मुड़ती है। देर से लुढ़को!', 'Stage 5: Sohrai Legend': 'चरण 5: सोहराय वीर', 'Everything he has. Hold on!': 'उसकी पूरी ताक़त। डटे रहो!',
@@ -686,6 +686,7 @@ export function initStory(C) {
         else if (!save.garland) add(W.gStand, 2.4, 'GARLAND', 'Garland and paddy sheaves', () => rebuke(3, 'the garland', putGarland));
       }
       if (save.ch >= 3) { const chart = save.ch === 3 || (save.ch >= 5 && !today().drum); add(W.drumStand, 1.9, 'BEAT', chart ? 'Beat the tamak' : 'Drum freely', () => (save.ch === 3 ? rebuke(3, 'the Khuntau drumming', () => drumStart(!chart)) : drumStart(!chart))); }
+      { const tk = C.talk && C.talk(); if (tk && tk.state.on) add(C.talkSpot, 2.4, 'TALK', 'Village talk', () => tk.open('spot')); } // the talking place by the log seat
       if (save.ch >= 1) {
         add(ARCH, 1.7, 'SHOOT', 'Shoot at the target', archStart);
         add(FSTAND, 1.7, 'FISH', 'Fish in the pond', () => rebuke(5, 'the fishing', fishStart));
@@ -1402,7 +1403,7 @@ export function initStory(C) {
   const look = { id: null, x: 0, y: 0, id2: null, x2: 0, y2: 0, d0: 0, z0: 1 };
   addEventListener('pointerdown', (e) => {
     if (!S.on || game.mode !== 'story' || S.inside || S.mode !== 'walk') return;
-    if (e.target.closest && e.target.closest('#joyzone, button, .overlay, #dlg, #pick, #pads')) return;
+    if (e.target.closest && e.target.closest('#joyzone, button, .overlay, #dlg, #pick, #pads, #talk')) return;
     if (look.id === null) { look.id = e.pointerId; look.x = e.clientX; look.y = e.clientY; }
     else if (look.id2 === null) { look.id2 = e.pointerId; look.x2 = e.clientX; look.y2 = e.clientY; look.d0 = Math.hypot(look.x2 - look.x, look.y2 - look.y) || 1; look.z0 = S.camZoom || 1; }
   });

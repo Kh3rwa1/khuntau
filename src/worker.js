@@ -403,10 +403,42 @@ const DISTRICTS = new Set(["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "E
   "Bankura", "Birbhum", "Purulia", "Jhargram", "Paschim Medinipur", "Paschim Bardhaman", "Purba Bardhaman", "Dakshin Dinajpur", "Uttar Dinajpur", "Malda", "Hooghly", "Murshidabad",
   "Mayurbhanj", "Balasore", "Keonjhar", "Sundargarh", "Banka", "Bhagalpur", "Jamui", "Katihar", "Purnia", "Kokrajhar", "Chirang", "Udalguri", "Sonitpur"]);
 // the only step names the counter accepts (anything else is dropped)
-const EV_KEY = /^(mercy|leave|temper|help|found|duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
+const EV_KEY = /^(talk\.(open|say|quick|report|spot|bubble)|mercy|leave|temper|help|found|duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+// ---- village talk: one public chat for everyone, kept for three days (see "Village talk" in CLAUDE.md) ----
+// Off switch: CHAT_ON = false and deploy (the game then hides the talk row, button and panel).
+// MUTED_TAGS: authors whose messages nobody sees; the tag is the `a` field of their messages in /api/chat. Add and deploy.
+const CHAT_ON = true, CHAT_KEEP_MS = 72 * 3600e3, CHAT_ROWS = 300, CHAT_LEN = 120, CHAT_REPORTS = 2;
+const MUTED_TAGS = new Set([]);
+// quick phrases travel as a key and are shown in each reader's own language (table QUICK in public/talk.js)
+const CHAT_QUICK = new Set(["johar", "round", "khunt", "nice", "who", "where", "thanks", "bye"]);
+// words that stop a message being sent: English and Hindi (Latin and Devanagari). BAD_WHOLE must be a whole word,
+// BAD_PART anywhere inside one. It only catches the lazy cases; reports and MUTED_TAGS are for the rest.
+const BAD_WHOLE = new Set(["fuck", "fucker", "fucking", "fuk", "shit", "bitch", "dick", "pussy", "cunt", "slut", "whore", "fag", "faggot", "rape", "rapist", "porn", "sex", "sexy", "nude", "nudes", "boobs", "penis", "vagina",
+  "randi", "lund", "gaand", "gand", "chut", "lauda", "lavda", "harami", "bsdk", "रंडी", "लंड", "गांड", "गाँड", "चूत", "हरामी"]);
+const BAD_PART = ["motherfuck", "asshole", "bastard", "nigger", "madarchod", "maderchod", "behenchod", "bhenchod", "bahenchod", "bhosdi", "bhosad", "chutiy", "gandu", "मादरचोद", "बहनचोद", "भोसड़ी", "भोसडी", "चूतिय", "चुतिय", "गांडू"];
+const chatBad = (s) => {
+  const leet = { "0": "o", "@": "a", "$": "s", "1": "i", "!": "i", "3": "e", "4": "a", "5": "s", "7": "t" };
+  for (const raw of String(s).normalize("NFKC").toLowerCase().replace(/[0@$1!3457]/g, c => leet[c]).split(/[^\p{L}\p{M}]+/u)) {
+    if (!raw) continue;
+    const once = raw.replace(/(.)\1+/gu, "$1"), stretched = /(.)\1\1/u.test(raw); // "fuuuck": letters held down on purpose
+    if (BAD_WHOLE.has(raw) || (stretched && [...BAD_WHOLE].some(w => w.replace(/(.)\1+/gu, "$1") === once))) return true;
+    if (BAD_PART.some(w => raw.includes(w) || (stretched && once.includes(w.replace(/(.)\1+/gu, "$1"))))) return true;
+  }
+  return false;
+};
+// a typed message: one line, 120 characters, no links, no phone numbers, no handles or ways to move to another app
+const cleanChat = (raw) => {
+  const s = String(raw || "").normalize("NFKC").replace(/[\p{Cc}‪-‮⁦-⁩﻿]/gu, " ").replace(/\s+/g, " ").trim().slice(0, CHAT_LEN).trim();
+  if (!s) return { err: "empty" };
+  if (/https?:|www\.|\b[\w-]+\.(com|net|org|io|gg|xyz|app|dev|tv|link|site|online)\b|\.(in|me|co|ly)\//i.test(s)) return { err: "link" }; // bare ".in" / ".me" are left alone: "wait.me too" is a missing space, not a link
+  if (/(\p{Nd}[\s().+-]*){7,}/u.test(s)) return { err: "number" };
+  if (/@|whats\s*app|telegram|insta(gram)?\b|snap\s*chat|facebook|\bfb\b|व्हाट्सएप|वॉट्सऐप|व्हाट्सऐप/iu.test(s)) return { err: "contact" };
+  if (chatBad(s)) return { err: "words" };
+  return { text: s };
+};
 // reminders may only be sent to real browser push services
 const okPushHost = (ep) => { try { const u = new URL(ep); return u.protocol === "https:" && /(^|\.)(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)$/.test(u.hostname); } catch { return false; } };
 export class Board extends DurableObject {
@@ -427,7 +459,30 @@ export class Board extends DurableObject {
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS stats (day TEXT NOT NULL, k TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, k))");
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS vfest (day TEXT NOT NULL, pid TEXT NOT NULL, vkey TEXT NOT NULL, d INTEGER NOT NULL, PRIMARY KEY (day, pid))"); // who kept a day of the festival today, by village
       this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS alltime (pid TEXT PRIMARY KEY, name TEXT NOT NULL, pts INTEGER NOT NULL, lvl INTEGER NOT NULL DEFAULT 1, at INTEGER NOT NULL)");
+      // village talk: messages (q = a quick-phrase key, or text), who reported which message, and who came today
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, tag TEXT NOT NULL, name TEXT NOT NULL, v TEXT NOT NULL DEFAULT '', q TEXT NOT NULL DEFAULT '', text TEXT NOT NULL DEFAULT '', hid INTEGER NOT NULL DEFAULT 0)");
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS chat_rep (id INTEGER NOT NULL, tag TEXT NOT NULL, PRIMARY KEY (id, tag))");
+      this.ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS here (day TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY (day, tag))");
     });
+  }
+  // ---- village talk ----
+  // a player's public tag: the same for all their messages, cannot be turned back into their id
+  async chatTag(pid) { this._tags ||= new Map(); let v = this._tags.get(pid); if (!v) { v = (await this.sign("chat." + pid)).slice(0, 10); if (this._tags.size > 4000) this._tags.clear(); this._tags.set(pid, v); } return v; }
+  // who is in the game right now (in memory: a restart empties the count for half a minute) and how many came today
+  presence(tag) {
+    const t = Date.now(), day = istDay(), sql = this.ctx.storage.sql; this.seen ||= new Map();
+    const was = this.seen.get(tag); if (!was || was.day !== day) { sql.exec("INSERT OR IGNORE INTO here (day, tag) VALUES (?, ?)", day, tag); this._today = null; }
+    this.seen.set(tag, { t, day });
+    if (this.seen.size > 3000) for (const [k, v] of this.seen) if (t - v.t > 300000) this.seen.delete(k);
+    let now = 0; for (const v of this.seen.values()) if (t - v.t < 75000) now++;
+    if (!this._today || this._today.day !== day || t - this._today.at > 20000) this._today = { day, at: t, n: sql.exec("SELECT COUNT(*) AS n FROM here WHERE day = ?", day).one().n };
+    return { now, today: Math.max(this._today.n, now) };
+  }
+  // messages a reader may see, oldest first: not hidden, not theirs to have reported, not from a muted author
+  chatRows(tag, after = 0, limit = 40) {
+    const rows = this.ctx.storage.sql.exec("SELECT id, at, tag, name, v, q, text FROM chat WHERE hid = 0 AND at > ? AND id > ? AND id NOT IN (SELECT id FROM chat_rep WHERE tag = ?) ORDER BY id DESC LIMIT ?",
+      Date.now() - CHAT_KEEP_MS, after, tag, limit).toArray();
+    return rows.filter(r => !MUTED_TAGS.has(r.tag)).reverse().map(r => ({ id: r.id, at: r.at, n: r.name, v: r.v, ...(r.q ? { q: r.q } : { x: r.text }), a: r.tag, ...(r.tag === tag ? { me: 1 } : {}) }));
   }
   // ---- helpers ----
   json(obj, status = 200) { return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
@@ -520,6 +575,42 @@ export class Board extends DurableObject {
       return this.json({ rooms: list.slice(0, 8) });
     }
     if (path === "/internal/push") { await this.ctx.storage.setAlarm(Date.now() + 1000); return this.json({ ok: 1 }); }
+
+    // village talk. /api/here: a heartbeat every half minute (who is here, how many today, the newest message);
+    // /api/chat: read (GET, ?after=id) and say (POST); /api/chat/report: two different players hide a message for all
+    if (path === "/api/here" || path === "/api/chat" || path === "/api/chat/report") {
+      const pid = request.method === "POST" ? m.pid : url.searchParams.get("pid");
+      if (!okPid(pid)) return new Response("bad pid", { status: 400 });
+      if (this.flood("ch" + ip, 300)) return new Response("slow down", { status: 429 });
+      if (!CHAT_ON) return request.method === "POST" ? this.json({ err: "off" }, 403) : this.json({ on: 0, now: 0, today: 0, last: 0, msgs: [] });
+      const tag = await this.chatTag(pid), t = Date.now(), who = this.presence(tag);
+      if (path === "/api/here") { const p = this.chatRows(tag, 0, 5).pop() || null; return this.json({ on: 1, ...who, last: p ? p.id : 0, p }); }
+      if (path === "/api/chat" && request.method !== "POST") return this.json({ on: 1, ...who, msgs: this.chatRows(tag, clamp(parseInt(url.searchParams.get("after"), 10) || 0, 0, 1e12)) });
+      if (path === "/api/chat") {
+        if (MUTED_TAGS.has(tag)) return this.json({ err: "muted" }, 403);
+        this.said ||= new Map(); const prev = this.said.get(tag);
+        if ((prev && t - prev.t < 3000) || this.flood("cp" + pid, 6) || this.flood("cpi" + ip, 40)) return this.json({ err: "slow" }, 429);
+        const q = CHAT_QUICK.has(m.q) ? m.q : ""; let text = "";
+        if (!q) { const c = cleanChat(m.text); if (c.err) return this.json({ err: c.err }, 400); text = c.text; }
+        if (prev && prev.q === q && prev.text === text && t - prev.t < (q ? 20000 : 120000)) return this.json({ err: "dup" }, 400); // the same thing again and again
+        let name = cleanName(m.name); if (chatBad(name)) name = "Player";
+        const vk = this.villageOf(pid), vn = vk && !HIDDEN_VILLAGES.has(vk) ? (sql.exec("SELECT vname FROM vnames WHERE vkey = ?", vk).toArray()[0]?.vname || "") : "";
+        sql.exec("INSERT INTO chat (at, tag, name, v, q, text) VALUES (?, ?, ?, ?, ?, ?)", t, tag, name, vn, q, text);
+        this.said.set(tag, { t, q, text }); if (this.said.size > 3000) this.said.clear();
+        if (Math.random() < 0.05) { sql.exec("DELETE FROM chat WHERE at < ? OR id <= (SELECT MAX(id) FROM chat) - ?", t - CHAT_KEEP_MS, CHAT_ROWS); sql.exec("DELETE FROM chat_rep WHERE id NOT IN (SELECT id FROM chat)"); sql.exec("DELETE FROM here WHERE day < ?", istDay(-2)); }
+        return this.json({ ok: 1, ...who, msgs: this.chatRows(tag, clamp(parseInt(m.after, 10) || 0, 0, 1e12)) });
+      }
+      // report
+      if (request.method !== "POST") return new Response("POST only", { status: 405 });
+      const id = Math.floor(Number(m.id)) || 0, row = sql.exec("SELECT tag FROM chat WHERE id = ?", id).toArray()[0];
+      if (!row) return new Response("gone", { status: 404 });
+      if (row.tag === tag) return this.json({ err: "own" }, 400);
+      if (this.flood("cr" + ip, 30)) return new Response("slow down", { status: 429 });
+      sql.exec("INSERT OR IGNORE INTO chat_rep (id, tag) VALUES (?, ?)", id, tag);
+      const n = sql.exec("SELECT COUNT(*) AS n FROM chat_rep WHERE id = ?", id).one().n;
+      if (n >= CHAT_REPORTS) sql.exec("UPDATE chat SET hid = 1 WHERE id = ?", id);
+      return this.json({ ok: 1, hidden: n >= CHAT_REPORTS ? 1 : 0 });
+    }
 
     if (path === "/api/board") return this.json(this.board(url.searchParams.get("pid")));
 
