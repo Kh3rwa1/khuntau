@@ -10,6 +10,7 @@ await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, 
 await page.evaluateOnNewDocument(() => { localStorage.setItem('khuntau-story', JSON.stringify({ ch: 3, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); });
 await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
+await page.waitForFunction(() => __k.murals, { timeout: 30000 }); // the house murals load late: count them in every view
 const info = () => page.evaluate(() => ({ calls: __k.renderer.info.render.calls, tris: __k.renderer.info.render.triangles }));
 await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(3000); within('ring', await info());
 // the worst moment, not a quiet frame: a snatch throws sparks, a charge throws dust (each puff was its own draw)

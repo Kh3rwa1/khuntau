@@ -1,7 +1,7 @@
 // Outside house walls follow Dulor's photos of a Santal house (24 Nov): white lime on top, a charcoal-black painted
 // band in the middle edged with pink scallops, red ochre at the foot. Checks the bands' colours, both borders, the
 // texture's seam (it repeats every 2.5 m), that the story's wall motifs sit inside the black band, and that the inside
-// of the house kept its own wall. Screenshots: walls-phone.jpg, walls-phone-motifs.jpg, walls-laptop.jpg.
+// of the house kept its own wall; the murals on the other houses. Screenshots: walls-phone*.jpg, walls-laptop.jpg.
 //   node tests/walls.mjs     (static server on 8791)
 import puppeteer from 'puppeteer';
 import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
@@ -61,7 +61,28 @@ const s = await page.evaluate(() => {
 check(s.spots.length === 3 && s.spots.every(([a, b]) => a >= 0.74 && b <= 2.06), `the three wall motifs fit inside the black band 0.74-2.06 m (${s.spots.map(([a, b]) => a.toFixed(2) + '-' + b.toFixed(2)).join(', ')})`);
 check(s.inside > 0 && !s.insideShared, 'the inside of the house keeps its own wall texture');
 
-// 3. look at it: the home house with its painted motifs, a neighbour from an angle, and on a laptop
+// 3. painted figures on the other houses' bands: one mesh, in the clear part of the band, clear of the door, never
+//    the same panel twice in a row, lit like the wall so the panel's background melts into the band
+const loaded = await page.waitForFunction(() => __k.murals, { timeout: 30000 }).then(() => true, () => false);
+check(loaded, 'the house murals load');
+if (loaded) {
+  const m = await page.evaluate(() => { const M = __k.murals, fx = M.mesh.material.userData.fx || {}, wfx = __k.wallMat.userData.fx || {};
+    return { slots: M.slots, cells: M.cells, houses: __k.houses.map(h => h.w), oneMesh: M.mesh.isMesh && !M.mesh.isInstancedMesh,
+      litLikeWall: fx.eave === wfx.eave && fx.ao === wfx.ao && M.mesh.receiveShadow, inScene: !!M.mesh.parent }; });
+  const sl = m.slots, bad = [];
+  for (const p of sl) { if (p.house === 0) bad.push('on your own house');
+    if (p.y - p.h / 2 < 0.86 || p.y + p.h / 2 > 1.96) bad.push(`house ${p.house}: outside the band's clear part`);
+    if (Math.abs(p.lx) - p.w / 2 < 0.7) bad.push(`house ${p.house}: over the door`);
+    if (Math.abs(p.lx) + p.w / 2 > m.houses[p.house] / 2 - 0.15) bad.push(`house ${p.house}: off the wall`); }
+  check(m.oneMesh && m.inScene && sl.length >= 14, `murals: ${sl.length} panels on houses 1-8 in one mesh (one draw), ${m.cells} different paintings`);
+  check(!bad.length, 'every panel sits in the band between its borders, clear of the door, on the wall' + (bad.length ? ': ' + [...new Set(bad)].join('; ') : ''));
+  check(sl.every((p, i) => !i || p.cell !== sl[i - 1].cell || p.flip !== sl[i - 1].flip), 'no two panels in a row are the same painting the same way round');
+  check(m.litLikeWall, 'murals are shaded and shadowed exactly like the wall (their background melts into the band)');
+}
+
+// 4. look at it: the home house with its painted motifs, a painted neighbour, one from an angle, and on a laptop
+await faceHouse(page, 1, 5); await sleep(300);
+await page.screenshot({ path: 'tests/out/walls-phone-murals.jpg', type: 'jpeg', quality: 75 });
 await faceHouse(page, 0, 4.5); await sleep(300);
 await page.screenshot({ path: 'tests/out/walls-phone-motifs.jpg', type: 'jpeg', quality: 75 });
 await faceHouse(page, 2, 6, 3); await sleep(300);

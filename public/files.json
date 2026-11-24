@@ -1,6 +1,8 @@
 {
- "v": "3fb346677d",
+ "v": "367fd2ebe0",
  "files": {
+  "art/murals.json": "31453c0d95b91853bec43da92e9db958d85ec7e955b93924058b784c2119e907",
+  "art/murals.webp": "4be9d861e546fb322674e0b43af6d9d5660f8035b65f11d20b5667033189b86c",
   "audio/bellow.mp3": "974facb3a639a219dbb5db381a3ad237cee0e6c235127da97feb5acec13ed9bf",
   "audio/bells.mp3": "67d154be495a3ffcd5add0503da1c6908112ac81582aed12f8b6c933322a38d5",
   "audio/bonk.mp3": "79c49a9cfb33d79df4cf2047d2d31ada79731dc807cc6dc57829cc92f26ddaac",
@@ -57,7 +59,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "6573fdfcff7c8ff924ba217dbcad59373bdd13c124632ef3a81d46497237f8f9",
+  "index.html": "bcda6cb6658543d9743695e10a3741e4c3bb0d5c4ce6edf855ca8a64cf5cfa58",
   "life.js": "dbc9aac62a2125808ed03c01acfb1aed245c7c19275371456cf298728d315ac1",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",

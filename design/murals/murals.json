@@ -1,0 +1,7 @@
+{
+ "out": "public/art",
+ "cuts": [
+  { "name": "three dancers", "src": "dancers.jpg", "box": [0, 80, 1024, 925] },
+  { "name": "two dancers", "src": "dancers.jpg", "box": [360, 80, 1024, 925] }
+ ]
+}

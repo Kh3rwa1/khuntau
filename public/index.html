@@ -1116,6 +1116,36 @@ const paddyFields = { plots: [] };
     if (i % 6 === 3 && stacks < 6) { stacks++; const [x, z] = inPlot(pl, 2); add(new THREE.CylinderGeometry(1.1, 1.2, 1.4, 9), 0xcaa858, x, 0.7, z); add(new THREE.ConeGeometry(1.3, 1.3, 9), 0xc09c4c, x, 2.05, z); } }); // a big paddy stack
 }
 for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoors, houseRoofs]) if (l.length) bakeStatic(l);
+/* Painted figures on the black band of the other houses' front walls, as on the walls in Dulor's photos (24 Nov).
+   One atlas (art/murals.webp; cells in art/murals.json, built by tools/murals.py from the photo-based images in
+   design/murals/), one merged mesh: one draw call. Loaded after the village is up, so it costs nothing before PLAY.
+   Panels fill the clear part of the band (between its pink borders), left and right of each door; house 0 is yours
+   and carries the story's motifs. Lit exactly like the wall (same shading, eave, shadows) so each panel's charcoal
+   background disappears into the band. Neighbouring panels use different cells, and every other one is mirrored. */
+const MURAL = { y0: 0.88, y1: 1.94, door: 0.72, edge: 0.2, off: 0.012 };
+let murals = null;
+function loadMurals() {
+  return fetch('art/murals.json').then(r => r.json()).then(spec => new THREE.TextureLoader().loadAsync('art/' + spec.image).then(tex => {
+    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const cells = spec.cells, geos = [], slots = [], full = MURAL.y1 - MURAL.y0, M = new THREE.Matrix4();
+    let k = 0;
+    houses.forEach((h, i) => { if (!i) return;
+      for (const side of [-1, 1]) {
+        const avail = h.w / 2 - MURAL.edge - MURAL.door; if (avail < 0.6) continue;
+        const c = cells[k % cells.length], flip = k % 2 === 1; k++;
+        let pw = full * c.aspect, ph = full; if (pw > avail) { pw = avail; ph = pw / c.aspect; }
+        const g = new THREE.PlaneGeometry(pw, ph), uv = g.attributes.uv;
+        for (let j = 0; j < uv.count; j++) { const u = uv.getX(j); uv.setXY(j, c.u0 + (flip ? 1 - u : u) * (c.u1 - c.u0), c.v0 + uv.getY(j) * (c.v1 - c.v0)); }
+        const lx = side * (MURAL.door + avail / 2), y = (MURAL.y0 + MURAL.y1) / 2;
+        g.translate(lx, y, h.d / 2 + MURAL.off); g.applyMatrix4(M.makeRotationY(h.rot).setPosition(h.x, 0, h.z));
+        geos.push(g); slots.push({ house: i, side, cell: c.name, flip, lx, y, w: pw, h: ph });
+      } });
+    const mat = shade(Mat({ map: tex, transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 }), { eave: true });
+    const mesh = new THREE.Mesh(mergeGeometries(geos, false), mat); mesh.receiveShadow = true; mesh.renderOrder = 1;
+    geos.forEach(g => g.dispose()); scene.add(mesh);
+    return (murals = { mesh, slots, cells: cells.length });
+  })).catch(e => console.warn('murals:', e.message));
+}
 // Leaves: the canopies were smooth green balls. Each ball carries a coat of leaf sprays (alpha-cut cards facing outward,
 // lit like the ball under them, lighter on top), one instanced draw per call. Not on budget phones.
 function leafCoat(balls) { if (QUALITY < 1 || !balls.length) return null; const per = QUALITY === 2 ? 24 : 12;
@@ -2122,6 +2152,7 @@ function onCrowdLoaded() {
     for (const a of [boy, girl]) { scene.add(a.wrap); a.play('Idle'); a.actions.Idle.time = rand(0, 2); }
     market.couple = { boy, girl, x: cx, z: cz, tan, out: [Math.cos(ang), Math.sin(ang)], k: 0, away: 9, seenBy: false }; }
   setTimeout(registerSW, 1500);
+  loadMurals(); // painted figures on the houses' wall bands (one draw)
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   import('./story.js').then(m => {
     story = m.initStory({ props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
@@ -3698,7 +3729,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
