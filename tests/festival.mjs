@@ -20,6 +20,12 @@ const tomorrow = () => ev(() => { const d = __k.story.debug; d.fest.on = '2000-1
 check(/Day 1 of 5: Um Hilok/.test(await page.$eval('#startBtn', e => e.textContent + ' ' + (document.getElementById('playSub') || {}).textContent)), 'home: a new player starts on Sohrai Day 1 of 5 (Um Hilok)');
 await ev(() => document.getElementById('startBtn').click()); await until(() => __k.game.mode === 'story');
 await ev(() => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; });
+// the day opens with its painting (art/day1.webp): the day's name, its task, tap to begin
+check(await until(() => { const c = document.getElementById('dayCard'), i = c && c.querySelector('img'); return c && !c.hidden && c.classList.contains('show') && i.complete && i.naturalWidth > 0; }, 15000)
+  && await page.$eval('#dayCard em', e => e.textContent) === 'Day 1 of Sohrai' && await page.$eval('#dayCard b', e => e.textContent) === 'Um Hilok' && /paint the wall/i.test(await page.$eval('#dayCard p', e => e.textContent)), 'Day 1 opens with its painting, its name and its task');
+await sleep(700); await page.screenshot({ path: 'tests/out/fest-daycard.jpg', type: 'jpeg', quality: 75 });
+await ev(() => document.getElementById('dayCard').click());
+check(await until(() => document.getElementById('dayCard').hidden, 3000), 'a tap puts the day card away');
 check(await ev(() => __k.story.debug.GATED && __k.story.debug.fest.day === 1 && !__k.story.debug.festWaiting()), 'the festival is on: day 1, open');
 // day 1 (Um Hilok): wake, paint, choose the animal and oil its horns. Oiling closes the day.
 await ev(() => { const d = __k.story.debug; d.S.inside = false; d.W.room.visible = false; d.save.painted = [1, 1, 1]; d.setChapter(2); });

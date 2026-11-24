@@ -61,11 +61,14 @@ export function initStory(C) {
     ['In my day we knew which day was which. Shame!', 'हमारे ज़माने में हमें हर दिन का पता था। शर्म करो!'], ['The ancestors see everything, child. Keep the order.', 'पुरखे सब देखते हैं, बच्चे। क्रम का मान रखो।']];
   function festHello() { if (!GATED || F.fin) return; const d = festDay(); if (F.seen === d || festWaiting()) return; F.seen = d; persist();
     const img = new Image(); img.src = 'art/day' + d + '.webp'; const ready = img.decode().then(() => true, () => false); /* fetched while the village settles */
-    setTimeout(async () => { if (!S.on || S.dlg) { F.seen = 0; return; }
-      if (await ready) dayCard(d, img.src); else banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1]), OLD[d - 1]); }, 1800); }
+    // the day's title comes first, like a chapter title: the card covers everything, so anyone who starts talking
+    // (Gogo on the first morning) waits underneath until it is tapped away. The banner fallback keeps clear of talk.
+    setTimeout(async () => { if (!S.on) { F.seen = 0; return; }
+      if (await ready) dayCard(d, img.src); else if (!S.dlg) banner(tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), tr(FEST[d - 1][1]), OLD[d - 1]); else F.seen = 0; }, 1000); }
   // the day's painting, title and task; tap anywhere to begin (the old banner is the fallback when it cannot load)
   function dayCard(d, src) { const el = $('dayCard'); if (!el) return; el.querySelector('img').src = src; el.querySelector('i').textContent = OLD[d - 1] || '';
-    el.querySelector('b').textContent = tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]); el.querySelector('p').textContent = tr(FEST[d - 1][1]); el.querySelector('small').textContent = tr('Tap to begin');
+    const title = tr('Day ' + d + ' of Sohrai: ' + FEST[d - 1][0]), cut = title.lastIndexOf(': '); /* 'Day 3 of Sohrai' small, 'Khuntau' large (Hindi too) */
+    el.querySelector('em').textContent = cut > 0 ? title.slice(0, cut) : ''; el.querySelector('b').textContent = cut > 0 ? title.slice(cut + 2) : title; el.querySelector('p').textContent = tr(FEST[d - 1][1]); el.querySelector('small').textContent = tr('Tap to begin');
     el.hidden = false; requestAnimationFrame(() => el.classList.add('show')); S.dayCard = true;
     const close = () => { el.classList.remove('show'); S.dayCard = false; removeEventListener('keydown', key); setTimeout(() => { if (!el.classList.contains('show')) el.hidden = true; }, 450); };
     const key = e => { if (['Enter', ' ', 'Escape', 'e', 'E'].includes(e.key)) { e.preventDefault(); close(); } }; /* laptops */
@@ -1437,6 +1440,6 @@ export function initStory(C) {
     seenUi, // the journal of things seen, for the pause menu
     dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
-    debug: { SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    debug: { dayCard, SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }
