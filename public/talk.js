@@ -155,9 +155,11 @@ export function initTalk(C) {
       list.append(li);
     }
     if (atEnd || !render.done) list.scrollTop = list.scrollHeight; render.done = true;
+    if (!err.dataset.msg) note(''); // the rules line follows what is in view
   }
   const fixNewest = () => { const shown = T.msgs.filter(visible); T.newest = shown.length ? shown[shown.length - 1] : null; paint(); };
-  const note = s => { err.textContent = s || (T.spoken ? '' : t('rules')); err.classList.toggle('quiet', !s); }; // until you have spoken once, the rules stand where errors go
+  // until you have spoken once, the rules stand where errors go, unless the copy at the top of the list is in view anyway
+  const note = s => { const top = list.querySelector('.talk-note'), inView = !!top && list.scrollTop < top.offsetHeight; err.textContent = s || (T.spoken || inView ? '' : t('rules')); err.classList.toggle('quiet', !s); err.dataset.msg = s ? '1' : ''; };
   function labels() {
     title.textContent = t('title'); x.setAttribute('aria-label', t('close')); box.setAttribute('aria-label', t('title')); input.placeholder = t('ph'); nameIn.placeholder = t('name'); send.textContent = t('send');
     quick.textContent = ''; for (const k of Object.keys(QUICK.en)) { const b = el('button', null, QUICK[lang()][k] || QUICK.en[k]); b.type = 'button'; b.dataset.q = k; b.onclick = () => say({ q: k }); quick.append(b); }

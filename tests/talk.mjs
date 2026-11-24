@@ -31,6 +31,8 @@ check(await A.until(() => !document.getElementById('talkBtn').hidden && /came to
 await A.ev(() => document.getElementById('talkBtn').click());
 check(await A.until(() => !document.getElementById('talk').hidden) && /Be kind/.test(await A.ev(() => document.querySelector('#talk .talk-list').textContent)), 'home: tapping it opens the panel, with the rules at the top');
 check(await A.ev(() => !document.querySelector('#talk .talk-name').hidden), 'a player with no name is asked for one');
+{ const n = await A.ev(() => [...document.querySelectorAll('#talk .talk-sheet *')].filter(e => !e.children.length && /Be kind/.test(e.textContent) && e.getBoundingClientRect().height > 0 && (() => { const r = e.getBoundingClientRect(), l = document.querySelector('.talk-list').getBoundingClientRect(); return !e.closest('.talk-list') || (r.bottom > l.top && r.top < l.bottom); })()).length);
+  check(n === 1, `the rules are on screen once, not twice (${n})`); }
 await A.type('hello without a name');
 check(/name first/i.test(await A.ev(() => document.querySelector('#talk .talk-err').textContent)) && !(await A.ev(() => document.querySelector('#talk li.me'))), 'nothing is sent until there is a name');
 await A.page.type('#talk .talk-name', 'Mina'); await A.ev(() => { document.querySelector('#talk .talk-in').value = ''; });
