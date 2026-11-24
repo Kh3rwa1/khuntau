@@ -62,7 +62,7 @@ check(await page.evaluate(() => { const v = __k.villageProps; return v.filter(o 
       /* poll until a chop and a pause have both been seen and a buyer has moved: game time crawls on a software-GL runner */
       const movedNow = () => { let m = 0; buyers.forEach((a, i) => { m = Math.max(m, a.wrap.position.distanceTo(p0[i])); }); return m; };
       let fy0 = 9, fy1 = -9, odd = false; const fv = new __k.THREE.Vector3();
-      for (let i = 0; i < 600 && (!(seen.has('chop') && seen.has('rest')) || movedNow() <= 0.15 || i < 90); i++) { seen.add(b.ph >= 0 ? 'chop' : 'rest'); b.root.getObjectByName('FistR').getWorldPosition(fv); fy0 = Math.min(fy0, fv.y); fy1 = Math.max(fy1, fv.y);
+      for (let i = 0; i < 600 && (!(seen.has('chop') && seen.has('rest')) || movedNow() <= 0.15 || i < 90 || fy1 <= 1.15 || fy0 >= 0.85); i++) { /* also until the arm has been seen up and down: starting on the tail of a chop, his 2.5-5 s rest could outlast the 9 s on a slow runner */ seen.add(b.ph >= 0 ? 'chop' : 'rest'); b.root.getObjectByName('FistR').getWorldPosition(fv); fy0 = Math.min(fy0, fv.y); fy1 = Math.max(fy1, fv.y);
         if (M.people.some(a => a.curName === 'SwordSlash' || a.curName === 'PickUp')) odd = true; await new Promise(r => setTimeout(r, 100)); }
       buyers.forEach((a, i) => { moved = Math.max(moved, a.wrap.position.distanceTo(p0[i])); });
       const dancersNear = (__k.story.debug.W.sarpa || []).some(a => a.wrap.visible && Math.hypot(a.wrap.position.x - M.spot[0], a.wrap.position.z - M.spot[1]) < 9);
