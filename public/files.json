@@ -1,5 +1,5 @@
 {
- "v": "98dc00d4b8",
+ "v": "28ebf36d50",
  "files": {
   "art/card.webp": "01f2eaba4df92ba8d31fbceaf205d7dc43eb5cb76498d1064f77614343c01be7",
   "art/day1.webp": "186b993866951b081b4e5184a5340ff3f6d04361aba66c413020cba7981dae3e",
@@ -80,7 +80,7 @@
   "privacy.html": "9ab1c476a21ffb1d84fbd44d7a88355dc2333f13fa2a4085328a0110450fcf74",
   "stats.html": "6899fe012fbbf38c9fa6a226c53c562b6869694fe4da654d0d179a54bf659e3c",
   "story.js": "aa52020f4eacc6cb360f6b74f3bf013f94630af5c096a37d7bbeb47ac9748510",
-  "talk.js": "18e4716c1b8542d070db19eeb089dfe4eeeedc11cb227da1e3a4514fa98b92a6",
+  "talk.js": "24524280ee8123915e38591e411d9790d378d2c4550632f604cf133a59acebbc",
   "vendor/three/LICENSE": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
   "vendor/three/build/three.module.min.js": "08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb13c39e7",
   "vendor/three/examples/jsm/loaders/GLTFLoader.js": "45139faddd5aaf48ed2d62203d976e5cbd703db1a592de40527f9f6cf58abd44",

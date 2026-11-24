@@ -113,8 +113,8 @@ export function initTalk(C) {
     if (doc.hidden || !meta.pid) return;
     let r; try { r = await api('/api/here?pid=' + meta.pid); } catch (e) { return; }
     if (r.s !== 200) { if (r.s === 404 || r.d.on === 0) setOn(false); return; }
+    if (r.d.on === 1) { T.now = r.d.now; T.today = r.d.today; if (r.d.p && !T.hide.has(r.d.p.a) && (!T.newest || r.d.p.id > T.newest.id)) T.newest = r.d.p; } // before the row is shown: it must never show empty counts first
     setOn(r.d.on === 1); if (!T.on) return;
-    T.now = r.d.now; T.today = r.d.today; if (r.d.p && !T.hide.has(r.d.p.a) && (!T.newest || r.d.p.id > T.newest.id)) T.newest = r.d.p;
     if (r.d.last > T.last && (T.open || roaming() || !T.loaded)) await pull();
     paint();
   }
@@ -215,9 +215,12 @@ export function initTalk(C) {
     if (T.showing && (performance.now() > T.showing.until || !inVillage || T.open)) hideSay();
     if (!inVillage || T.open) { T.near = false; return; }
     if (!T.loaded && !T.pulling) { T.pulling = true; pull().finally(() => { T.pulling = false; }); }
-    const near = outdoors() && spotDist() < 8;
-    if (near && !T.near && !T.showing && T.newest && !T.newest.me && roaming() && (T.heard !== T.newest.id || performance.now() - T.spoke > 45000)) { T.heard = T.newest.id; showSay(T.newest); } // walking up: hear the last thing said
-    T.near = near && roaming(); // not while someone is talking to you: the bubble waits and comes up when you are free
+    // the last thing said is shown once when you step out into the village (houses stand at random distances, so the
+    // talking place may be 5 to 9 m from your door), and again when you walk up to the talking place
+    const free = roaming() && outdoors(), near = free && spotDist() < 8, fresh = T.newest && !T.newest.me && !T.showing;
+    if (fresh && free && T.heard !== T.newest.id) { T.heard = T.newest.id; showSay(T.newest); }
+    else if (fresh && near && !T.near && performance.now() - T.spoke > 45000) showSay(T.newest);
+    T.near = near; // not while someone is talking to you: it waits and comes up when you are free
     if (!T.showing && T.queue.length && roaming() && performance.now() - T.spoke > 1500) showSay(T.queue.shift());
   }, 500);
 

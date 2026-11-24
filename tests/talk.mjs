@@ -27,6 +27,12 @@ async function phone(name, { lang = 'en', view = null, story = true } = {}) {
 
 // ---- phone A: the home row, the panel, saying something ----
 const A = await phone('');
+// the row is never shown with empty counts first: the first words it ever shows are already the real ones
+{ const C = await browser.createBrowserContext(), pg = await C.newPage(); await pg.evaluateOnNewDocument(() => { window.__rowFirst = null; addEventListener('DOMContentLoaded', () => { const row = document.getElementById('talkBtn');
+    new MutationObserver(() => { if (!row.hidden && window.__rowFirst === null) window.__rowFirst = row.textContent; }).observe(row, { attributes: true, childList: true, subtree: true, characterData: true }); }); });
+  await pg.goto(BASE + '/?debug&q=low', { waitUntil: 'domcontentloaded' }); await pg.waitForFunction(() => window.__rowFirst !== null, { timeout: 90000 });
+  const first = await pg.evaluate(() => window.__rowFirst), real = await pg.evaluate(async () => (await (await fetch('/api/here?pid=' + __k.meta.pid)).json()));
+  check(real.p ? first.includes(real.p.n + ':') : true, `home: the row's first words already carry the newest message (${first.slice(0, 60)})`); await C.close(); }
 check(await A.until(() => !document.getElementById('talkBtn').hidden && /came today|here now/.test(document.getElementById('talkBtn').textContent)), `home: the talk row shows who is here (${await A.ev(() => document.getElementById('talkBtn').textContent)})`);
 await A.ev(() => document.getElementById('talkBtn').click());
 check(await A.until(() => !document.getElementById('talk').hidden) && /Be kind/.test(await A.ev(() => document.querySelector('#talk .talk-list').textContent)), 'home: tapping it opens the panel, with the rules at the top');
