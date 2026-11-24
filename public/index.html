@@ -232,6 +232,19 @@ select.vil { font: 700 16px var(--font-ui); color: var(--ink); background: var(-
 #board .dot { width: 10px; height: 10px; border-radius: 50%; }
 #timerChip .score-num { font-size: 22px; }
 /* story mode */
+/* the first minute: the control to use next has a pulsing ring, the others step back; a ghost stick shows where to drag */
+.coach-on { position: relative; }
+.coach-on::before { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 3px solid #ffb347; pointer-events: none; animation: coachPulse 1.1s ease-out infinite; }
+@keyframes coachPulse { 0% { transform: scale(1); opacity: .95; } 100% { transform: scale(1.4); opacity: 0; } }
+.coach-dim { opacity: .28; }
+#joyGhost { position: fixed; z-index: 4; left: 22%; bottom: calc(3.5% + env(safe-area-inset-bottom, 0px)); /* under the hint bubble, where the thumb rests */ width: 116px; height: 116px; margin: 0 0 0 -58px; border-radius: 50%; border: 2px dashed rgba(246, 238, 221, .6); background: rgba(20, 10, 6, .18); pointer-events: none; display: none; }
+#joyGhost i { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255, 179, 71, .9); animation: joyGhost 1.7s ease-in-out infinite; }
+@keyframes joyGhost { 0%, 12% { transform: translateY(0); opacity: .95; } 60% { transform: translateY(-34px); opacity: .95; } 100% { transform: translateY(-34px); opacity: 0; } }
+html.touch #joyGhost.show { display: block; }
+@media (prefers-reduced-motion: reduce) { .coach-on::before, #joyGhost i { animation: none; } }
+.langrow { display: flex; justify-content: center; gap: 8px; margin: 2px 0 0; }
+.langrow button { all: unset; cursor: pointer; font-size: 13px; padding: 3px 12px; border-radius: 999px; border: 1px solid rgba(246, 238, 221, .3); color: var(--paste); opacity: .75; }
+.langrow button.on { background: rgba(255, 179, 71, .22); border-color: #ffb347; opacity: 1; font-weight: 700; }
 #actBtn { grid-area: grab; width: 104px; height: 104px; background: var(--saffron); font-size: 15px; line-height: 1.05; padding: 8px; box-sizing: border-box; text-align: center; box-shadow: 0 6px 0 #b8701f; display: none; }
 #actBtn.off { background: #7c6a55; box-shadow: 0 6px 0 #4b3e30; opacity: .45; }
 .story-on #hideBtn, .story-on #rollBtn, .story-on #grabBtn { display: none; }
@@ -350,6 +363,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
 
 <div id="controls">
   <div id="joyzone"><div id="joy"><div id="knob"></div></div></div>
+  <div id="joyGhost" aria-hidden="true"><i></i></div>
   <div class="acts">
     <button class="act" id="hideBtn" aria-label="Wave the dried hide at the bull">HIDE</button>
     <button class="act" id="leaveBtn" hidden aria-label="Walk out of the ring with your pitha">LEAVE</button>
@@ -369,6 +383,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <div class="bar" id="loadBar"><i></i></div>
     <button class="btn play" id="startBtn" disabled>Loading…</button>
     <p class="playsub" id="playSub"></p>
+    <div class="langrow" id="langRow" aria-label="Language"><button type="button" data-l="en" lang="en">English</button><button type="button" data-l="hi" lang="hi">हिन्दी</button></div>
     <p class="olchiki day" id="dayOl" lang="sat" hidden></p>
     <div class="storyrow"><button class="linkbtn" id="quickBtn" type="button" disabled>Quick round at the khunt</button></div>
     <p class="bestline" id="bestLine" hidden></p>
@@ -2196,8 +2211,12 @@ function onCrowdLoaded() {
   import('./talk.js').then(m => { talk = m.initTalk({ $, meta, game, track, sfx, spot: talkSpot, story: () => story, project: toScreen, named: n => { if ($('nameIn') && !$('nameIn').value) $('nameIn').value = n; } }); }).catch(e => console.error(e)); // village talk
   muralsP = loadMurals(); // painted figures on the houses' wall bands (one draw); the story's wall motifs use them too
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
+  { let l = null; try { l = localStorage.getItem('khuntau-lang'); if (!l && /^hi\b/i.test(navigator.language || '')) { l = 'hi'; localStorage.setItem('khuntau-lang', l); } } catch (e) {} // before the story loads: it reads the saved language
+    const row = $('langRow'), mark = v => row.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.l === v)); mark(l || 'en');
+    row.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const v = b.dataset.l; try { localStorage.setItem('khuntau-lang', v); } catch (e2) {}
+      if (story && story.setLang) story.setLang(v); mark(v); track('lang.' + v); if (talk) talk.refresh(); renderStoryBtn(); }); }
   import('./story.js').then(m => {
-    story = m.initStory({ talk: () => talk, talkSpot, murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+    story = m.initStory({ hintHold, hintOff, joyGhost, talk: () => talk, talkSpot, murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: (src) => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
@@ -2623,9 +2642,51 @@ function renderLives() { if (livesShown === game.lives) return; livesShown = gam
 let toastTimer;
 function toast(text, ms = 1100) { const t = $('toast'); t.textContent = L(text); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
 let hintTimer;
-function hint(text, ms = 2600) { const h = $('hint'); h.textContent = L(text); h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
+function hint(text, ms = 2600) { if (game.coach) return; /* a taught first round says one thing at a time */ const h = $('hint'); h.textContent = L(text); h.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove('show'), ms); }
+// a line that stays until it is taken away (the first-minute lessons: they wait for the player, not for a clock)
+function hintHold(text) { const h = $('hint'); h.textContent = L(text); h.classList.add('show'); clearTimeout(hintTimer); }
+function hintOff() { clearTimeout(hintTimer); $('hint').classList.remove('show'); }
+const joyGhost = on => $('joyGhost').classList.toggle('show', !!on);
+
+/* ---------- the first round is taught, one step at a time ----------
+   New players only (until the first pitha, remembered in khuntau-coach), solo rounds only. Each step waits for the
+   player: 1 walk, 2 HIDE (he charges at the hide), 3 ROLL when he runs at you, 4 GRAB while he is dizzy. Until step 3 the bull never
+   charges on his own; in step 4 he stays dizzy for up to 12 s; a hit costs no lamp and goes back to step 2. The button
+   for the step pulses and the others step back. The old opening showed eight timed lines in twenty seconds while he
+   was already charging. Off under plain ?debug (the older tests play real rounds); ?debug&coach turns it on. */
+const COACH = !/[?&]debug\b/.test(location.search) || /[?&]coach\b/.test(location.search);
+let coachDone = false; try { coachDone = localStorage.getItem('khuntau-coach') === '1'; } catch (e) {}
+const COACH_BTN = { 2: 'hideBtn', 3: 'rollBtn', 4: 'grabBtn' };
+const COACH_SAY = {
+  1: ['Drag the left side of the screen to walk', 'Walk with WASD or the arrow keys'],
+  2: ['Tap HIDE. He charges at the hide', 'Press Q to wave the hide. He charges at it'],
+  3: ['Wait for it… when he runs at you, tap ROLL', 'Wait for it… when he runs at you, press Space'],
+  now: ['ROLL now!', 'Space now!'],
+  4: ['He is dizzy! Run to the post and tap GRAB', 'He is dizzy! Run to the post and press E'],
+  hit: ['He got you, but it does not count yet. Try again: HIDE, then ROLL', 'He got you, but it does not count yet. Try again: Q, then Space'],
+  up: ['He is up again. HIDE, ROLL, then GRAB while he is dizzy', 'He is up again. Q, Space, then E while he is dizzy'],
+};
+function coachStep(n, key = n) { const c = game.coach; if (!c) return; c.step = n; c.t = 0; track('coach.' + n); hintHold(COACH_SAY[key][isTouch ? 0 : 1]);
+  for (const id of ['hideBtn', 'rollBtn', 'grabBtn']) { $(id).classList.toggle('coach-on', COACH_BTN[n] === id); $(id).classList.toggle('coach-dim', COACH_BTN[n] !== id); }
+  joyGhost(n === 1); }
+function coachEnd(learned) { if (!game.coach) return; game.coach = null; hintOff(); joyGhost(false);
+  for (const id of ['hideBtn', 'rollBtn', 'grabBtn']) $(id).classList.remove('coach-on', 'coach-dim');
+  if (!learned) return;
+  coachDone = true; try { localStorage.setItem('khuntau-coach', '1'); } catch (e) {} track('coach.done');
+  toast('That is the game!', 1500); tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint('Snatch as many pitha as you can. Each lamp is a life.', 4200); }, 1700)); roundNotes(6200); }
+function coachTick(dt) { const c = game.coach, p = game.p, b = game.b; if (!c || game.mode !== 'play') return; c.t += dt;
+  if (c.step === 1) { c.walked += Math.hypot(p.vel.x, p.vel.z) * dt; if (c.walked > 2.5) coachStep(2); }
+  if (c.step === 3 && b.state === 'charge' && c.was !== 'charge') hintHold(COACH_SAY.now[isTouch ? 0 : 1]); // he is off: now
+  if (c.step === 3 && c.was === 'charge' && b.state !== 'charge' && !b.hitDone) coachStep(4); // he missed (or the rope stopped him): now the pitha
+  else if (c.step === 4 && (b.state === 'watch' || b.state === 'windup')) coachStep(2, 'up');   // too slow: round again
+  if (game.pitha > c.pitha0) coachEnd(true);
+  c.was = b.state; }
+// what is different about this round (the animal's temper, the day's rule, help from the village): after the opening lines
+function roundNotes(delay) { if (!soloRun()) return; const notes = [...(animal.id !== 'brown' ? [animal.name + '. ' + animal.temper.line] : []), ...mod().notes];
+  notes.forEach((n, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(L(n), 2500); }, delay + i * 2800))); }
 
 function resetGame() {
+  coachEnd(false);
   if (pitha.userData.gold) setGoldQuiet(); game.slow = 0; game.stage = 1; rival.passed = new Set(); rival.bestSaid = false; hs.on = false; hs.next = mod().handi; hs.sentAt = -9; handi.visible = false; game.p.boost = 0; livesShown = -1; boardKey = ''; game.score = 0; game.lives = mod().lamps; game.mercyUsed = false; game.left = false; game.t = 0; game.combo = 0; game.pitha = 0; game.charges = 0; game.beaten = false;
   tipTimers.forEach(clearTimeout); tipTimers = [];
   Object.assign(game.p, { state: 'free', t: 0, invuln: 0, rollCd: 0, teaseCd: 0, teaseT: -9 }); game.p.pos.set(0, 0, 7.5); game.p.yaw = Math.PI; game.p.vel.set(0, 0, 0);
@@ -2636,7 +2697,7 @@ function resetGame() {
   game.hintsShown = {};
 }
 // ring buttons speak the story's language only during the story finale (online and normal rounds stay English)
-function ringLabels() { game.ringLang = !!(game.storyRun || game.villageRun); for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB'], ['leaveBtn', 'LEAVE']]) $(id).textContent = L(w); }
+function ringLabels() { game.ringLang = !game.online; /* every solo round follows the chosen language (the home screen offers it since 24 Nov); online rooms stay English */ for (const [id, w] of [['hideBtn', 'HIDE'], ['rollBtn', 'ROLL'], ['grabBtn', 'GRAB'], ['leaveBtn', 'LEAVE']]) $(id).textContent = L(w); }
 function startGame() {
   view.yaw = 0; /* each round starts looking at the post; your tilt and zoom are kept */
   game.menuOpen = false; $('pauseScreen').hidden = true;
@@ -2649,15 +2710,17 @@ function startGame() {
   const tips = isTouch
     ? ['Drag the left side of the screen to move', 'Tap HIDE to make him charge, then ROLL aside', 'Stun him on the post, then GRAB the pitha']
     : ['Move with WASD or the arrow keys', 'Press Q to wave the hide, then Space to roll aside', 'Stun him on the post, then press E to grab'];
-  if (!played) tips.forEach((t, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(t, 3000); }, 300 + i * 3600)));
-  else hint(isTouch ? 'HIDE to bait, ROLL to dodge, GRAB at the post' : 'Q bait · Space roll · E grab', 2200);
-  if (soloRun()) { const notes = [...(animal.id !== 'brown' ? [animal.name + '. ' + animal.temper.line] : []), ...mod().notes]; /* what is different about this round */
-    notes.forEach((n, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(L(n), 2500); }, (played ? 2600 : 11500) + i * 2800))); /* the hint bubble wraps; these lines are too long for the big toast */ if (animal.id !== 'brown') track('temper'); if (mod().notes.length) track('help'); }
+  game.coach = COACH && !coachDone && soloRun() ? { step: 0, t: 0, walked: 0, was: '', pitha0: game.pitha } : null;
+  if (game.coach) coachStep(1); // taught step by step; the round's notes follow once the first pitha is in hand
+  else { if (!played) tips.forEach((t, i) => tipTimers.push(setTimeout(() => { if (game.mode === 'play') hint(t, 3000); }, 300 + i * 3600)));
+    else hint(isTouch ? 'HIDE to bait, ROLL to dodge, GRAB at the post' : 'Q bait · Space roll · E grab', 2200);
+    roundNotes(played ? 2600 : 11500); } /* the hint bubble wraps; these lines are too long for the big toast */
+  if (soloRun()) { if (animal.id !== 'brown') track('temper'); if (mod().notes.length) track('help'); }
   if (challenge) tipTimers.push(setTimeout(() => { if (game.mode === 'play') toast(`Beat ${challenge.beat}!`, 1200); }, played ? 2400 : 11200));
 }
 function gameOver() {
   game.mode = 'over'; audio.intensity = 0;
-  tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
+  coachEnd(false); tipTimers.forEach(clearTimeout); tipTimers = []; $('hint').classList.remove('show');
   if (game.storyRun && story) { const won = game.pitha >= 3; setTimeout(() => { if (game.storyRun) story.afterRing(won); }, 1700); return; }
   const pts = game.score, isBest = pts > best; $('leaveBtn').hidden = true;
   roundsPlayed++; try { localStorage.setItem('khuntau-rounds', roundsPlayed); } catch (e) {}
@@ -2846,7 +2909,7 @@ function updateBull(dt) {
         const urgent = p.state === 'grab' || p.pos.length() < GRAB_R + 0.2;
         const provoked = game.t - (p.teaseT ?? -9) < 1.4;
         const wait = provoked ? 0.15 : (urgent ? b.dur * 0.35 : b.dur) * temper().wait;
-        if (playing && b.t > wait) {
+        if (playing && b.t > wait && !(game.coach && game.coach.step < 3 && !provoked)) { /* being taught: he only comes when the hide is waved */
           const gentle = game.charges < mod().calm; // first charges of a round are slow and readable
           setBull('windup', Math.max(lerp(1.05, 0.45, d) * (provoked ? 0.75 : 1), gentle ? 1.25 : 0) * temper().wind * mod().wind); sfx.snort(); crowdReact('flinch');
           b.provoked = provoked; b.again = false; /* a fresh attack: he may double again (a bonk on the post used to leave this set) */
@@ -2875,7 +2938,7 @@ function updateBull(dt) {
         const lead = tmpV2.copy(p.pos).addScaledVector(p.vel, 0.25 * d); lead.y = 0;
         b.dir.subVectors(lead, b.pos).setY(0).normalize();
         b.yaw = Math.atan2(b.dir.x, b.dir.z);
-        b.speed = lerp(8.5, 13.5, d) * (game.charges < mod().calm ? 0.82 : 1) * temper().speed; b.dist = Math.max(distP + 2.5, 5); b.hitDone = false; b.hoof = 0;
+        b.speed = lerp(8.5, 13.5, d) * (game.charges < mod().calm ? 0.82 : 1) * temper().speed * (game.coach ? 0.65 : 1); /* being taught: he comes slower, so 'ROLL now!' can be read and obeyed */ b.dist = Math.max(distP + 2.5, 5); b.hitDone = false; b.hoof = 0;
         b.minD = 99; game.charges++;
         setBull('charge', 3);
         if (!game.hintsShown.charge) { game.hintsShown.charge = true; hint(isTouch ? 'He is charging. Hit ROLL!' : 'He is charging. Press Space to roll!', 1800); }
@@ -2910,7 +2973,7 @@ function updateBull(dt) {
     case 'stunned':
     case 'recover': {
       if (b.state === 'recover') bull.play('Idle', { fade: 0.25 });
-      if (b.t > b.dur) setBull('watch', lerp(1.2, 0.5, d) * rand(0.8, 1.2));
+      if (b.t > b.dur && !(game.coach && game.coach.step === 4 && b.t < 12)) setBull('watch', lerp(1.2, 0.5, d) * rand(0.8, 1.2)); /* being taught: he stays dizzy while you fetch the first pitha */
       if (b.t < 0.05 && playing && !game.hintsShown.tired && game.score < 2) { game.hintsShown.tired = true; setTimeout(() => hint('He is catching his breath. Grab now!', 1800), 200); }
       break;
     }
@@ -2941,10 +3004,13 @@ function closeCall(b, p) {
 }
 function hitPlayer() {
   const p = game.p, b = game.b;
+  if (game.coach) { // being taught: knocked over, no lamp lost, and the lesson starts again at HIDE
+    sfx.hit(); game.shake = 0.5; cineR.kick = 1; buzz([40, 30, 40]); crowdReact('groan'); p.vel.copy(b.dir).multiplyScalar(7).setY(0); p.state = 'hit'; p.t = 0; p.invuln = 2.4;
+    player.play('RecieveHit', { once: true, fade: 0.06 }); track('coach.hit'); coachStep(2, 'hit'); return; }
   if (soloRun() && MERCY && !game.mercyUsed && game.score < RULES.mercyScore && roundsPlayed < RULES.mercyRounds) { // a beginner's first hit is a warning, not a lamp
     game.mercyUsed = true; sfx.hit(); game.shake = 0.5; cineR.kick = 1; buzz([40, 30, 40]); crowdReact('groan'); p.vel.copy(b.dir).multiplyScalar(7).setY(0); p.state = 'hit'; p.t = 0; p.invuln = 2.4;
     player.play('RecieveHit', { once: true, fade: 0.06 }); toast(L('A warning!'), 1200); hint(L('He lets you off this once. No lamp lost'), 2000); track('mercy');
-    setTimeout(() => { if (game.mode === 'play') hint(L(isTouch ? 'Next time, ROLL sideways when the arrow flashes' : 'Next time, roll sideways (Space) when the arrow flashes'), 2800); }, 2300); return; }
+    setTimeout(() => { if (game.mode === 'play') hint(L(isTouch ? 'Next time, tap ROLL when he runs at you' : 'Next time, press Space when he runs at you'), 2800); }, 2300); return; }
   game.lives--; renderLives(); sfx.hit(); game.shake = 0.6; cineR.kick = 1.4; buzz([60, 40, 90]); crowdReact('groan');
   if (!game.online && game.combo >= 2) setTimeout(() => pop('Combo lost', ''), 250);
   game.combo = 0; renderCombo();
@@ -2972,21 +3038,26 @@ function updatePlayer(dt) {
   if (p.state === 'free' && game.mode === 'play') {
     if (input.roll && p.rollCd <= 0) {
       p.state = 'roll'; p.t = 0; p.rollCd = 0.35 * mod().roll; sfx.roll();
-      p.rollDir.copy(mag > 0.1 ? move.normalize() : fwdOf(p.yaw, new THREE.Vector3()));
+      if (mag > 0.1) p.rollDir.copy(move.normalize());
+      else { const b = game.b, lx = p.pos.x - b.pos.x, lz = p.pos.z - b.pos.z, n = Math.hypot(lx, lz);
+        if ((b.state === 'windup' || b.state === 'charge') && n > 0.01) { // no direction held while he is coming: jump aside, across his line. It went the way you faced, and after the hide you face him: straight into the horns
+          const sx = -lz / n, sz = lx / n, rA = Math.hypot(p.pos.x + sx * 3.2, p.pos.z + sz * 3.2), rB = Math.hypot(p.pos.x - sx * 3.2, p.pos.z - sz * 3.2), s = Math.abs(rA - 5) <= Math.abs(rB - 5) ? 1 : -1; // the side that lands you nearer mid-ring: not into the post, not out at the edge
+          p.rollDir.set(sx * s, 0, sz * s); }
+        else fwdOf(p.yaw, p.rollDir); }
       p.yaw = Math.atan2(p.rollDir.x, p.rollDir.z);
       player.play('Roll', { once: true, fade: 0.06, ts: 1.5 }); sfx.whoosh();
     } else if (input.tease && p.teaseCd <= 0) {
       p.state = 'tease'; p.t = 0; p.teaseCd = 1.3; p.teaseT = game.t; sfx.flap();
       if (game.mode === 'play') { const b = game.b; p.yaw = Math.atan2(b.pos.x - p.pos.x, b.pos.z - p.pos.z); }
       player.play('SwordSlash', { once: true, fade: 0.08, ts: 1.5 }); player.flap = 0.9;
-      sfx.tease(); if (game.online) netSend({ t: 'tease' });
+      sfx.tease(); if (game.online) netSend({ t: 'tease' }); if (game.coach && game.coach.step < 3) coachStep(3);
       if (!game.hintsShown.tease) { game.hintsShown.tease = true; hint('He saw the hide! Get ready to roll.', 1600); }
     } else if (input.grab && nearPost && game.pithaReady) {
       p.state = 'grab'; p.t = 0; p.grabbed = false; p.vel.set(0, 0, 0);
       p.yaw = Math.atan2(-p.pos.x, -p.pos.z);
       player.play('Jump', { once: true, fade: 0.08, ts: 1.15 });
     } else if (input.grab && !nearPost) {
-      hint('Get inside the dotted ring at the post first.', 1500);
+      hint('Get inside the dotted ring at the post first.', 1500); /* (while being taught the lesson line already says: run to the post) */
     } else {
       const speed = 5.4 * mag * ((p.boost || 0) > 0 ? 1.3 : 1);
       p.vel.copy(move).setLength(speed); p.stepD = (p.stepD || 0) + speed * dt; if (p.stepD > 1.15) { p.stepD = 0; sfx.step(0.6); }
@@ -3783,7 +3854,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, get talk() { return talk; }, talkSpot, toScreen, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, get talk() { return talk; }, talkSpot, toScreen, COACH, coachStep, coachEnd, get coachDone() { return coachDone; }, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3872,7 +3943,7 @@ function frame() {
     if (life) { try { life.update(dt); } catch (e) { if (!life.err) { life.err = 1; console.error(e); } } }
     if (inStory) { try { story.update(dt); } catch (e) { if (!story.err) { story.err = 1; console.error(e); } } } // one bad frame in the village must never freeze the game
     else {
-      updatePlayer(dt); updateBull(dt); updatePitha(dt); updateHandi(dt);
+      updatePlayer(dt); updateBull(dt); coachTick(dt); updatePitha(dt); updateHandi(dt);
       if (game.storyRun && game.mode === 'play' && game.pitha >= 3 && !game.storyWon) { // story finale: three pitha wins the day
         game.storyWon = true; game.slow = 0.5; crowdCheer(1); ringShot({ dur: 1.9, at(t, P, L) { const a = Math.atan2(camera.position.x, camera.position.z) + t * 0.5; P.set(Math.sin(a) * 8.5, 2.6 + t * 0.6, Math.cos(a) * 8.5); L.set(0, 1.4, 0); return { zoom: 0.85, snap: 0.003 }; } }); toast('3 pitha! The village roars', 1700);
         setTimeout(() => { if (game.storyRun && game.mode === 'play') { game.mode = 'over'; gallop(false); story.afterRing(true); } }, 2000);

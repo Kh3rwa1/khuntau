@@ -161,6 +161,8 @@ export function initStory(C) {
     'He saw the hide! Get ready to roll.': 'उसने खाल देख ली! लुढ़कने को तैयार रहो।', 'He is catching his breath. Grab now!': 'वह साँस ले रहा है। अभी झपटो!',
     'He is charging. Hit ROLL!': 'वह दौड़ा! लुढ़को दबाओ!', 'He is charging. Press Space to roll!': 'वह दौड़ा! Space दबाकर लुढ़को!',
     'HIDE to bait, ROLL to dodge, GRAB at the post': 'खाल से उकसाओ, लुढ़ककर बचो, खूँटे पर झपटो', 'Q bait · Space roll · E grab': 'Q उकसाओ · Space लुढ़को · E झपटो',
+    'Wait for it… when he runs at you, tap ROLL': 'रुको… जब वह तुम्हारी ओर दौड़े, लुढ़को दबाओ', 'Wait for it… when he runs at you, press Space': 'रुको… जब वह तुम्हारी ओर दौड़े, Space दबाओ', 'ROLL now!': 'अभी लुढ़को!', 'Space now!': 'अभी Space दबाओ!', 'Next time, tap ROLL when he runs at you': 'अगली बार जब वह तुम्हारी ओर दौड़े, लुढ़को दबाओ', 'Next time, press Space when he runs at you': 'अगली बार जब वह तुम्हारी ओर दौड़े, Space दबाओ',
+    'Drag the left side of the screen to walk': 'चलने के लिए स्क्रीन का बायाँ हिस्सा खींचो', 'Walk with WASD or the arrow keys': 'WASD या तीर के बटनों से चलो', 'Tap HIDE. He charges at the hide': 'खाल दबाओ। वह खाल पर दौड़ेगा', 'Press Q to wave the hide. He charges at it': 'खाल लहराने के लिए Q दबाओ। वह उस पर दौड़ेगा', 'He is dizzy! Run to the post and tap GRAB': 'वह चकरा गया! खूँटे तक दौड़ो और झपटो दबाओ', 'He is dizzy! Run to the post and press E': 'वह चकरा गया! खूँटे तक दौड़ो और E दबाओ', 'He got you, but it does not count yet. Try again: HIDE, then ROLL': 'उसने मार दिया, पर अभी यह नहीं गिना जाएगा। फिर से: खाल, फिर लुढ़को', 'He got you, but it does not count yet. Try again: Q, then Space': 'उसने मार दिया, पर अभी यह नहीं गिना जाएगा। फिर से: Q, फिर Space', 'He is up again. HIDE, ROLL, then GRAB while he is dizzy': 'वह फिर खड़ा हो गया। खाल, लुढ़को, फिर चकराते ही झपटो', 'He is up again. Q, Space, then E while he is dizzy': 'वह फिर खड़ा हो गया। Q, Space, फिर चकराते ही E', 'That is the game!': 'यही खेल है!', 'Snatch as many pitha as you can. Each lamp is a life.': 'जितने पीठे झपट सको, झपटो। हर दीया एक जान है।', 'The bull waits at the khunt in the middle of the village. Go there any time to play a round.': 'बैल गाँव के बीच खूँटे पर है। जब चाहो वहाँ जाकर एक राउंड खेलो।',
     'Drag the left side of the screen to move': 'चलने के लिए स्क्रीन का बायाँ हिस्सा खींचो', 'Tap HIDE to make him charge, then ROLL aside': 'खाल दबाओ ताकि वह दौड़े, फिर लुढ़ककर हटो',
     'Stun him on the post, then GRAB the pitha': 'उसे खूँटे से टकराओ, फिर पीठा झपटो', 'Move with WASD or the arrow keys': 'WASD या तीर वाली कुंजियों से चलो',
     'Press Q to wave the hide, then Space to roll aside': 'खाल हिलाने को Q, लुढ़कने को Space', 'Stun him on the post, then press E to grab': 'उसे खूँटे से टकराओ, फिर झपटने को E',
@@ -186,6 +188,7 @@ export function initStory(C) {
   }
   const langName = (l) => ({ en: 'English', hi: 'हिन्दी', sat: SAT['Santali'] || 'Santali' })[l];
   const toast = (a, ms) => C.toast(tr(a), ms), pop = (a, b) => C.pop(tr(a), tr(b)), hint = (a, ms) => C.hint(tr(a), ms);
+  const walkTip = () => C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.');
   function applyLang() {
     $('pickOk').textContent = tr('Tie this one to the khunt'); $('padDone').textContent = tr('Done'); $('tapQuit').textContent = tr('Leave');
     $('padT').firstElementChild.firstChild.nodeValue = tr('TAMAK'); $('padU').firstElementChild.firstChild.nodeValue = tr('TUMDAK');
@@ -659,7 +662,6 @@ export function initStory(C) {
     const d = S.dlg; if (!d || now() - d.t < 0.25) return;
     if (++d.i < d.lines.length) { showLine(); return; }
     S.dlg = null; $('dlg').hidden = true;
-    if (S.hintAfterDlg) { S.hintAfterDlg = false; hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.'), 4500); }
     if (d.then) d.then();
   }
   $('dlg').addEventListener('pointerdown', (e) => { e.preventDefault(); nextLine(); });
@@ -673,8 +675,7 @@ export function initStory(C) {
     if (S.inside) {
       const I = W.inside;
       add(I.handi, 1.25, 'DRINK', 'Drink the handi', drinkHandi);
-      add(I.pitha, 1.1, 'EAT', 'Eat a pitha', eatPitha);
-      add(I.bed, 1.5, 'REST', 'Rest on the khatia', rest);
+      if (save.ch >= 1) { add(I.pitha, 1.1, 'EAT', 'Eat a pitha', eatPitha); add(I.bed, 1.5, 'REST', 'Rest on the khatia', rest); } /* first the handi: a new player's first orange button was REST (the bed is where they wake) */
       add(mother.wrap.position, 1.3, 'TALK', 'Talk to Gogo', () => say(save.ch === 0 ? T.wake.slice(1) : T.gogoIdle));
       add(I.door, 1.1, 'GO OUT', 'Go outside', () => leaveHouse());
     } else {
@@ -705,6 +706,8 @@ export function initStory(C) {
   }
   function leaveHouse() {
     C.sfx.door(); fade(() => { S.inside = false; W.room.visible = false; game.p.pos.copy(STEP_OUT); game.p.yaw = H.rot; S.camYaw = H.rot; snapCam(); });
+    if (!save.kh) { save.kh = 1; persist(); if (C.track) C.track('fm.out'); /* once: the game they came for is in the middle of the village */
+      setTimeout(() => { if (S.on && !S.dlg && !S.inside) hint('The bull waits at the khunt in the middle of the village. Go there any time to play a round.', 6000); }, 1500); }
   }
   function gulp() { if (!C.audio.ctx) return; const t = C.audio.ctx.currentTime; [0, 0.16, 0.32, 0.5].forEach((d, i) => C.tone(t + d, 'sine', 300 - i * 30, 150 - i * 15, 0.13, 0.4, C.audio.sfxBus)); C.play('bells', { vol: 0.4, rate: 1.4, when: 0.7 }); }
   function drinkHandi() {
@@ -1075,8 +1078,7 @@ export function initStory(C) {
     castCrowd(); placeAnimal(); applyPaint(true);
     C.setMusic('game'); C.musicLevel(C.BED.village); /* the Khuntau BGM */
     if (fromRing) return;
-    setTimeout(() => { if (S.on && !S.dlg) hint(C.isTouch ? (LANG === 'hi' ? 'बाएँ खींचकर चलो, दाएँ खींचकर चारों ओर देखो। काम के लिए नारंगी बटन दबाओ।' : 'Drag the left side to walk, the right side to look around. Tap the orange button to do things.') : (LANG === 'hi' ? 'WASD से चलो, माउस खींचकर चारों ओर देखो। काम के लिए E दबाओ या नारंगी बटन पर क्लिक करो।' : 'Walk with WASD or the arrow keys, drag the mouse to look around. Press E or click the orange button to do things.'), 4500); }, 600);
-    S.hintAfterDlg = true;
+    S.teach = save.ch === 0 && !save.w ? 'walk' : ''; S.teachOn = false; S.teachD = 0; S.teachPos = null; /* new players: how to walk, held until they have walked (see update) */
     if (save.ch === 0) { S.inside = true; W.room.visible = true; game.p.pos.copy(W.inside.bedSide); game.p.yaw = 0.4; setTimeout(() => { if (S.on && save.ch === 0) say(GATED && !F.fin ? T.wakeFest : T.wake); }, 700); } /* lived over five days, the first morning is Um Hilok; Khuntau is day 3 */
     else { S.inside = false; W.room.visible = false; game.p.pos.copy(YARD); game.p.yaw = H.rot; S.camYaw = H.rot; }
     snapCam();
@@ -1200,6 +1202,14 @@ export function initStory(C) {
     const p = game.p, pl = C.player(), bull = C.bull(), tn = now();
     S.lock -= dt; S.tipsy = Math.max(0, S.tipsy - dt); S.boost -= dt; S.bullReact -= dt; S.sat -= dt;
     const free = S.mode === 'walk' && !S.dlg && !pick.on && S.lock <= 0;
+    // a new player's first lesson: how to walk. It comes up when they are free (not under the day card or Gogo's
+    // words), stays until they have walked a few steps, and a ghost stick shows where to drag on a phone.
+    if (S.teach === 'walk' && save.ch >= 1) { S.teach = ''; if (S.teachOn) { S.teachOn = false; C.hintOff(); C.joyGhost(false); } save.w = 1; persist(); } /* they reached the handi: they can walk */
+    if (S.teach === 'walk') { const can = free && !S.dayCard;
+      if (can && !S.teachOn) { S.teachOn = true; C.hintHold(walkTip()); C.joyGhost(true); S.teachPos = p.pos.clone(); if (C.track) C.track('fm.free'); }
+      else if (!can && S.teachOn) { S.teachOn = false; C.hintOff(); C.joyGhost(false); }
+      if (S.teachOn) { const d = Math.hypot(p.pos.x - S.teachPos.x, p.pos.z - S.teachPos.z); if (d < 1) S.teachD += d; S.teachPos.copy(p.pos);
+        if (S.teachD > 1.5) { S.teach = ''; S.teachOn = false; C.hintOff(); C.joyGhost(false); save.w = 1; persist(); if (C.track) C.track('fm.walk'); } } }
 
     // walking
     const camF = t1.copy(p.pos).sub(camera.position).setY(0).normalize(), camR = t2.crossVectors(camF, UP).normalize();
@@ -1227,7 +1237,7 @@ export function initStory(C) {
     const it = free ? interactions() : null; S.near = it;
     const label = it ? it.label : '';
     if (label !== S.label) {
-      S.label = label; const b = $('actBtn'); b.textContent = tr(label) || '·'; b.classList.toggle('off', !label);
+      S.label = label; const b = $('actBtn'); b.textContent = tr(label) || '·'; b.classList.toggle('off', !label); b.classList.toggle('coach-on', save.ch === 0 && label === 'DRINK');
       const pr = $('prompt'); pr.hidden = !label; if (label) pr.innerHTML = '<kbd>E</kbd>' + tr(it.text);
     }
     if (S.act) { S.act = false; if (it) it.go(); }
@@ -1439,6 +1449,8 @@ export function initStory(C) {
     // a friend in the shared village did something: their drum is heard, quieter with distance, and the dancers feel it
     peer: (k, n, r) => { if (!S.on || S.inside) return; if (k === 'drum') { dance.peer = (dance.peer || 0) + 1; dance.peerT = now(); const ctx = C.audio.ctx, v = C.sfx.near(W.drumStand, 30); if (ctx && !C.audio.muted && v > 0) { const t = ctx.currentTime; if (n === 0) C.sfx.dhamsa(t); else C.sfx.madalHi(t); } dance.energy = Math.min(1.5, dance.energy + 0.12); } },
     toMenu: C.toMenu, active: () => S.on, energy: () => dance.energy,
+    langs: () => LANGS.slice(), lang: () => LANG, tr, // the home screen offers the language before PLAY
+    setLang: (l) => { if (!LANGS.includes(l) || l === LANG) return; LANG = l; try { localStorage.setItem('khuntau-lang', LANG); } catch (e) {} applyLang(); },
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     seenUi, // the journal of things seen, for the pause menu
     dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen

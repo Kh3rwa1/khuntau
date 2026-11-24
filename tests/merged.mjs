@@ -40,12 +40,15 @@ const act = (P) => P.ev(() => document.getElementById('actBtn').dispatchEvent(ne
   for (let i = 0; i < 8 && await ev(() => !!__k.story.debug.S.dlg); i++) { await ev(() => document.getElementById('dlg').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))); await sleep(350); }
   // rest on the khatia: you lie on it, head on the pillow, then get up again
   await ev(() => { const d = __k.story.debug, w = d.W.inside.bed; __k.game.p.pos.set(w.x + 0.2, w.y, w.z + 1.05); d.S.near = null; });
+  await sleep(700); check(await ev(() => !__k.story.debug.S.near), 'by the khatia before the handi: nothing is offered yet (a new player\'s first orange button was REST)');
+  await ev(() => { __k.story.debug.save.ch = 1; }); // as if the handi were drunk: the bed is offered (put back below, this player's quest must stay at the handi)
   check(await until(() => { const n = __k.story.debug.S.near; return n && n.label === 'REST'; }), 'by the khatia: REST');
   await act(await P);
   check(await until(() => { const r = __k.story.debug.S.rest, q = __k.player.wrap.quaternion, a = __k.story.debug.W.inside.restAt, w = __k.player.wrap.position;
     return r && r.t > 0.5 && Math.abs(q.w - 1) > 0.2 && Math.hypot(w.x - a.x, w.z - a.z) < 0.05 && w.y > a.y + 0.4; }, 6000), 'resting: lying flat on the khatia');
   await page.screenshot({ path: 'tests/out/merged-0-rest.jpg', type: 'jpeg', quality: 70 });
   check(await until(() => !__k.story.debug.S.rest && Math.abs(__k.player.wrap.rotation.x) < 0.01 && Math.abs(__k.player.wrap.rotation.z) < 0.01, 12000), 'then you get up and stand again');
+  await ev(() => { __k.story.debug.save.ch = 0; __k.story.debug.S.objKey = ''; });
   await ev(() => { const d = __k.story.debug, w = d.W.inside.door; __k.game.p.pos.set(w.x, w.y, w.z); d.S.near = null; });
   check(await until(() => { const n = __k.story.debug.S.near; return n && n.label === 'GO OUT'; }), 'the door says GO OUT'); await act(await P);
   await until(() => !__k.story.debug.S.inside, 8000);

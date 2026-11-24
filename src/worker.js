@@ -403,7 +403,7 @@ const DISTRICTS = new Set(["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "E
   "Bankura", "Birbhum", "Purulia", "Jhargram", "Paschim Medinipur", "Paschim Bardhaman", "Purba Bardhaman", "Dakshin Dinajpur", "Uttar Dinajpur", "Malda", "Hooghly", "Murshidabad",
   "Mayurbhanj", "Balasore", "Keonjhar", "Sundargarh", "Banka", "Bhagalpur", "Jamui", "Katihar", "Purnia", "Kokrajhar", "Chirang", "Udalguri", "Sonitpur"]);
 // the only step names the counter accepts (anything else is dropped)
-const EV_KEY = /^(talk\.(open|say|quick|report|spot|bubble)|mercy|leave|temper|help|found|duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
+const EV_KEY = /^(fm\.(free|walk|out)|coach\.(1|2|3|4|done|hit)|lang\.(en|hi|sat)|talk\.(open|say|quick|report|spot|bubble)|mercy|leave|temper|help|found|duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
