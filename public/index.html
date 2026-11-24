@@ -1302,7 +1302,7 @@ const music = { intro: new Audio('audio/intro.mp3'), game: new Audio('audio/khun
 for (const el of [music.intro, music.game]) { el.loop = true; el.preload = 'auto'; el.playsInline = true; }
 // The music is a quiet bed, not the star: Dulor wants the game's own sounds (claps, people talking, steps, animals,
 // the cleaver) to carry it. BED: how loud the Khuntau track plays in the village and in the ring.
-const BED = { village: 0.022, ring: 0.04 }, MUSIC_VOL = { intro: 0.22, game: BED.ring };
+const BED = { village: 0.035, ring: 0.06 }, MUSIC_VOL = { intro: 0.3, game: BED.ring }; // 24 Nov: Dulor found 0.022 / 0.04 too low
 // Dulor (23 Nov): a track that never stops is irritating. It plays for a while, then leaves the place to its own
 // sounds, then comes back. bedCycle: seconds on, seconds off, counted from when the track last started.
 const bedCycle = { on: 40, off: 85, t0: 0, open: true };
@@ -1336,7 +1336,7 @@ audio.buf = {};
 function loadSamples() {
   const loadBuf = n => fetch('audio/' + n + '.mp3').then(r => r.arrayBuffer()).then(b => audio.ctx.decodeAudioData(b)).then(d => { audio.buf[n] = d; }).catch(() => {});
   for (const n of SFX_FILES) loadBuf(n);
-  setTimeout(() => { for (const k of Object.keys(REAL)) loadBuf('r-' + k); }, 3500); /* the everyday sounds' recordings: after the first rush, the synthesized ones cover until then */
+  setTimeout(() => { for (const n of REAL_FILES) loadBuf(n); }, 3500); /* the everyday sounds' recordings: after the first rush, the synthesized ones cover until then */
 }
 function play(name, { vol = 1, rate = 1, when = 0 } = {}) {
   const b = audio.buf[name]; if (!b || !audio.ctx || audio.muted) return !!b;
@@ -1486,13 +1486,16 @@ Object.assign(sfx, {
 // Real recordings for the small everyday sounds (Openverse, CC0; sources in design/sound-sources.tsv). REAL: sound ->
 // [volume that puts this recording at the right level, how far its pitch may wander so repeats do not sound stamped].
 // Each one replaces the synthesized sound of the same name once its file has loaded; until then the synthesized one plays.
-const REAL = { bleat: [0.33, 0.05], chirp: [0.3, 0.14], chop: [0.58, 0.07], cicada: [0.15, 0.05], cluck: [0.5, 0.1], cowbell: [0.47, 0.05], crackle: [1.2, 0.12], door: [0.97, 0.05], farDog: [0.16, 0.05], flop: [0.85, 0.14], flutter: [0.9, 0.05], frog: [0.23, 0.12], gulp: [0.65, 0.05], laugh: [0.19, 0.05], munch: [0.92, 0.1], plop: [1.2, 0.05], quack: [0.48, 0.1], rooster: [0.16, 0.05], rustle: [0.15, 0.06], snore: [1.07, 0.05], splash: [0.74, 0.05], step: [0.28, 0.14], thud: [1.16, 0.05], twang: [1.07, 0.05] };
+const REAL = { bleat: [0.33, 0.05], chirp: [0.3, 0.14], chop: [0.58, 0.07], cicada: [0.15, 0.05], cluck: [0.5, 0.1], cowbell: [0.47, 0.05], crackle: [1.2, 0.12], door: [0.97, 0.05], farDog: [0.16, 0.05], flop: [0.85, 0.14], flutter: [0.9, 0.05], frog: [0.23, 0.12], gulp: [0.65, 0.05], laugh: [0.19, 0.05], munch: [0.92, 0.1], plop: [1.2, 0.05], quack: [0.48, 0.1], rooster: [0.16, 0.05], rustle: [0.15, 0.06], snore: [1.07, 0.05], splash: [0.74, 0.05], step: [0.52, 0.07], thud: [1.16, 0.05], twang: [1.07, 0.05] };
+// footsteps are four different steps cut from one walk on firm earth, played in turn: one clip repeated on every stride sounded stamped
+const STEPS = 4, REAL_FILES = Object.keys(REAL).flatMap(k => k === 'step' ? Array.from({ length: STEPS }, (_, i) => 'r-step' + (i + 1)) : ['r-' + k]); let stepN = 0;
 for (const k of Object.keys(REAL)) { const syn = sfx[k]; if (!syn) continue;
   sfx[k] = (...a) => { const [vol, sp] = REAL[k]; let v = typeof a[0] === 'number' ? a[0] : 1, rate = 1 + rand(-sp, sp), n = 1, gap = 0;
-    if (k === 'step' && a[1]) { v *= 0.6; rate *= 0.9; } /* soft: indoors */
+    if (k === 'step' && a[1]) { v *= 0.55; rate *= 0.92; } /* soft: indoors */
     if (k === 'munch' || k === 'gulp') { n = Math.min(3, typeof a[0] === 'number' ? a[0] : 3); v = 1; gap = k === 'munch' ? 0.34 : 0.42; } /* these take a count, not a loudness */
-    if (!audio.buf['r-' + k]) return syn(...a);
-    for (let i = 0; i < n; i++) play('r-' + k, { vol: vol * v, rate: rate * (1 + (i ? rand(-0.06, 0.06) : 0)), when: i * gap }); }; }
+    const file = k === 'step' ? 'r-step' + (1 + (stepN = (stepN + 1 + (Math.random() < 0.2 ? 1 : 0)) % STEPS)) : 'r-' + k;
+    if (!audio.buf[file]) return syn(...a);
+    for (let i = 0; i < n; i++) play(file, { vol: vol * v, rate: rate * (1 + (i ? rand(-0.06, 0.06) : 0)), when: i * gap }); }; }
 function runDrums() {
   if (!audio.ctx || audio.muted) return;
   const c = audio.ctx, bpm = lerp(96, 168, audio.intensity), stepDur = 60 / bpm / 2;
@@ -3610,7 +3613,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, REAL, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, draw, view, stepUp, stepDown, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {

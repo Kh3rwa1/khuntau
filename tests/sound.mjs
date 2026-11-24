@@ -29,10 +29,10 @@ const near = (P, l) => P.until((l) => { const n = __k.story.debug.S.near; return
   check(stepped, 'walking makes footsteps');
   { const m = await P.ev(() => ({ bed: __k.MUSIC_VOL.game, village: __k.BED.village, ring: __k.BED.ring, micro: __k.audio.microBus.gain.value, intro: __k.MUSIC_VOL.intro }));
     check(m.bed === m.village && m.village <= 0.08 && m.ring <= 0.12 && m.intro <= 0.5 && m.micro >= 2, `the music is a quiet bed (village ${m.village}, ring ${m.ring}, home ${m.intro}) and the everyday sounds are lifted over it (x${m.micro.toFixed(1)})`); }
-  { const got = await P.until(() => Object.keys(__k.REAL).every(k => __k.audio.buf['r-' + k] && __k.audio.buf['r-' + k].duration > 0.15), 40000, 'recordings');
-    const n = await P.ev(() => Object.keys(__k.REAL).filter(k => __k.audio.buf['r-' + k]).length + '/' + Object.keys(__k.REAL).length);
+  { const got = await P.until(() => __k.REAL_FILES.every(f => __k.audio.buf[f] && __k.audio.buf[f].duration > 0.15), 40000, 'recordings');
+    const n = await P.ev(() => __k.REAL_FILES.filter(f => __k.audio.buf[f]).length + '/' + __k.REAL_FILES.length);
     check(got, `the everyday sounds are real recordings, all loaded (${n})`); }
-  check(await P.ev(() => __k.CHEER <= 0.5 && __k.BED.village <= 0.03 && __k.BED.ring <= 0.05), 'cheers and the music bed are turned well down');
+  check(await P.ev(() => __k.CHEER <= 0.5 && __k.BED.village <= 0.045 && __k.BED.ring <= 0.07), 'cheers and the music bed are turned well down');
   { const shut = await P.ev(async () => { const b = __k.bedCycle; b.t0 = performance.now() - (b.on + 5) * 1000; for (let i = 0; i < 40 && b.open; i++) await new Promise(r => setTimeout(r, 100)); const r = !b.open; b.t0 = performance.now(); return r; });
     check(shut, 'the music does not run on and on: after a while it falls silent and leaves the village to its own sounds'); }
   // the ambience is rolled by chance each frame; on CI's slow renderer game time crawls and 40 s could pass without a
