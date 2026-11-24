@@ -48,7 +48,7 @@ const aimAt = (page, role = 'soldier') => page.evaluate(async (role) => { const 
   let shots = 0; await page.evaluate(() => { __h.G.god = true; }); // set-up: the test aims but does not roll or hide, so musket hits are switched off here
   for (let k = 0; k < 16 && (await state(page)).left > 0 && (await state(page)).mode === 'play'; k++) {
     // like a player: wait for a clear line to him (no trunk in between) before drawing
-    let clear = false; for (let w = 0; w < 12 && !clear; w++) { if (!(await aimAt(page))) break; clear = await page.evaluate(() => { const r = __h.aimProbe(); return r === 'redcoat' || r === 'sepoy'; }); if (!clear) { if (w % 3 === 2) { await page.keyboard.down('KeyW'); await gwait(page, 1.0); await page.keyboard.up('KeyW'); } else await gwait(page, 0.8); } } // no clear line: wait, then walk toward him like a player would
+    let clear = false; for (let w = 0; w < 30 && !clear; w++) { if (!(await aimAt(page))) break; clear = await page.evaluate(() => { const r = __h.aimProbe(); return r === 'redcoat' || r === 'sepoy'; }); if (!clear) { if (w % 3 === 2) { await page.keyboard.down('KeyW'); await gwait(page, 1.0); await page.keyboard.up('KeyW'); } else await gwait(page, 0.8); } } // no clear line: wait, then walk toward him like a player would
     if (!clear) break;
     await page.mouse.down(); await sleep(150); if (k === 0) await page.screenshot({ path: 'tests/out/hul-lap-draw0.jpg', quality: 75 });
     await gwait(page, 0.75); await aimAt(page); if (k === 0) { await page.screenshot({ path: 'tests/out/hul-lap-aim.jpg', quality: 75 }); check(await page.evaluate(() => document.getElementById('xh').classList.contains('on')), 'crosshair turns red on a soldier'); }

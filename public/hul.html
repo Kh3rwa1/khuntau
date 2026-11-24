@@ -692,7 +692,7 @@ function fire(e, d) { e.aimT = 0; e.reload = 5.5; const tip = e.tip.getWorldPosi
 function updateArrows(dt) { const g = 6; for (let i = arrowsLive.length - 1; i >= 0; i--) { const a = arrowsLive[i], a0 = a.p.clone(); a.v.y -= a.g * dt; a.p.addScaledVector(a.v, dt); a.t += dt;
     let done = null; const seg = a.p.clone().sub(a0), L = seg.length(), dir = seg.clone().divideScalar(L || 1);
     // people
-    for (const e of enemies) { if (e.dead || e.gone) continue; if (e.pos.distanceTo(a.p) > 4) continue; const hb = hitboxes(e);
+    for (const e of enemies) { if (e.dead || e.gone) continue; if (e.pos.distanceTo(a.p) > 3 + L) continue; /* a fast arrow on a slow frame moves several metres: test the whole step */ const hb = hitboxes(e);
       for (const [c, r, part] of [[hb.head, 0.17, 'head'], [hb.chest, 0.3, 'body'], [hb.hip, 0.27, 'body']]) { _v.subVectors(c, a0); const t = clamp(_v.dot(dir), 0, L); _w.copy(a0).addScaledVector(dir, t); if (_w.distanceTo(c) < r) { done = { e, part, at: _w.clone() }; break; } } if (done) break; }
     if (done) { arrowsLive.splice(i, 1); const e = done.e; if (G.log) G.log.push(['hit', e.id, done.part, a.aimed]); if (e.role === 'porter') { G.stats.porterHit++; G.stats.score = Math.max(0, G.stats.score - 150); e.fleeing = true; e.state = 'flee'; if (e.load) e.load.visible = false; toast('Not him! He is one of us, forced to carry.', 2.6); play('hit', { vol: 0.5 }); stuck.push({ p: done.at.setY(H(done.at.x, done.at.z) + 0.05), q: new THREE.Quaternion() }); continue; }
       G.stats.hits++; play('hit', { vol: 0.9, at: done.at }); const head = done.part === 'head'; e.hp -= head ? 2 : 1; e.arrowsIn++;
