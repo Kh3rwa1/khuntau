@@ -102,8 +102,10 @@ export function initTalk(C) {
   // never taken away again while the page is up: the row used to appear a second or two after the others, when the
   // server had answered, and push them down 30 px under a thumb already on its way to one of them (seen on the live
   // site, 25 Nov: a tap on the row below landed on its neighbour). Giving the place back when there turns out to be
-  // no talk moved the rows just the same, the other way. Only a phone that is offline when the page starts gets no row.
-  if (row) { if (navigator.onLine === false) { row.hidden = true; row.style.visibility = ''; } else { row.hidden = false; row.style.visibility = 'hidden'; } }
+  // no talk moved the rows just the same, the other way. Only a phone that is offline when the page starts gets no row,
+  // and that is known before the first paint (hs-notalk on <html>, set in the page's <head>), so nothing moves for it either.
+  const noRow = (v) => doc.documentElement.classList.toggle('hs-notalk', v);
+  if (row) { if (navigator.onLine === false) { row.hidden = true; row.style.visibility = ''; noRow(true); } else { row.hidden = false; row.style.visibility = 'hidden'; noRow(false); } }
 
   /* ---------- talking to the server ---------- */
   const api = async (path, body) => { const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}); let d = null; try { d = await r.json(); } catch (e) {} return { s: r.status, d: d || {} }; };
@@ -136,7 +138,7 @@ export function initTalk(C) {
   /* ---------- home row, button, counts ---------- */
   const countText = () => T.now > 1 ? t('here', T.now) : t('today', Math.max(1, T.today));
   function paint() {
-    if (row && (T.on || !row.hidden)) { row.hidden = false; /* a phone that started offline and found a connection gets its row now */ row.style.visibility = T.on ? '' : 'hidden'; if (T.on) { const s = row.querySelector('span'), u = row.querySelector('u'), m = T.newest; s.textContent = '';
+    if (row && (T.on || !row.hidden)) { row.hidden = false; noRow(false); /* a phone that started offline and found a connection gets its row now */ row.style.visibility = T.on ? '' : 'hidden'; if (T.on) { const s = row.querySelector('span'), u = row.querySelector('u'), m = T.newest; s.textContent = '';
       const dot = el('i', 'talk-dot'); s.append(dot, countText() + ' · ' + (m ? m.n + ': ' + said(m) : t('homeEmpty'))); u.textContent = t('open'); } }
     hud.classList.toggle('new', !!T.newest && T.newest.id > T.seen && !T.newest.me);
     hud.setAttribute('aria-label', t('title')); hud.title = t('title');
