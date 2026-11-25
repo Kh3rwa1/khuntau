@@ -10,6 +10,33 @@ Package name: **com.skyward.ascent** (an existing Play listing whose old upload 
 - `upload_certificate.pem` is the public certificate of that key. It is safe to share.
   SHA-256: `49:2F:38:CE:FE:EE:4B:24:23:42:BF:B7:E7:2A:1F:B7:D6:06:B8:CE:69:A4:A9:34:C3:1C:0F:94:82:D8:42:B1`
 
+## Signed builds from GitHub (25 Nov)
+GitHub builds the app on every push to `main` that changes the game or the app (`.github/workflows/apk.yml`) and
+publishes it to the `apk-build` branch. With two repository secrets it signs the build with the upload key:
+
+| Secret | What goes in it |
+|---|---|
+| `UPLOAD_KEYSTORE_B64` | `upload-keystore.jks` as base64 text. Mac: `base64 -i upload-keystore.jks \| pbcopy` (copies it); Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("upload-keystore.jks")) \| Set-Clipboard`; Linux: `base64 -w0 upload-keystore.jks` |
+| `UPLOAD_KEYSTORE_PASSWORD` | the password in `KEYSTORE-PASSWORD.txt` |
+
+Add them at GitHub > the repository > Settings > Secrets and variables > Actions > New repository secret. Never
+paste either into a chat, an issue or a file in the repository. Then: Actions > apk > Run workflow.
+
+Signed, the branch holds `sohrai.apk` (install on a phone), `sohrai.aab` (upload to Play), `signed-by.txt` and
+`build.txt` (version, commit, game files). Without the secrets it holds the unsigned files, as before.
+
+- `tools/apk-sign.sh` does the signing. It refuses a keystore whose certificate is not listed in
+  `public/.well-known/assetlinks.json`, a wrong password, a cut-off paste; then nothing is published signed and the
+  run is red with the reason.
+- Only the workflow's `publish` job is given the key: a fresh machine running GitHub's own actions and that script.
+  The `build` job (Gradle, the emulator) never sees it. Each build also rehearses the signing with a throwaway key
+  and boots the result on the emulator with the network off (`5-release-build-offline-home.png`).
+- The repository is public, so the signed APK is public too (it is a free game). The secrets are not: GitHub shows
+  them to nobody and gives them to no pull request from a fork.
+- If the key ever leaks: it is the upload key, not the app's signing key (Google holds that one). Request another
+  upload key reset and replace the two secrets.
+- Play refuses a version code it has seen: raise `appVersionCode` in `twa/twa-manifest.json` before an upload.
+
 ## 1. Ask Google to accept the new upload key
 Play Console > the app > Test and release > Setup > App signing > "Request upload key reset" (if the button is not
 there, use the upload key reset form in Play Console Help). Choose "I lost my upload key", attach

@@ -1,13 +1,20 @@
-# Builds the packed Android app (android/, with public/ inside it) unsigned, boots it on an emulator with the network
-# off, and publishes the files to the apk-build branch. Signing happens off CI with the upload key, never stored here.
+# Builds the packed Android app (android/, with public/ inside it), boots it on an emulator with the network off,
+# signs it with the Play upload key and publishes the files to the apk-build branch.
+#
+# Signing (Dulor, 25 Nov: 'put the key in GitHub secrets'): two repository secrets,
+#   UPLOAD_KEYSTORE_B64       the upload keystore file (upload-keystore.jks, key 'upload') as base64 text
+#   UPLOAD_KEYSTORE_PASSWORD  its password
+# Without them the build is published unsigned, as before. The key is only ever given to the 'publish' job, which
+# runs on a fresh machine and uses nothing but GitHub's own actions and this repository's tools/apk-sign.sh: the
+# 'build' job (Gradle, the emulator action) never sees it and has no write access to the repository.
 name: apk
 on:
   workflow_dispatch:
   push:
     branches: [main, 'main-*'] # was only main-y500hu, an earlier session's branch: pushes to main built no app from 24 Nov morning on
-    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh', 'public/**', 'twa/twa-manifest.json']
+    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh', 'tools/apk-sign.sh', 'public/**', 'twa/twa-manifest.json']
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: apk
   cancel-in-progress: true
@@ -35,6 +42,22 @@ jobs:
           cp "$BT/lib/apksigner.jar" out/
           sed -n 3p public/sw.js > out/web-version.txt
           ls -la out
+      # Proves tools/apk-sign.sh on this machine, with a key made here and thrown away: it must sign with a listed
+      # key and refuse an unlisted one. The emulator step then installs what it signed (the release build).
+      - name: Signing rehearsal (throwaway key)
+        run: |
+          mkdir -p /tmp/rehearsal /tmp/refuse && cp out/sohrai-unsigned-aligned.apk out/sohrai-unsigned.aab out/apksigner.jar /tmp/rehearsal/ && cp /tmp/rehearsal/* /tmp/refuse/
+          keytool -genkeypair -keystore /tmp/try.jks -storetype PKCS12 -storepass throwaway -alias upload -keyalg RSA -keysize 2048 -validity 2 -dname CN=rehearsal
+          FP=$(keytool -list -v -keystore /tmp/try.jks -storepass throwaway | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' | head -1)
+          KS_B64=$(base64 /tmp/try.jks) KS_PASS=throwaway WANT_SHA256="$FP" bash tools/apk-sign.sh /tmp/rehearsal
+          ls -la /tmp/rehearsal && test -s /tmp/rehearsal/sohrai.apk && test -s /tmp/rehearsal/sohrai.aab
+          # the two refusals are expected: keep their '::error::' lines out of the run's annotations
+          if KS_B64=$(base64 /tmp/try.jks) KS_PASS=throwaway bash tools/apk-sign.sh /tmp/refuse > /tmp/refuse-1.txt 2>&1; then echo "::error::signed with a key the site does not list"; exit 1; fi
+          grep -v '^::' /tmp/refuse-1.txt | cut -c1-120
+          test -s /tmp/refuse/sohrai-unsigned-aligned.apk && ! test -e /tmp/refuse/sohrai.apk
+          if KS_B64=$(base64 /tmp/try.jks) KS_PASS=wrong WANT_SHA256="$FP" bash tools/apk-sign.sh /tmp/refuse > /tmp/refuse-2.txt 2>&1; then echo "::error::signed with a wrong password"; exit 1; fi
+          grep -v '^::' /tmp/refuse-2.txt | cut -c1-120
+          rm -f /tmp/try.jks
       - name: Let the emulator use KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -50,9 +73,41 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: sh tools/apk-smoke.sh
-      # The cloud session that signs the app cannot download artifacts, so the output goes to a branch.
+      - name: Hand the build to the publish job
+        uses: actions/upload-artifact@v4
+        with: { name: out, path: out, retention-days: 3, if-no-files-found: error }
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      HAS_KEY: ${{ secrets.UPLOAD_KEYSTORE_B64 != '' && secrets.UPLOAD_KEYSTORE_PASSWORD != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: actions/download-artifact@v4
+        with: { name: out, path: out }
+      - name: Sign with the upload key
+        if: env.HAS_KEY == 'true'
+        env:
+          KS_B64: ${{ secrets.UPLOAD_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.UPLOAD_KEY_PASSWORD }} # only if the key has a password of its own; normally unset
+        run: bash tools/apk-sign.sh out
+      - name: No key, no signature
+        if: env.HAS_KEY != 'true'
+        run: echo "::warning::UPLOAD_KEYSTORE_B64 / UPLOAD_KEYSTORE_PASSWORD are not set, so this build is unsigned and installs on no phone."
+      # A cloud session cannot download artifacts, and Dulor wants one place to fetch the app from: a branch.
       - name: Publish to the apk-build branch
         run: |
+          VC=$(sed -n 's/.*"appVersionCode": *\([0-9]*\).*/\1/p' twa/twa-manifest.json)
+          VN=$(sed -n 's/.*"appVersionName": *"\([^"]*\)".*/\1/p' twa/twa-manifest.json)
+          KIND=unsigned; [ -f out/sohrai.apk ] && KIND=signed
+          printf 'app %s (code %s), %s, built from %s, game files %s\n' "$VN" "$VC" "$KIND" "${GITHUB_SHA::7}" "$(sed -n "s/.*'\(.*\)'.*/\1/p" out/web-version.txt)" > out/build.txt
+          cat out/build.txt; ls -la out
           cd out && git init -q -b apk-build && git config user.name ci && git config user.email ci@users.noreply.github.com
-          git add -A && git commit -q -m "unsigned Android build of ${GITHUB_SHA::7}"
+          git add -A && git commit -q -m "$KIND Android build of ${GITHUB_SHA::7} (app $VN, code $VC)"
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" apk-build

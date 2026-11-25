@@ -52,4 +52,20 @@ adb shell run-as com.skyward.ascent ls -laR files/ota > out/ota-files.txt 2>&1 |
 cat out/logcat-ota-1-download.txt out/logcat-ota-2-applied.txt
 adb shell dumpsys webviewupdate | grep -i "current webview package" > out/webview.txt || true
 wc -l out/logcat.txt
+
+# Everything above runs the debug build. The release build, the one that is signed and shipped, had only ever been
+# built, never started. The workflow's signing rehearsal has put it through tools/apk-sign.sh with a throwaway key:
+# install that in place of the debug app and open it with the network still off. (The real key's signature is
+# checked where it is made, by apksigner verify in tools/apk-sign.sh; a throwaway-signed copy differs in nothing else.)
+if [ -f /tmp/rehearsal/sohrai.apk ]; then
+  adb uninstall com.skyward.ascent
+  adb install /tmp/rehearsal/sohrai.apk > out/release-install.txt 2>&1
+  adb logcat -c
+  adb shell am start -W -n com.skyward.ascent/.MainActivity
+  sleep 90
+  adb exec-out screencap -p > out/5-release-build-offline-home.png
+  adb logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat-release.txt
+  adb shell dumpsys package com.skyward.ascent | grep -i -m2 "versionCode\|versionName" >> out/release-install.txt || true
+  cat out/release-install.txt
+fi
 exit 0
