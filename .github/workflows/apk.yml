@@ -21,7 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -64,6 +64,7 @@ jobs:
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
       - name: Boot the app offline on an emulator
         continue-on-error: true
+        timeout-minutes: 18 # it takes about 9; an emulator that dies must not take the build with it
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -77,6 +78,7 @@ jobs:
       # shows on an Android 16 phone, above all the back gesture: so the release build is started there too.
       - name: Boot the release build offline on Android 16
         continue-on-error: true
+        timeout-minutes: 10 # run 33: the emulator died, the script waited for it, the job hit its limit and nothing was signed
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
