@@ -12,7 +12,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60 # the suite takes about 33 minutes; a slow runner needs the room (raised from 45 on 25 Nov)
     env:
       SWGL: '1' # no GPU on the runner: software WebGL
     steps:
