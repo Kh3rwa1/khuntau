@@ -10,6 +10,7 @@ const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, 
 async function phone(story) {
   const page = await browser.newPage(), logs = []; page.on('pageerror', e => logs.push(e.message));
   await page.emulate({ viewport: { width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' });
+  if (process.env.SLOW) await page.evaluateOnNewDocument((ms) => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = cb => raf(t => { const e = performance.now() + ms; while (performance.now() < e); cb(t); }); }, +process.env.SLOW); // SLOW=90: about 9 frames a second, like a busy CI runner
   await page.evaluateOnNewDocument((st) => { localStorage.setItem('khuntau-name', 'Sound Test'); localStorage.setItem('khuntau-played', '1'); if (st) localStorage.setItem('khuntau-story', JSON.stringify(st)); }, story);
   await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
@@ -71,7 +72,14 @@ const near = (P, l) => P.until((l) => { const n = __k.story.debug.S.near; return
   await P.ev(() => { const d = __k.story.debug; d.S.mode = 'walk'; d.S.focus = null; const a = 0.35 + 0.698132 * 4.5; __k.game.p.pos.set(Math.cos(a) * 20.7, 0, Math.sin(a) * 20.7); d.S.near = null; });
   if (await near(P, 'FISH')) { await act(P); await P.until(() => __k.story.debug.S.mode === 'fish'); await sleep(600);
     await clear(P); await P.ev(() => { __k.story.debug.S.tap = true; }); check(await heard(P, 'plop'), 'the float plops into the water');
-    await P.until(() => __k.story.debug.fish.st === 'bite', 8000); await P.ev(() => { __k.story.debug.S.tap = true; }); check(await heard(P, 'splash'), 'a landed fish splashes'); }
+    // The bite comes 1.3 to 3.6 s after the cast on the game's clock, which crawls on a slow runner (CI run 251: no
+    // bite within 8 s of wall clock, so the pull came too early and nothing was landed). Wait for the bite itself; a
+    // miss casts again (three casts to a turn).
+    let landed = false; for (let i = 0; i < 3 && !landed; i++) {
+      if (i) { if (!(await P.until(() => __k.story.debug.fish.st === 'idle', 30000))) break; await P.ev(() => { __k.story.debug.S.tap = true; }); }
+      if (!(await P.until(() => __k.story.debug.fish.st === 'bite', 45000))) continue;
+      await P.ev(() => { __k.story.debug.S.tap = true; }); landed = await heard(P, 'splash', 20000); }
+    check(landed, 'a landed fish splashes'); }
   else check(false, 'reached the fishing stand');
   { const e = realErrors(P.logs); check(!e.length, 'archery/fishing: no page errors' + (e.length ? ': ' + e.slice(0, 3).join(' | ') : '')); }
   await P.page.close(); }
