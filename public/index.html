@@ -2376,7 +2376,7 @@ function flushEv() {
 addEventListener('pagehide', flushEv); document.addEventListener('visibilitychange', () => { if (document.hidden) flushEv(); });
 { // where this visit came from, and whether the player came back
   const q = new URLSearchParams(location.search); track('open');
-  if (q.has('beat')) track('open.challenge'); if (q.has('k')) track('keep.open'); /* came from a shared festival card */ if (q.has('room')) track('open.room'); if (q.get('src') === 'app') track('open.app');
+  if (q.has('beat')) track('open.challenge'); if (q.has('k')) track('keep.open'); /* came from a shared festival card */ if (q.has('room')) track('open.room'); if (q.get('src') === 'app') track('open.app'); if (q.get('src') === 'wa') track('open.wa'); /* came through the link under a WhatsApp poster (promo/posters) */
   let first = null, old = false; try { first = localStorage.getItem('khuntau-first'); old = !!localStorage.getItem('khuntau-played'); if (!first) localStorage.setItem('khuntau-first', istDay()); } catch (e) {}
   if (!first && !old) track('open.new');
   else { track('open.return'); const d = first ? Math.round((Date.parse(istDay()) - Date.parse(first)) / 864e5) : -1;
