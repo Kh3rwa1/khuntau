@@ -63,7 +63,7 @@ export const SHOTS = [
     },
   },
   { // 3+4 THE ROUND, one take on the phone screen: tap HIDE, he charges and slams the post, step in, tap GRAB, golden pitha
-    id: 'S34', frames: 250,
+    id: 'S34', frames: Number(process.env.S34_FRAMES || 320), // the 40 s reel holds the crowd's cheer a bar longer than the 22 s cut
     async setup(ctx) {
       await toRing(ctx); await ui(ctx, ['film-ring']); // each shot opens its own place: filmed alone, this one stayed on the home screen
       // How the round is really won: stand just off his line beside the post. With the post straight between you he walks
@@ -107,6 +107,7 @@ export const SHOTS = [
             cur = v; } });
           __k.input.grab = true; });
         return 'tap-grab'; }
+      if (this.got) await ctx.ev(() => { const b = __k.game.b; if (b.state === 'watch') b.t = 0; }); // after the snatch he only watches: the 320-frame take had him horn the player under the cheer (frame 236)
       if (s.n >= 1 && !this.got) { this.got = 1; await ui(ctx, ['film-clean']); return 'snatch'; }
     },
     async after() { return { buttons: this.btn }; },
@@ -190,9 +191,32 @@ export const SHOTS = [
       if (k === 2) return 'cut-' + i;
     },
   },
+  { // V1 (40 s reel): he runs out from his painted house toward the khunt; the camera backs away in front of him, the
+    // house and its wall paintings behind him. The house opposite the sun, so the light is behind the camera.
+    id: 'V1', frames: 80,
+    async setup(ctx) {
+      await toVillage(ctx); await ui(ctx, ['film-clean']);
+      await ctx.ev(new Function(sunAxis + `
+        let best = null, bd = 9; for (const h of __k.houses) { const L = Math.hypot(h.x, h.z), d = (h.x * sx + h.z * sz) / L; if (d < bd) { bd = d; best = h; } }
+        const L = Math.hypot(best.x, best.z), ox = best.x / L, oz = best.z / L, r0 = L - best.d / 2 - 1.6;
+        const d = __k.story.debug, p = __k.game.p; p.pos.set(ox * r0, 0, oz * r0); p.yaw = Math.atan2(-ox, -oz); d.S.mode = 'walk'; d.S.dlg = null; d.snapCam();
+        window.__v1 = { dx: -ox, dz: -oz }; const sm = { x: p.pos.x, z: p.pos.z };
+        window.__cam = (c, t) => { const pp = __k.game.p.pos; sm.x += (pp.x - sm.x) * 0.35; sm.z += (pp.z - sm.z) * 0.35;
+          const sxo = oz * 0.9, szo = -ox * 0.9; c.fov = 50; c.position.set(sm.x - ox * 4.6 + sxo, 1.2, sm.z - oz * 4.6 + szo); c.lookAt(sm.x + ox * 1.5, 1.55, sm.z + oz * 1.5); };`));
+      for (let i = 0; i < 6; i++) await ctx.step(-1);
+    },
+    async at(ctx, i) { // the stick toward the khunt (the keys nearest that direction on screen), from the first frame
+      await ctx.ev(() => { const k = __k, p = k.game.p.pos, c = k.camera.position, T = k.THREE, s = window.__v1, codes = [];
+        const d = new T.Vector3(s.dx, 0, s.dz), f = new T.Vector3(p.x - c.x, 0, p.z - c.z).normalize(), r = new T.Vector3().crossVectors(f, new T.Vector3(0, 1, 0)).normalize(), y = -d.dot(f), x = d.dot(r);
+        if (x > 0.38) codes.push('KeyD'); if (x < -0.38) codes.push('KeyA'); if (y > 0.38) codes.push('KeyS'); if (y < -0.38) codes.push('KeyW');
+        for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) dispatchEvent(new KeyboardEvent(codes.includes(code) ? 'keydown' : 'keyup', { code })); });
+      if (i === 0) return 'run';
+    },
+    async after(ctx) { await ctx.ev(() => { for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) dispatchEvent(new KeyboardEvent('keyup', { code })); }); return {}; },
+  },
   { // 9 OUTRO: back at the khunt. A low camera from the sun's side looks up at the bull and the post with its
     // pitha, the sky above left for the title. (A crane over the paddy ran into a tree: 25 Nov, first take.)
-    id: 'S9', frames: 110,
+    id: 'S9', frames: Number(process.env.S9_FRAMES || 300),
     async setup(ctx) {
       await toRing(ctx); await ui(ctx, ['film-clean']);
       // the bull stands three-quarter to the lens beside the khunt, held there every frame: left in 'watch' he turns to
@@ -203,7 +227,7 @@ export const SHOTS = [
         g.b.pos.set(bx, 0, bz); g.b.yaw = Math.atan2(dx, dz); g.b.state = 'watch'; g.b.t = 0;
         g.p.pos.set(-px * 2.0 - sx * 0.6, 0, -pz * 2.0 - sz * 0.6); g.p.state = 'free'; g.p.yaw = Math.atan2(px, pz);
         window.__hold = { b: g.b.pos.clone(), by: g.b.yaw, p: g.p.pos.clone(), py: g.p.yaw };
-        window.__cam = (c, t) => { __k.player.root.visible = true; const k = e(t / 3.6), a0 = Math.atan2(sx, sz) + 0.16 - 0.1 * k, r = 10.2 - 1.0 * k;
+        window.__cam = (c, t) => { __k.player.root.visible = true; const k = e(t / 9.5), a0 = Math.atan2(sx, sz) + 0.16 - 0.1 * k, r = 10.2 - 1.0 * k; /* a slow push over the 40 s reel's three-bar end card */
           c.fov = 48; c.position.set(Math.sin(a0) * r, 0.85 + 0.15 * k, Math.cos(a0) * r); c.lookAt(px * 1.5, 2.5, pz * 1.5); };`));
       for (let i = 0; i < 6; i++) await ctx.step(-1);
     },

@@ -1,0 +1,103 @@
+{
+ "_": "The 40 s Hinglish story reel's voiceover: Devanagari for Kokoro's Hindi voice (it says Hinglish words right this way), Roman Hinglish for the captions. 'at' is a cue name compose.mjs resolves to a time.",
+ "lines": [
+  {
+   "id": "l1",
+   "at": "start",
+   "hi": "हर सोहराय पे, ये गुस्सैल बैल खूँटे से बँधता है।",
+   "cap": "Har Sohrai pe..."
+  },
+  {
+   "id": "l2",
+   "at": "crane",
+   "hi": "और खूँटे के ऊपर? गरम-गरम पीठा!",
+   "cap": "...aur khunte pe | garam PITHA!"
+  },
+  {
+   "id": "l3",
+   "at": "gogo",
+   "hi": "गोगो बोली, बेटा, पहले त्योहार तो मनाओ!",
+   "cap": "\"Beta, pehle | tyohar manao!\""
+  },
+  {
+   "id": "l4",
+   "at": "days",
+   "hi": "पाँच दिन। दीवार पे रंग, आँगन में अल्पना, पूरा गाँव एक साथ।",
+   "cap": "Paanch din. | Poora gaon | ek saath."
+  },
+  {
+   "id": "l5a",
+   "at": "drum",
+   "hi": "तमाक बजाओ!",
+   "cap": "Tamak bajao!"
+  },
+  {
+   "id": "l5b",
+   "at": "bow",
+   "hi": "तीर चलाओ!",
+   "cap": "Teer chalao!"
+  },
+  {
+   "id": "l5c",
+   "at": "fish",
+   "hi": "मछली पकड़ो!",
+   "cap": "Machhli pakdo!"
+  },
+  {
+   "id": "l5d",
+   "at": "reap",
+   "hi": "धान काटो!",
+   "cap": "Dhaan kaato!"
+  },
+  {
+   "id": "l6a",
+   "at": "round",
+   "hi": "फिर आया खुंटाऊ का दिन।",
+   "cap": "Phir aaya | KHUNTAU!"
+  },
+  {
+   "id": "l6b",
+   "at": "hide",
+   "hi": "कपड़ा दिखाओ, और रुको...",
+   "cap": "Kapda dikhao... | aur ruko..."
+  },
+  {
+   "id": "l6c",
+   "at": "bonk",
+   "hi": "बैल सीधा खूँटे से टकराया!",
+   "cap": "Seedha khunte se!",
+   "skip": true,
+   "_": "the bonk speaks for itself: no room before the grab (bonk to snatch is 1 s); its caption DHADAAM! stays"
+  },
+  {
+   "id": "l6d",
+   "at": "grab",
+   "hi": "अब! पीठा छीनो!",
+   "cap": "Ab! PITHA | CHHEENO!"
+  },
+  {
+   "id": "l7",
+   "at": "cheer",
+   "hi": "पूरा गांव बोला, जोहार!",
+   "cap": "JOHAR!"
+  },
+  {
+   "id": "l8",
+   "at": "end",
+   "hi": "सोहराय। अब गूगल प्ले पे अवेलेबल।",
+   "cap": ""
+  },
+  {
+   "id": "l9",
+   "at": "end2",
+   "hi": "फ़्री है, ऑफ़ लाइन भी चलता है।",
+   "cap": ""
+  },
+  {
+   "id": "l10",
+   "at": "end3",
+   "hi": "अभी डाउनलोड करो!",
+   "cap": ""
+  }
+ ]
+}

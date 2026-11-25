@@ -40,7 +40,7 @@ export async function open() {
   const hud = '.hud, #controls, #pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #hudScore, #pads, #tapzone, #reticle, #joyGhost, #leaveBtn';
   const sel = (cls, list) => list.split(', ').map(x => `html.${cls} ${x}`).join(', ');
   await page.addStyleTag({ content: `
-    #toast, #hint, #pop, #stageBanner, #prompt, #tapHint, #dayCard, #dlg, #talkToast, #talkBubble, #rivalChip, #fpsMeter, .judge, #stamp, .stamp { display: none !important; }
+    #toast, #hint, #pop, #stageBanner, #prompt, #tapHint, #dayCard, #dlg, #talkToast, #talkBubble, #rivalChip, #fpsMeter, .judge, #stamp, .stamp, #albStamp { display: none !important; }
     ${sel('film-clean', hud)} { display: none !important; }
     ${sel('film-ring', '#pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #joyGhost, #leaveBtn, #pads')} { display: none !important; }
     ${sel('film-pads', '#controls, #pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #hudScore, #joyGhost, #tapzone, #reticle')} { display: none !important; } /* display, not visibility: a child with visibility: visible (the objective arrow) shows through a hidden parent */
