@@ -6,6 +6,7 @@
 // Rule checks that need a set-up state (patrol at the village gate, standing behind a soldier, at the store) are labelled "set-up".
 import puppeteer from 'puppeteer';
 import { check, finish, realErrors, SW } from './check.mjs';
+import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true }); // a fresh checkout has no tests/out (gitignored)
 const BASE = process.argv[2] || 'http://127.0.0.1:8792';
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, '--no-sandbox', '--mute-audio'] });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
