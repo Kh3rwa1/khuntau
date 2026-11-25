@@ -69,7 +69,11 @@ const said = (w) => { const n = [document.getElementById('talkToast'), document.
 check(await B.until(said, 10000, word), 'village: stepping out, the last thing said comes up on screen');
 await sleep(400); await B.page.screenshot({ path: 'tests/out/talk-phone-arrive.jpg', type: 'jpeg', quality: 75 });
 // facing the talking place it is a bubble over it; with your back to it, a line at the top of the screen
-await sleep(7000); await B.ev(() => { const s = __k.talkSpot, d = __k.story.debug, out = [Math.cos(s.a), Math.sin(s.a)], st = __k.talk.state; __k.game.p.pos.set(s.x - out[0] * 4.5, 0, s.z - out[1] * 4.5); d.S.camYaw = Math.atan2(-out[0], -out[1]); d.S.lookT = performance.now() / 1000 + 99; d.snapCam(); st.heard = 0; st.near = false; st.spoke = 0; });
+// The line is let go again only when the new view has been drawn. The bubble is placed with the camera of the last frame
+// drawn; on a machine that draws a few frames a second (CI has no GPU) the talk's half-second tick often came before
+// that frame, found the seat off screen and sent the line to the top instead (CI run 243, 25 Nov: failed 1 run in 3).
+await sleep(7000); await B.ev(() => new Promise(done => { const s = __k.talkSpot, d = __k.story.debug, out = [Math.cos(s.a), Math.sin(s.a)], st = __k.talk.state; __k.game.p.pos.set(s.x - out[0] * 4.5, 0, s.z - out[1] * 4.5); d.S.camYaw = Math.atan2(-out[0], -out[1]); d.S.lookT = performance.now() / 1000 + 99; d.snapCam();
+  requestAnimationFrame(() => requestAnimationFrame(() => { st.heard = 0; st.near = false; st.spoke = 0; done(); })); }));
 check(await B.until((w) => { const b = document.getElementById('talkBubble'), r = b.getBoundingClientRect(); return !b.hidden && b.classList.contains('show') && b.style.visibility !== 'hidden' && b.textContent.includes(w) && r.left >= 0 && r.right <= innerWidth && r.top >= 0; }, 10000, word), 'facing the talking place, it is a bubble over the log seat, inside the screen');
 await sleep(400); await B.page.screenshot({ path: 'tests/out/talk-phone-bubble.jpg', type: 'jpeg', quality: 75 });
 check(await B.until(() => !document.getElementById('talkHud').hidden && document.getElementById('talkHud').classList.contains('new')), 'village: the talk button is there, with a dot for what you have not read');
