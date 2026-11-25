@@ -9,7 +9,7 @@ const ROUND_SECS = 120, MAX_PLAYERS = 6;
 const COLORS = ["#e8b33c", "#d9472b", "#3d8bd9", "#4caf50", "#b05cd6", "#f2f2f2"];
 const SHIRT_COLORS = ["#ffb347", "#3f8a4f", "#c8372d", "#2f5fa8", "#e8b33c"];
 const ANIMS = new Set(["Idle", "Walk", "Run", "Roll", "Jump", "RecieveHit", "Death", "Victory", "Defeat", "SwordSlash", "Shoot_OneHanded", "PickUp", "SitDown", "StandUp", "Punch", "Walk_Carry", "Run_Carry"]);
-const VILLAGE_R = 31; // friends walking the village together between rounds (v: 1 outside, 2 inside the house)
+const VILLAGE_R = 46.5; // friends walking the village together between rounds (v: 1 outside, 2 inside the house); the land grew from 30.5 to 46 m on 25 Nov
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
