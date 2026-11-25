@@ -62,11 +62,14 @@ SHA-256 from Play Console > Setup > App signing to the same list (Play re-signs 
 merge and deploy. Check `https://khuntau.dulalkisku0.workers.dev/.well-known/assetlinks.json` loads.
 
 ## 4. Upload
-Play Console > com.skyward.ascent > create a release > upload `app-release-bundle.aab`.
+Play Console > com.skyward.ascent > create a release > upload `sohrai.aab` from the `apk-build` branch
+(`https://github.com/Kh3rwa1/khuntau/raw/apk-build/sohrai.aab`; `build.txt` beside it says which version it is). Play takes only apps that
+target Android 16 (API 36) since 31 Aug 2026: the app does since 1.3.0 (code 4, 25 Nov); older builds are refused.
+Install `sohrai.apk` from the same branch on a phone first.
 The store listing (name, description, screenshots, category) currently describes the old app: replace it with
 Sohrai's. A big change of what an app is can draw a Play review; describe the app honestly.
-Data safety form: the game collects no personal data; it stores a random player id, a chosen display name and
-village, and anonymous step counts.
+Data safety form: answers in `twa/data-safety.csv` (a random player id, a chosen display name and village, anonymous
+step counts, and since 24 Nov public chat messages kept 3 days).
 
 ## Store listing
 Text, graphics list and the App content answers (ads, rating, data safety): `twa/store-listing.md`. Privacy policy: `public/privacy.html`.
