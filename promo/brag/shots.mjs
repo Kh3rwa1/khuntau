@@ -69,11 +69,14 @@ export const SHOTS = [
         const g = __k.game; window.__cam = null; __k.player.root.visible = true; __k.setGold(true);
         const dx = -sx * 0.6 + px * 0.8, dz = -sz * 0.6 + pz * 0.8, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
         g.b.pos.set(ux * 3.6, 0, uz * 3.6); g.b.yaw = Math.atan2(-ux, -uz); g.b.state = 'watch'; g.b.t = 0;
-        g.p.pos.set(-ux * 1.38, 0, -uz * 1.38); /* inside the 1.45 m grab circle, but far enough that he hits the post before his horns reach you */ g.p.state = 'free'; g.p.yaw = Math.atan2(ux, uz); g.lives = 3; g.pitha = 0;`));
+        g.p.pos.set(-ux * 1.38, 0, -uz * 1.38); /* inside the 1.45 m grab circle, but far enough that he hits the post before his horns reach you */ g.p.state = 'free'; g.p.yaw = Math.atan2(ux, uz); g.lives = 3; g.pitha = 0;
+        window.__hold = { b: g.b.pos.clone(), by: g.b.yaw, p: g.p.pos.clone(), py: g.p.yaw };`));
       for (let i = 0; i < 20; i++) await ctx.step(-1);
       this.btn = await rects(ctx, ['hideBtn', 'rollBtn', 'grabBtn']);
     },
     async at(ctx, i) {
+      // until the bait he stands still where he was put: left alone he charges on his own, from wherever he wandered (take 2)
+      if (i < 45) await ctx.ev(() => { const g = __k.game, h = window.__hold; g.b.state = 'watch'; g.b.t = 0; g.b.pos.copy(h.b); g.b.yaw = h.by; g.p.pos.copy(h.p); g.p.yaw = h.py; g.p.vel.set(0, 0, 0); g.lives = 3; });
       if (i === 45) { await ctx.ev(() => { __k.input.tease = true; }); return 'tap-hide'; } // late enough that the slam on the post can sit on a bar line with the tap still in the scene
       const s = await ctx.ev(() => ({ b: __k.game.b.state, n: __k.game.pitha }));
       if (s.b === 'charge' && !this.c) { this.c = 1; return 'charge'; }
