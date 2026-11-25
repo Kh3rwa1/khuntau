@@ -1,0 +1,11 @@
+// Hul: its own Worker and its own address, https://hul.dulalkisku0.workers.dev
+// Static files only (no Worker code). Built into hul/dist by tools/hul-build.mjs, which copies hul/index.html and
+// the few shared files Hul uses from public/ (three.js, two character models, sounds, fonts, icon).
+// Deploy: node tools/hul-build.mjs && npx wrangler deploy --config hul/wrangler.jsonc  (CI does it: .github/workflows/hul.yml)
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "hul",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": true,
+  "assets": { "directory": "./dist", "not_found_handling": "404-page" }
+}

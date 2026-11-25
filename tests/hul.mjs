@@ -1,10 +1,12 @@
-// Hul (public/hul.html): the stealth archery game. Boots on a phone (portrait + landscape) and a laptop, then plays:
+// Hul (hul/index.html, its own site): the stealth archery game. Run against the built site:
+//   node tools/hul-build.mjs && ROOT=hul/dist PORT=8792 node tests/serve.mjs &  then  npm run test:hul   (or pass another base URL)
+// Boots on a phone (portrait + landscape) and a laptop, then plays:
 // real mouse holds and releases shoot arrows; real touch hold-drag-release on BOW shoots; E does the takedown and burns the store.
 // Aiming is chosen by turning the camera toward a soldier (a helper, like a player's eye); everything else goes through the controls.
 // Rule checks that need a set-up state (patrol at the village gate, standing behind a soldier, at the store) are labelled "set-up".
 import puppeteer from 'puppeteer';
 import { check, finish, realErrors, SW } from './check.mjs';
-const BASE = process.argv[2] || 'http://127.0.0.1:8791';
+const BASE = process.argv[2] || 'http://127.0.0.1:8792';
 const browser = await puppeteer.launch({ protocolTimeout: 180000, args: [...SW, '--no-sandbox', '--mute-audio'] });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // wait in game time: a software-rendered runner draws a few frames a second and the game caps each frame's step
@@ -12,7 +14,7 @@ const gwait = async (page, sec) => { const t0 = await page.evaluate(() => __h.G.
 async function open(w, h, touch, q = '') {
   const page = await browser.newPage(); await page.setViewport({ width: w, height: h, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
   const logs = []; page.on('pageerror', e => logs.push('pageerror ' + e.message)); page.on('console', m => { if (m.type() === 'error') logs.push(m.text()); });
-  await page.goto(BASE + '/hul.html?debug&nolock' + q, { waitUntil: 'load' });
+  await page.goto(BASE + '/?debug&nolock' + q, { waitUntil: 'load' });
   await page.waitForFunction(() => !document.getElementById('play').disabled, { timeout: 90000 });
   return { page, logs };
 }
