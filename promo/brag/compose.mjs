@@ -68,7 +68,8 @@ say('SOHRAI', t(6, 0), 99, 540, 745, RD(230), { rot: -0.02 });
 line('Free on Google Play', t(6, 1), 99, 540, 960, BL(76), { color: SAFFRON, shadowColor: INK });
 line('Works offline · English & Hindi', t(6, 1.5), 99, 540, 1060, BL(50), { shadowColor: INK });
 // taps on the real buttons, from where the buttons were on the filmed screen
-const bt = M.S34.buttons || {}, pad = M.S5.buttons || {};
+const px = (m, b) => b && b.map(v => v * (m.dpr || 1)); // button positions were taken in CSS px
+const bt = Object.fromEntries(Object.entries(M.S34.buttons || {}).map(([k, v]) => [k, px(M.S34, v)])), pad = Object.fromEntries(Object.entries(M.S5.buttons || {}).map(([k, v]) => [k, px(M.S5, v)]));
 if (bt.hideBtn) taps.push({ t: videoFrame('S34', ev('S34', 'tap-hide')) / FPS, x: bt.hideBtn[0], y: bt.hideBtn[1], r: bt.hideBtn[2] });
 if (bt.grabBtn) taps.push({ t: videoFrame('S34', ev('S34', 'tap-grab')) / FPS, x: bt.grabBtn[0], y: bt.grabBtn[1], r: bt.grabBtn[2] });
 for (const [k, v] of Object.entries(M.S5.events)) { const m = k.match(/^hit-([TU])-/); const b = pad[m ? (m[1] === 'T' ? 'padT' : 'padU') : '']; if (!m || !b) continue; const vf = videoFrame('S5', v); if (vf >= sceneOf('S5').f0 && vf < sceneOf('S5').f1) taps.push({ t: vf / FPS, x: b[0], y: b[1], r: b[2] * 0.8 }); }

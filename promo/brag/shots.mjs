@@ -69,7 +69,7 @@ export const SHOTS = [
         const g = __k.game; window.__cam = null; __k.player.root.visible = true; __k.setGold(true);
         const dx = -sx * 0.6 + px * 0.8, dz = -sz * 0.6 + pz * 0.8, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
         g.b.pos.set(ux * 3.6, 0, uz * 3.6); g.b.yaw = Math.atan2(-ux, -uz); g.b.state = 'watch'; g.b.t = 0;
-        g.p.pos.set(-ux * 1.15, 0, -uz * 1.15); g.p.state = 'free'; g.p.yaw = Math.atan2(ux, uz); g.lives = 3; g.pitha = 0;`));
+        g.p.pos.set(-ux * 1.38, 0, -uz * 1.38); /* inside the 1.45 m grab circle, but far enough that he hits the post before his horns reach you */ g.p.state = 'free'; g.p.yaw = Math.atan2(ux, uz); g.lives = 3; g.pitha = 0;`));
       for (let i = 0; i < 20; i++) await ctx.step(-1);
       this.btn = await rects(ctx, ['hideBtn', 'rollBtn', 'grabBtn']);
     },
@@ -142,7 +142,7 @@ export const SHOTS = [
         window.__cam = (c, t) => { const k = e(t / 2.6); c.fov = 46; c.position.set(cx + tx * 0.5 * k, 0.95 + 0.15 * k, cz + tz * 0.5 * k); c.lookAt(ox * (r + 1.6), 0.95, oz * (r + 1.6)); };`));
       for (let i = 0; i < 6; i++) await ctx.step(-1);
     },
-    async at(ctx, i) { if (i % 16 === 4) { await ctx.ev(() => { const d = __k.story.debug, p = __k.game.p; if (i > 4) p.pos.set(p.pos.x + Math.sin(p.yaw) * 0.45, 0, p.pos.z + Math.cos(p.yaw) * 0.45); d.S.act = true; }); return 'cut-' + i; } },
+    async at(ctx, i) { if (i % 16 === 4) { await ctx.ev(i => { const d = __k.story.debug, p = __k.game.p; if (i > 4) p.pos.set(p.pos.x + Math.sin(p.yaw) * 0.45, 0, p.pos.z + Math.cos(p.yaw) * 0.45); d.S.act = true; }, i); return 'cut-' + i; } },
   },
   { // 9 OUTRO: crane up from the golden paddy over the village at golden hour; the sky is left for the title
     id: 'S9', frames: 110,

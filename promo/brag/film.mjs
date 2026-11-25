@@ -8,14 +8,15 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import { SHOTS } from './shots.mjs';
 
-const W = 1080, H = 1920, OUT = 'brag-output/work/frames';
+// a phone-sized screen (540x960 CSS px at 2x = a 1080x1920 picture): the game's buttons come out at their real size
+const [VW, VH, DPR] = (process.env.VIEW || '540x960@2').split(/[x@]/).map(Number), OUT = 'brag-output/work/frames';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 export async function open() {
   const browser = await puppeteer.launch({ protocolTimeout: 1200000, args: ['--no-sandbox', '--mute-audio', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const page = await browser.newPage(); page.logs = [];
   page.on('pageerror', e => page.logs.push('PAGEERROR ' + e.message));
-  await page.emulate({ viewport: { width: W, height: H, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-A346E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' });
+  await page.emulate({ viewport: { width: VW, height: VH, deviceScaleFactor: DPR, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-A346E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' });
   await page.evaluateOnNewDocument(() => {
     // a returning player who has lived the whole festival: no lessons, no dialogue, English, the brown bull
     try {
@@ -43,7 +44,8 @@ export async function open() {
     ${sel('film-clean', hud)} { visibility: hidden !important; }
     ${sel('film-ring', '#pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #joyGhost, #leaveBtn, #pads')} { visibility: hidden !important; }
     ${sel('film-pads', '#controls, #pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #hudScore, #joyGhost, #tapzone, #reticle')} { visibility: hidden !important; }
-    html.film-nobars div[style*="background:#000"] { display: none !important; }` });
+    html.film-nobars div[style*="background:#000"], html.film-nobars div[style*="background: rgb(0, 0, 0)"] { display: none !important; } /* the cinematic letterbox bars (Chrome rewrites #000 as rgb) */
+    #padDone { visibility: hidden !important; }` });
   // a shot may set window.__cam(camera, t) to place the camera itself; it runs just before the game draws
   await page.evaluate(() => {
     const k = __k, R = k.renderer, orig = R.render.bind(R); window.__ft = 0;
@@ -67,7 +69,7 @@ async function run(page, shot, { probe = false } = {}) {
   const dir = `${OUT}/${shot.id}`; fs.mkdirSync(dir, { recursive: true });
   // PICK=0,30,60 films the shot only as far as the last of those frames and saves just those (for checking timing)
   const pick = process.env.PICK ? new Set(process.env.PICK.split(',').map(Number)) : null;
-  const n = pick ? Math.max(...pick) + 1 : probe ? 1 : shot.frames, t0 = Date.now(), meta = { id: shot.id, frames: n, events: {} };
+  const n = pick ? Math.max(...pick) + 1 : probe ? 1 : shot.frames, t0 = Date.now(), meta = { id: shot.id, frames: n, dpr: DPR, events: {} }; // dpr: button positions are in CSS px
   for (let i = 0; i < n; i++) {
     if (shot.at) { const ev = await shot.at(ctx, i); if (ev) { meta.events[ev] = i; if (pick) console.log('  event', ev, 'at frame', i); } }
     await frame(page, i, pick && !pick.has(i) ? null : `${dir}/${pick ? 'pick-' : ''}${String(i + 1).padStart(4, '0')}.jpg`);
