@@ -29,10 +29,15 @@ async function phone(name, { lang = 'en', view = null, story = true } = {}) {
 const A = await phone('');
 // the row is never shown with empty counts first: the first words it ever shows are already the real ones
 { const C = await browser.createBrowserContext(), pg = await C.newPage(); await pg.evaluateOnNewDocument(() => { window.__rowFirst = null; addEventListener('DOMContentLoaded', () => { const row = document.getElementById('talkBtn');
-    new MutationObserver(() => { if (!row.hidden && window.__rowFirst === null) window.__rowFirst = row.textContent; }).observe(row, { attributes: true, childList: true, subtree: true, characterData: true }); }); });
+    // seen = not hidden and not kept invisible (since 25 Nov the row's place is held from the start, so the rows below never jump)
+    const below = () => Math.round(document.getElementById('animalBtn').getBoundingClientRect().top - row.getBoundingClientRect().top); // the next row, measured from the talk row: fonts and the day's name move the whole panel while it loads, that is another matter
+    new MutationObserver(() => { if (!row.hidden && row.style.visibility === 'hidden') window.__heldUnseen = true; if (window.__belowFirst === undefined && !row.hidden) window.__belowFirst = below(); if (!row.hidden && row.style.visibility !== 'hidden' && window.__rowFirst === null) { window.__rowFirst = row.textContent; window.__belowThen = below(); } }).observe(row, { attributes: true, childList: true, subtree: true, characterData: true }); }); });
+  await pg.setViewport({ width: 390, height: 780, isMobile: true, hasTouch: true });
   await pg.goto(BASE + '/?debug&q=low', { waitUntil: 'domcontentloaded' }); await pg.waitForFunction(() => window.__rowFirst !== null, { timeout: 90000 });
   const first = await pg.evaluate(() => window.__rowFirst), real = await pg.evaluate(async () => (await (await fetch('/api/here?pid=' + __k.meta.pid)).json()));
-  check(real.p ? first.includes(real.p.n + ':') : true, `home: the row's first words already carry the newest message (${first.slice(0, 60)})`); await C.close(); }
+  check(real.p ? first.includes(real.p.n + ':') : true, `home: the row's first words already carry the newest message (${first.slice(0, 60)})`);
+  await sleep(600); const jump = await pg.evaluate(() => ({ place: window.__heldUnseen === true, held: window.__belowFirst, filled: window.__belowThen, now: Math.round(document.getElementById('animalBtn').getBoundingClientRect().top - document.getElementById('talkBtn').getBoundingClientRect().top) }));
+  check(jump.place && jump.held > 10 && Math.abs(jump.held - jump.filled) <= 1 && Math.abs(jump.filled - jump.now) <= 1, `home: the talk row keeps its place from the start, so the row under it does not jump when it fills in (${jump.held} px below it held, ${jump.filled} filled, ${jump.now} after; on the live site it appeared late and pushed the rows down 30 px)`); await C.close(); }
 check(await A.until(() => !document.getElementById('talkBtn').hidden && /came today|here now/.test(document.getElementById('talkBtn').textContent)), `home: the talk row shows who is here (${await A.ev(() => document.getElementById('talkBtn').textContent)})`);
 await A.ev(() => document.getElementById('talkBtn').click());
 check(await A.until(() => !document.getElementById('talk').hidden) && /Be kind/.test(await A.ev(() => document.querySelector('#talk .talk-list').textContent)), 'home: tapping it opens the panel, with the rules at the top');
