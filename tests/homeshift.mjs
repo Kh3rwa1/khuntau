@@ -95,6 +95,9 @@ async function run(name, [w, h, touch], slow, { url = '/?q=low', before = null, 
       if (first === null) first = lo = hi = v[0]; lo = Math.min(lo, v[0]); hi = Math.max(hi, v[0]); prev = v; }
     seen[id] = prev ? prev[2] : 0; if (first !== null && ROWS.includes(id)) tracked++; // at the end: 1 on screen, 0 not there (or its room kept, unseen)
     if (first !== null && hi - lo > 1 && !may.includes(id)) (ROWS.includes(id) ? moved : also).push(`${id} ${Math.round((hi - lo) * 10) / 10} px (${lo} to ${hi})`); }
+  // A room somebody really has open (the live site; a room an earlier test left on the Worker) comes in under "Play with friends"
+  // on a phone and may push the two small links under it, exactly as in the open-room case. On a laptop it moves nothing.
+  if (seen.rooms && w < 900) for (let i = also.length - 1; i >= 0; i--) if (/^(keepBtn|creditsBtn) /.test(also[i])) also.splice(i, 1);
   if (V) { log.sort((a, b) => parseInt(a) - parseInt(b)); console.log(`--- ${name}: first paint ${H.paint === null ? '?' : Math.round(H.paint)} ms, village ready ${Math.round(H.ready)} ms, ${H.n} looks, ${rows.length} different\n` + log.join('\n')); }
   return { moved, also, grew, seen, tapped, tracked, n: H.n, from: H.paint !== null ? H.paint : rows.length ? rows[0][0] : 0, to: H.t, paint: H.paint, ready: H.ready, errs };
 }
