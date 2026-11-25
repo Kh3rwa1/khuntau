@@ -101,7 +101,7 @@ export const SHOTS = [
   { // 6 VILLAGE: draw the bow; the camera rides the arrow into the banana-trunk target
     id: 'S6', frames: 110,
     async setup(ctx) {
-      await ui(ctx, ['film-clean']);
+      await toVillage(ctx); await ui(ctx, ['film-clean']);
       await ctx.ev(() => { const d = __k.story.debug; if (d.S.mode === 'drum') d.drum.done = true; d.S.mode = 'walk'; document.getElementById('pads').hidden = true; });
       for (let i = 0; i < 4; i++) await ctx.step(-1);
       const a = 0.35 + 0.698132 * 1.5; await act(ctx, [Math.cos(a) * 18.5, Math.sin(a) * 18.5], 'SHOOT');
@@ -116,7 +116,7 @@ export const SHOTS = [
   { // 7 VILLAGE: catch a fish; it leaps out of the pond in slow motion
     id: 'S7', frames: 120,
     async setup(ctx) {
-      await ui(ctx, ['film-clean']);
+      await toVillage(ctx); await ui(ctx, ['film-clean']);
       await ctx.ev(() => { document.getElementById('tapQuit').click(); });
       for (let i = 0; i < 20; i++) await ctx.step(-1);
       const a = 0.35 + 0.698132 * 4.5; await act(ctx, [Math.cos(a) * 20.7, Math.sin(a) * 20.7], 'FISH');
@@ -133,7 +133,7 @@ export const SHOTS = [
   { // 8 VILLAGE: reap the golden paddy with the sickle; a scarecrow stands in the plot behind
     id: 'S8', frames: 80,
     async setup(ctx) {
-      await ui(ctx, ['film-clean']);
+      await toVillage(ctx); await ui(ctx, ['film-clean']);
       await ctx.ev(() => { document.getElementById('tapQuit').click(); });
       for (let i = 0; i < 20; i++) await ctx.step(-1);
       await ctx.ev(new Function(sunAxis + ease + `
