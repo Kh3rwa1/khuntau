@@ -1,5 +1,5 @@
 import http from 'http'; import fs from 'fs'; import path from 'path';
-const root = process.cwd() + '/' + (process.env.ROOT || 'public'); // ROOT=hul/dist PORT=8792 serves Hul's built site
+const root = process.cwd() + '/' + (process.env.ROOT || 'public');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.mp3': 'audio/mpeg', '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/json', '.jpg': 'image/jpeg' };
 http.createServer((q, r) => { let u = decodeURIComponent(q.url.split('?')[0]);
   if (u === '/index.html') { r.writeHead(307, { location: '/' }); return r.end(); } // as the real host does; a service worker that saves this redirect breaks offline

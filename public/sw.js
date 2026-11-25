@@ -25,9 +25,9 @@ self.addEventListener('fetch', (e) => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;            // nothing from other sites
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/') || url.pathname === '/turn' || url.pathname === '/sw.js') return; // live data never cached
-  // other pages (Hul, stats, privacy) are their own pages: network first, saved under their own path. Before, any
+  // other pages (stats, privacy) are their own pages: network first, saved under their own path. Before, any
   // navigation counted as the home page, so opening /stats.html replaced the saved offline copy of the game.
-  const other = req.mode === 'navigate' && /^\/(hul|stats|privacy)(\.html)?$/.test(url.pathname);
+  const other = req.mode === 'navigate' && /^\/(stats|privacy)(\.html)?$/.test(url.pathname);
   if (other) { e.respondWith(caches.open(CACHE).then(c => fetch(req).then(r => { if (r.ok && r.status === 200) c.put(url.pathname, r.clone()); return r; }).catch(async () => (await clean(await c.match(url.pathname))) || Response.error()))); return; }
   const page = req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html';
   if (page || url.pathname === '/story.js') {
