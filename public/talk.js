@@ -98,12 +98,12 @@ export function initTalk(C) {
   const toast = el('div'); toast.id = 'talkToast'; toast.hidden = true; const bubble = el('div'); bubble.id = 'talkBubble'; bubble.hidden = true;
   doc.body.append(hud, box, toast, bubble);
   const row = $('talkBtn');
-  // The row's place on the home screen is kept from the start, drawn but not seen. It used to appear a second or two
-  // after the other rows, when the server had answered, and push them down 30 px under a thumb already on its way to
-  // one of them (seen on the live site, 25 Nov: a tap on the row below landed on its neighbour).
-  if (row && navigator.onLine !== false) { row.hidden = false; row.style.visibility = 'hidden'; }
-  const settle = () => { if (T.known) return; T.known = true; if (row && !T.on) { row.hidden = true; row.style.visibility = ''; } }; // no talk after all: give the place back
-  setTimeout(settle, 9000);
+  // The row's place on the home screen is kept from the first paint, drawn but not seen (index.html), and it is
+  // never taken away again while the page is up: the row used to appear a second or two after the others, when the
+  // server had answered, and push them down 30 px under a thumb already on its way to one of them (seen on the live
+  // site, 25 Nov: a tap on the row below landed on its neighbour). Giving the place back when there turns out to be
+  // no talk moved the rows just the same, the other way. Only a phone that is offline when the page starts gets no row.
+  if (row) { if (navigator.onLine === false) { row.hidden = true; row.style.visibility = ''; } else { row.hidden = false; row.style.visibility = 'hidden'; } }
 
   /* ---------- talking to the server ---------- */
   const api = async (path, body) => { const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}); let d = null; try { d = await r.json(); } catch (e) {} return { s: r.status, d: d || {} }; };
@@ -117,10 +117,10 @@ export function initTalk(C) {
   };
   async function beat() { // every half minute: am I here, who else is, is there anything new
     if (doc.hidden || !meta.pid) return;
-    let r; try { r = await api('/api/here?pid=' + meta.pid); } catch (e) { settle(); return; }
-    if (r.s !== 200) { if (r.s === 404 || r.d.on === 0) setOn(false); settle(); return; }
+    let r; try { r = await api('/api/here?pid=' + meta.pid); } catch (e) { return; }
+    if (r.s !== 200) { if (r.s === 404 || r.d.on === 0) setOn(false); return; }
     if (r.d.on === 1) { T.now = r.d.now; T.today = r.d.today; if (r.d.p && !T.hide.has(r.d.p.a) && (!T.newest || r.d.p.id > T.newest.id)) T.newest = r.d.p; } // before the row is shown: it must never show empty counts first
-    setOn(r.d.on === 1); settle(); if (!T.on) return;
+    setOn(r.d.on === 1); if (!T.on) return;
     if (r.d.last > T.last && (T.open || roaming() || !T.loaded)) await pull();
     paint();
   }
@@ -131,12 +131,12 @@ export function initTalk(C) {
     if (T.open) { render(); markSeen(); } else if (!first && roaming()) for (const m of fresh.slice(-2)) T.queue.push(m); // said while you are in the village: shown as it comes
     paint();
   }
-  function setOn(on) { if (T.on === on) return; T.on = on; if (!on) { close(); hud.hidden = true; if (row) { row.hidden = true; row.style.visibility = ''; } } paint(); }
+  function setOn(on) { if (T.on === on) return; T.on = on; if (!on) { close(); hud.hidden = true; } paint(); }
 
   /* ---------- home row, button, counts ---------- */
   const countText = () => T.now > 1 ? t('here', T.now) : t('today', Math.max(1, T.today));
   function paint() {
-    if (row) { if (T.on || T.known) { row.hidden = !T.on; row.style.visibility = ''; } if (T.on) { const s = row.querySelector('span'), u = row.querySelector('u'), m = T.newest; s.textContent = '';
+    if (row && (T.on || !row.hidden)) { row.hidden = false; /* a phone that started offline and found a connection gets its row now */ row.style.visibility = T.on ? '' : 'hidden'; if (T.on) { const s = row.querySelector('span'), u = row.querySelector('u'), m = T.newest; s.textContent = '';
       const dot = el('i', 'talk-dot'); s.append(dot, countText() + ' · ' + (m ? m.n + ': ' + said(m) : t('homeEmpty'))); u.textContent = t('open'); } }
     hud.classList.toggle('new', !!T.newest && T.newest.id > T.seen && !T.newest.me);
     hud.setAttribute('aria-label', t('title')); hud.title = t('title');

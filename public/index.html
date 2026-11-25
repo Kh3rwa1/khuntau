@@ -398,7 +398,8 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
       <div class="xpbar"><i id="xpFill"></i></div>
       <ul class="missions" id="missions"></ul>
       <div class="shirts" id="shirts" aria-label="Shirt colour"></div>
-      <button class="boardline" id="talkBtn" type="button" hidden><span>Village talk</span><u>Talk</u></button>
+      <!-- in the page from the first paint, unseen, so the rows under it never jump when the talk answers (talk.js shows it) -->
+      <button class="boardline" id="talkBtn" type="button" style="visibility:hidden"><span>Village talk</span><u>Talk</u></button>
       <button class="boardline" id="animalBtn" type="button"><span>In the ring: <b id="animalName">Brown bull</b></span><u>Change</u></button>
       <button class="boardline" id="boardBtn" type="button"><span id="boardLine">Today's board</span><u>See board</u></button>
       <button class="boardline" id="villageBtn" type="button"><span id="villageLine">Play for your village</span><u id="villageCta">Choose</u></button>
