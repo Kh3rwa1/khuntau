@@ -53,7 +53,7 @@ export const SHOTS = [
   { // 2 REVEAL: crane up over the ring from the sun's side: the khunt and its pitha, the bull on his rope, the village
     id: 'S2', frames: 110,
     async setup(ctx) {
-      await ui(ctx, ['film-clean']);
+      await toRing(ctx); await ui(ctx, ['film-clean']);
       await ctx.ev(new Function(sunAxis + ease + `
         const g = __k.game; g.b.pos.set(-sx * 3.2 - px * 1.5, 0, -sz * 3.2 - pz * 1.5); g.b.state = 'watch'; g.b.t = 0; g.p.pos.set(-sx * 6.5 + px * 2, 0, -sz * 6.5 + pz * 2); g.p.state = 'free';
         window.__cam = (c, t) => { __k.player.root.visible = true; const k = e(t / 3.4), a0 = Math.atan2(sx, sz) - 0.42 + 0.3 * k, r = 9 + 7.5 * k;
@@ -64,7 +64,7 @@ export const SHOTS = [
   { // 3+4 THE ROUND, one take on the phone screen: tap HIDE, he charges and slams the post, tap GRAB, golden pitha
     id: 'S34', frames: 250,
     async setup(ctx) {
-      await ui(ctx, ['film-ring']);
+      await toRing(ctx); await ui(ctx, ['film-ring']); // each shot opens its own place: filmed alone, this one stayed on the home screen
       await ctx.ev(new Function(sunAxis + `
         const g = __k.game; window.__cam = null; __k.player.root.visible = true; __k.setGold(true);
         const dx = -sx * 0.6 + px * 0.8, dz = -sz * 0.6 + pz * 0.8, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
