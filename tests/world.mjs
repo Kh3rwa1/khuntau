@@ -7,9 +7,9 @@ import fs from 'fs'; fs.mkdirSync('tests/out', { recursive: true });
 import { check, finish, realErrors, SW } from './check.mjs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ protocolTimeout: 240000, args: [...SW, '--no-sandbox', '--mute-audio'] });
-const logs = [];
+const logs = [], shaderErr = [];
 async function boot({ w = 390, h = 780, touch = true, q = 'low', lang = 'en' } = {}) {
-  const page = await browser.newPage(); page.on('pageerror', e => logs.push(e.message));
+  const page = await browser.newPage(); page.on('pageerror', e => logs.push(e.message)); page.on('console', m => { if (/Shader Error|Program Info Log|VALIDATE_STATUS/i.test(m.text())) shaderErr.push(m.text().slice(0, 300)); });
   if (touch) await page.emulate({ viewport: { width: w, height: h, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A346E) Mobile' }); else await page.setViewport({ width: w, height: h });
   await page.evaluateOnNewDocument((lang) => { localStorage.setItem('khuntau-seen-tips', '1'); localStorage.setItem('khuntau-lang', lang); localStorage.setItem('khuntau-story', JSON.stringify({ ch: 3, w: 1, kh: 1, painted: [1, 1, 1], chosen: 1, oiled: 1, garland: 1 })); }, lang);
   await page.goto('http://127.0.0.1:8791/?debug&q=' + q, { waitUntil: 'domcontentloaded' });
@@ -145,6 +145,14 @@ async function boot({ w = 390, h = 780, touch = true, q = 'low', lang = 'en' } =
       await new Promise(r => setTimeout(r, 1500)); return { before, gold: P.gold, reaped: !!P.reaped, u0, u1: uv.getX(P.vert), hint: document.getElementById('hint').textContent, left: left().length }; }, pl);
     check(!done.before.reaped && done.before.gold && done.reaped && !done.gold && done.u0 < 0.5 && done.u1 >= 0.5, `a plot with its paddy cut turns to stubble on the ground too (${JSON.stringify(done.before)} -> reaped ${done.reaped}, ground ${done.u0} -> ${done.u1})`);
     check(/plot is reaped/.test(done.hint), `and you are told ('${done.hint}')`); }
+
+  // The paddy nods in the wind on the grass's clock, and what is cut lies still (the sway is scaled by how tall the instance stands)
+  { const w = await ev(() => { const k = __k, P = k.renderer.info.programs || [], has = key => { const p = P.find(p => p.cacheKey && p.cacheKey.includes(key)); return !!p && !!p.getUniforms().map.gWind; };
+      const v = (m) => { let src = ''; const sh = { uniforms: {}, vertexShader: '#include <begin_vertex>\n#include <project_vertex>', fragmentShader: '#include <dithering_fragment>\n#include <color_fragment>\n#include <map_fragment>' }; try { m.onBeforeCompile(sh); src = sh.vertexShader; } catch (e) { src = 'ERR ' + e.message; } return src; };
+      const ps = v(k.paddyFields.tufts.material), gs = v(k.cutWorld.grass.material);
+      return { paddy: has('|paddy'), grass: has('|grass'), still: /instanceMatrix\[1\]\.xyz\) \/ length\(instanceMatrix\[0\]\.xyz\)/.test(ps) && /instanceMatrix\[1\]\.xyz\) \/ length\(instanceMatrix\[0\]\.xyz\)/.test(gs), ps: ps.slice(0, 60) }; });
+    check(w.paddy && w.grass && w.still, `paddy and grass both sway on the wind's clock, scaled by how tall the instance stands, so a cut one lies still (${JSON.stringify(w)})`);
+    check(shaderErr.length === 0, 'every shader compiles ' + shaderErr.join(' | ')); }
 
   // 12. CUT never takes the place of something else to do, and there is no sickle indoors
   { await place(0, 0, 0); await ev(() => { const d = __k.story.debug, W = d.W; __k.game.p.pos.set(0, 0, 2.2); }); await sleep(600);

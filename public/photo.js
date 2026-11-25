@@ -51,7 +51,7 @@ html.photo-on body > *:not(#stage):not(#photoUi):not(#photoPrev) { visibility: h
     if (C.sight) for (; d > 1.3; d -= 0.4) { const c = { x: P.target.x + dir.x * d, y: P.target.y + dir.y * d, z: P.target.z + dir.z * d }; if (C.sight(P.target, c)) break; }
     P.dist = d; camera.position.set(P.target.x + dir.x * d, Math.max(P.floor + 0.3, P.target.y + dir.y * d), P.target.z + dir.z * d); camera.lookAt(P.target); }
   function open() { if (P.on) return; const f = C.focus(); P.floor = f.y; P.target.set(f.x, f.y + 1.05, f.z); const d = t1.copy(camera.position).sub(P.target), len = d.length() || 6;
-    P.inside = !!C.inside(); P.max = P.inside ? 3.4 : 13; P.want = Math.min(P.max, Math.max(1.8, len)); P.yaw = Math.atan2(d.x, d.z); P.pitch = Math.min(1.25, Math.max(0.04, Math.asin(Math.max(-1, Math.min(1, d.y / len)))));
+    P.inside = !!C.inside(); P.max = P.inside ? 2.6 : 13; /* the room is small */ P.want = Math.min(P.max, Math.max(1.8, len)); P.yaw = Math.atan2(d.x, d.z); P.pitch = Math.min(1.25, Math.max(0.04, Math.asin(Math.max(-1, Math.min(1, d.y / len)))));
     P.on = true; P.id = P.id2 = null; if (C.hide) C.hide(true); doc.documentElement.classList.add('photo-on'); layout(); text(); ui.hidden = false; prev.hidden = true; tip.style.opacity = 1; clearTimeout(P.tipT); P.tipT = setTimeout(() => { tip.style.opacity = 0; }, 4200); track('photo.open'); }
   function close() { if (!P.on) return; P.on = false; if (C.hide) C.hide(false); ui.hidden = true; prev.hidden = true; doc.documentElement.classList.remove('photo-on'); if (P.shot) { URL.revokeObjectURL(P.shot.url); P.shot = null; } if (C.closed) C.closed(); }
   const cam = () => { if (P.on) place(); }; // every frame while it is open (the game is paused; index.html calls this before it draws)

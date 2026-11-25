@@ -1279,7 +1279,14 @@ const paddyFields = { plots: [] }, cutWorld = { plants: [], cells: new Map(), sh
   const farPlots = paddyFields.plots.map((pl, pi) => [pl, pi]).filter(([pl]) => pl.gold && pl.r0 > 36 && pl.r0 < 50);
   for (let i = 0; i < FAR && farPlots.length; i++) { const [pl, pi] = farPlots[(Math.random() * farPlots.length) | 0], [x, z] = inPlot(pl); tufts.push({ x, z, yaw: rand(0, 6.28), s: rand(1.0, 1.5), sy: rand(1.1, 1.7), plot: pi }); }
   if (tufts.length) { // emissive: a card seen from behind has its normal turned away from the light and came out nearly black from close by
-    const im = new THREE.InstancedMesh(tg, Mat({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, emissive: 0xffffff, emissiveMap: tuftTex, emissiveIntensity: 0.42 }), tufts.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
+    const tm = Mat({ map: tuftTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, emissive: 0xffffff, emissiveMap: tuftTex, emissiveIntensity: 0.42 }), tprev = tm.onBeforeCompile, tkey = tm.customProgramCacheKey();
+    tm.onBeforeCompile = sh => { tprev(sh); sh.uniforms.gWind = grassWind; // heavy heads nodding in the wind (the grass's clock); a cut tuft, squashed flat, lies still
+      sh.vertexShader = 'uniform float gWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      #ifdef USE_INSTANCING
+        { float ph = instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23, up = clamp((length(instanceMatrix[1].xyz) / length(instanceMatrix[0].xyz) - 0.35) * 4.0, 0.0, 1.0), k = position.y * position.y * 1.5 * up; transformed.x += (sin(gWind * 1.25 + ph) * 0.06 + sin(gWind * 2.3 + ph * 1.6) * 0.02) * k; transformed.z += cos(gWind * 1.05 + ph * 0.7) * 0.035 * k; }
+      #endif`); };
+    tm.customProgramCacheKey = () => tkey + '|paddy';
+    const im = new THREE.InstancedMesh(tg, tm, tufts.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
     tufts.forEach((t, i) => { ps.set(t.x, 0.02, t.z); q.setFromAxisAngle(UPV, t.yaw); sc.set(t.s, t.sy, t.s); im.setMatrixAt(i, m4.compose(ps, q, sc)); if (t.x * t.x + t.z * t.z < 48.2 * 48.2) cutWorld.plants.push({ kind: 1, i, x: t.x, z: t.z, yaw: t.yaw, s: t.s, sy: t.sy, plot: t.plot, cut: false }); /* all a sickle can reach from the walkable land (46 m), the next ring's first tufts too */ });
     im.frustumCulled = false; scene.add(im); paddyFields.tufts = im; }
   // cut plots: sheaves lying in rows, a few standing in shocks, and a big stack here and there (houses' shared mesh)
@@ -1434,7 +1441,7 @@ const grassWind = { value: 0 };
   m.onBeforeCompile = sh => { prev(sh); sh.uniforms.gWind = grassWind;
     sh.vertexShader = 'uniform float gWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       #ifdef USE_INSTANCING
-        { float ph = instanceMatrix[3].x * 0.35 + instanceMatrix[3].z * 0.27, k = position.y * position.y * 5.0; transformed.x += (sin(gWind * 1.7 + ph) * 0.07 + sin(gWind * 3.1 + ph * 1.7) * 0.03) * k; transformed.z += cos(gWind * 1.3 + ph * 0.8) * 0.04 * k; }
+        { float ph = instanceMatrix[3].x * 0.35 + instanceMatrix[3].z * 0.27, up = clamp((length(instanceMatrix[1].xyz) / length(instanceMatrix[0].xyz) - 0.35) * 4.0, 0.0, 1.0), k = position.y * position.y * 5.0 * up /* a cut clump (squashed to a fifth of its height) lies still */; transformed.x += (sin(gWind * 1.7 + ph) * 0.07 + sin(gWind * 3.1 + ph * 1.7) * 0.03) * k; transformed.z += cos(gWind * 1.3 + ph * 0.8) * 0.04 * k; }
       #endif`); };
   m.customProgramCacheKey = () => key0 + '|grass';
   const want = [560, 3300, 11000][QUALITY], gA = (g) => 0.35 + (2 * Math.PI / 9) * g, im = new THREE.InstancedMesh(clump, m, want); // 450 / 2600 / 9000 before the land grew to 46 m
@@ -4094,10 +4101,10 @@ $('setMus').addEventListener('input', e => { SET.mus = clamp(+e.target.value / 1
   if (music.cur === 'game' && audio.ctx) { bedCycle.t0 = performance.now(); bedCycle.open = true; if (music.game.paused) music.game.play().catch(() => {}); clearTimeout(musPeek); musPeek = setTimeout(() => { if (game.mode === 'paused' && music.cur === 'game') music.game.pause(); }, 3500); }
   refreshMusicVol(0.08); });
 $('howBtn').addEventListener('click', () => { $('howList').hidden = !$('howList').hidden; if (!$('howList').hidden) { $('seenList').hidden = true; track('how.open'); } });
-$('langBtn').addEventListener('click', () => setTimeout(pauseText, 0)); // story.js changes the language on this click; the menu follows
+$('langBtn').addEventListener('click', () => setTimeout(() => { pauseText(); if (story && story.seenUi && game.pausedFrom === 'story') story.seenUi(); }, 0)); // story.js changes the language on this click; the menu follows
 // Photo mode (photo.js, fetched on the first tap): the pause card goes, the game stays paused, the camera is yours
 function openPhoto() { if (game.mode !== 'paused') return; photoP = photoP || import('./photo.js').then(m => (photo = m.initPhoto({ $, THREE, camera, renderer, game, draw, track, isTouch, tr: T2, lang: () => (story && story.lang ? story.lang() : 'en'), sens: () => SET.look,
-    focus: () => game.p.pos, hide: on => { if (story && story.photo) story.photo(on); }, inside: () => !!(story && game.pausedFrom === 'story' && story.debugInside && story.debugInside()), sight: (p, c) => (story && story.sight && game.pausedFrom === 'story' ? story.sight(p, c) : true),
+    focus: () => game.p.pos, hide: on => { if (story && story.photo) story.photo(on); }, inside: () => !!(story && game.pausedFrom === 'story' && story.debugInside && story.debugInside()), sight: (p, c) => (story && story.sight && game.pausedFrom === 'story' && !story.debugInside() /* the room lies under the ground beneath the house: the village's test would call every direction blocked */ ? story.sight(p, c) : true),
     click: () => { if (audio.ctx) { const t = audio.ctx.currentTime; noise(t, 0.03, 0.25, 'highpass', 3000, 0.7); noise(t + 0.07, 0.04, 0.2, 'highpass', 2200, 0.7); } }, closed: () => { if (game.menuOpen) { $('pauseScreen').hidden = false; $('resumeBtn').focus(); } } })));
   photoP.then(ph => { if (game.mode === 'paused' && game.menuOpen) { $('pauseScreen').hidden = true; ph.open(); } }).catch(e => { console.error(e); photoP = null; }); }
 $('photoBtn').addEventListener('click', openPhoto);

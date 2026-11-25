@@ -1531,6 +1531,6 @@ export function initStory(C) {
         sights: SIGHTS.map(([id, name, clue]) => ({ id, name: tr(name), clue: tr(clue), seen: !!seen[id] })) }; },
     dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
-    debug: { fences, collide, VILLAGE_R, SHEAF, dayCard, SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    debug: { fences, collide, VILLAGE_R, SHEAF, enterHouse, leaveHouse, dayCard, SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }

@@ -109,6 +109,15 @@ const card = (ev) => ev(() => { const c = document.querySelector('.pcard').getBo
     check(got && Math.abs(a1 - 40) < 2 && Math.abs(a2 - 100) < 4, `archery: a 40 px drag moves the crosshair ${a1.toFixed(0)} px at 100% and ${a2.toFixed(0)} px at 250%`);
     await ev(() => document.getElementById('tapQuit').click()); await sleep(600); }
 
+  // photo indoors: the room lies under the ground beneath the house, where the village's sight test calls every direction blocked
+  { const went = await ev(async () => { const d = __k.story.debug, S = d.S; if (!d.enterHouse) return false; d.enterHouse(); for (let i = 0; i < 60 && !S.inside; i++) await new Promise(r => setTimeout(r, 100)); await new Promise(r => setTimeout(r, 900)); return !!S.inside; });
+    if (went) { await ev(() => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; }); await P.pause(); await page.tap('#photoBtn'); await until(() => __k.photo && __k.photo.isOpen(), 15000); await sleep(600);
+      const st = await ev(() => { const s = __k.photo.state, c = __k.camera.position; return { dist: s.dist, d: Math.hypot(c.x - s.target.x, c.y - s.target.y, c.z - s.target.z), y: c.y, max: s.max, jump: document.getElementById('jumpBtn').hidden }; });
+      check(st.dist > 1.5 && st.max <= 2.6 && st.y < -30, `photo indoors: the camera stands back from you in the room, not pressed against your head (${st.dist.toFixed(1)} m, limit ${st.max})`);
+      await page.screenshot({ path: 'tests/out/set-photo-inside.jpg', type: 'jpeg', quality: 78 }); await ev(() => { __k.photo.close(); document.getElementById('resumeBtn').click(); }); await sleep(300);
+      await ev(async () => { const d = __k.story.debug; if (d.leaveHouse) d.leaveHouse(); for (let i = 0; i < 60 && d.S.inside; i++) await new Promise(r => setTimeout(r, 100)); await new Promise(r => setTimeout(r, 900)); d.S.dlg = null; document.getElementById('dlg').hidden = true; d.S.mode = 'walk'; }); }
+    else check(false, 'photo indoors: could not get into the house to try it'); }
+
   // remembered after a reload
   await P.pause(); await P.slide('setLook', 5); await P.slide('setSnd', 70); await P.slide('setMus', 150); await P.load();
   const re = await ev(() => ({ ...__k.SET })); check(Math.abs(re.look - 1.6) < 0.06 && re.snd === 0.7 && re.mus === 1.5, `the settings are remembered after a reload (${JSON.stringify(re)})`);
@@ -146,7 +155,7 @@ for (const [tag, o] of [['small', { w: 360, h: 640 }], ['land', { w: 780, h: 390
     check(!/[A-Za-z]{3,}/.test(t), 'Hindi: the whole card is in Hindi: ' + (t.match(/[A-Za-z]{3,}/g) || []).join(' '));
     await page.tap('#howBtn'); await page.tap('#photoBtn'); await until(() => __k.photo && __k.photo.isOpen(), 15000); await sleep(400);
     const pt = await ev(() => document.querySelector('#photoUi .pf-tip').textContent + ' ' + document.getElementById('photoBack').textContent); check(!/[A-Za-z]{3,}/.test(pt), `Hindi: photo mode's words too ('${pt}')`); await ev(() => __k.photo.close());
-    await page.tap('#langBtn'); await sleep(200); check(await ev(() => document.getElementById('resumeBtn').textContent === 'Resume' && document.getElementById('setLookL').textContent === 'Look speed'), 'the language button turns the card back to English at once'); }
+    await page.tap('#langBtn'); await sleep(200); check(await ev(() => document.getElementById('resumeBtn').textContent === 'Resume' && document.getElementById('setLookL').textContent === 'Look speed' && /^Seen: \d/.test(document.getElementById('seenBtn').textContent)), 'the language button turns the card back to English at once, the things-seen button too'); }
   await page.screenshot({ path: `tests/out/set-${tag}.jpg`, type: 'jpeg', quality: 78 });
   await page.close(); }
 check(realErrors(logs).length === 0, 'no page errors ' + realErrors(logs).join(' | '));
