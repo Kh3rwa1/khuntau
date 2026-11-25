@@ -33,7 +33,7 @@ cut('S7', F(20), F(22), ev('S7', 'land') - 14);
 const cuts = evp('S8', 'cut-'); cut('S8', F(22), F(24), (cuts[1] ?? 20) - 2);
 // bar 7: the crane up over the village, the title, the end
 cut('S9', F(24), N, 6);
-for (const s of scenes) if (['S5', 'S6', 'S7', 'S8', 'S9'].includes(s.shot) && !(M[s.shot].fixedHud)) s.patch = true; // filmed before the objective arrow was hidden with display: none
+for (const s of scenes) if (['S5', 'S6', 'S7'].includes(s.shot) && !(M[s.shot].fixedHud)) s.patch = true; // filmed before the objective arrow was hidden with display: none
 const sceneOf = shot => scenes.find(s => s.shot === shot);
 const videoFrame = (shot, clipFrame) => { const s = sceneOf(shot); return s.f0 + (clipFrame - s.in); }; // where a clip moment lands
 const bonkF = videoFrame('S34', ev('S34', 'bonk')), snatchF = videoFrame('S34', ev('S34', 'snatch'));
@@ -63,11 +63,11 @@ bands.push({ t0: t(4, 0), t1: t(6, 0) - 0.06, y0: 250, y1: 760, a: 0.34 });
 line('A WHOLE SANTAL VILLAGE', t(4, 0), t(6, 0) - 0.08, 540, 380, BL(50), { color: SAFFRON, ls: 4, shadowColor: INK });
 [['Beat the tamak', 0], ['Draw the bow', 2], ['Catch the fish', 4], ['Reap the paddy', 6]].forEach(([w, b]) => say(w, t(4, b), t(4, b + 2) - 0.07, 540, 520, RD(112), { rot: -0.02 }));
 // 7 the end card (no credits: Dulor's rule)
-bands.push({ t0: t(6, 0), t1: N / FPS + 1, y0: 430, y1: 1240, a: 0.4 });
-line('ᱥᱚᱦᱨᱟᱭ', t(6, 0), 99, 540, 560, OL(64), { color: SAFFRON, shadow: false });
-say('SOHRAI', t(6, 0), 99, 540, 745, RD(230), { rot: -0.02 });
-line('Free on Google Play', t(6, 1), 99, 540, 960, BL(76), { color: SAFFRON, shadowColor: INK });
-line('Works offline · English & Hindi', t(6, 1.5), 99, 540, 1060, BL(50), { shadowColor: INK });
+bands.push({ t0: t(6, 0), t1: N / FPS + 1, y0: 250, y1: 1060, a: 0.4 }); // the words sit in the sky above the bull and the post
+line('ᱥᱚᱦᱨᱟᱭ', t(6, 0), 99, 540, 400, OL(64), { color: SAFFRON, shadow: false });
+say('SOHRAI', t(6, 0), 99, 540, 580, RD(230), { rot: -0.02 });
+line('Free on Google Play', t(6, 1), 99, 540, 790, BL(76), { color: SAFFRON, shadowColor: INK });
+line('Works offline · English & Hindi', t(6, 1.5), 99, 540, 885, BL(50), { shadowColor: INK });
 // taps on the real buttons, from where the buttons were on the filmed screen
 const px = (m, b) => b && b.map(v => v * (m.dpr || 1)); // button positions were taken in CSS px
 const bt = Object.fromEntries(Object.entries(M.S34.buttons || {}).map(([k, v]) => [k, px(M.S34, v)])), pad = Object.fromEntries(Object.entries(M.S5.buttons || {}).map(([k, v]) => [k, px(M.S5, v)]));

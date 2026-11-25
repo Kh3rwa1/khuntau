@@ -146,17 +146,16 @@ export const SHOTS = [
     },
     async at(ctx, i) { if (i % 16 === 4) { await ctx.ev(i => { const d = __k.story.debug, p = __k.game.p; if (i > 4) p.pos.set(p.pos.x + Math.sin(p.yaw) * 0.45, 0, p.pos.z + Math.cos(p.yaw) * 0.45); d.S.act = true; }, i); return 'cut-' + i; } },
   },
-  { // 9 OUTRO: crane up from the golden paddy over the village at golden hour; the sky is left for the title
+  { // 9 OUTRO: back at the khunt. A low camera from the sun's side looks up at the garlanded bull and the post with its
+    // pitha, the sky above left for the title. (A crane over the paddy ran into a tree: 25 Nov, first take.)
     id: 'S9', frames: 110,
     async setup(ctx) {
-      await ui(ctx, ['film-clean']);
+      await toRing(ctx); await ui(ctx, ['film-clean']);
       await ctx.ev(new Function(sunAxis + ease + `
-        const P = __k.paddyFields.plots.filter(p => p.crow), want = Math.atan2(-sz, -sx); let best = P[0], bd = 9;
-        for (const p of P) { let d = (p.a0 + p.a1) / 2 - want; d = Math.abs(Math.atan2(Math.sin(d), Math.cos(d))); if (d < bd) { bd = d; best = p; } }
-        const am = (best.a0 + best.a1) / 2 - 0.12, ox = Math.cos(am), oz = Math.sin(am), r = best.r0 - 1.2;
-        const d = __k.story.debug, p = __k.game.p; p.pos.set(ox * r, 0, oz * r); p.yaw = Math.atan2(ox, oz); d.S.mode = 'walk';
-        const cr = r - 3.2, cx = ox * cr, cz = oz * cr;
-        window.__cam = (c, t) => { const k = e(t / 3.4); c.fov = 50; c.position.set(cx - ox * 1.2 * k, 1.0 + 5.0 * k, cz - oz * 1.2 * k); c.lookAt(ox * (r + 14), 2.2 + 0.5 * k, oz * (r + 14)); };`));
+        const g = __k.game; __k.setGold(false); g.b.pos.set(sx * 1.2 - px * 1.7, 0, sz * 1.2 - pz * 1.7); g.b.yaw = Math.atan2(sx + px * 0.6, sz + pz * 0.6); g.b.state = 'watch'; g.b.t = 0;
+        g.p.pos.set(-sx * 4 + px * 3, 0, -sz * 4 + pz * 3); g.p.state = 'free';
+        window.__cam = (c, t) => { __k.player.root.visible = true; const k = e(t / 3.6), a0 = Math.atan2(sx, sz) + 0.22 - 0.2 * k, r = 6.4 - 0.6 * k;
+          c.fov = 48; c.position.set(Math.sin(a0) * r, 0.55 + 0.25 * k, Math.cos(a0) * r); c.lookAt(-px * 0.6, 2.35, -pz * 0.6); };`));
       for (let i = 0; i < 6; i++) await ctx.step(-1);
     },
   },
