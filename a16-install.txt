@@ -1,0 +1,8 @@
+installed: /tmp/rehearsal/sohrai.apk
+Performing Streamed Install
+Success
+emulator API level: 36
+    versionCode=5 minSdk=24 targetSdk=36
+    versionName=1.3.1
+album row found at 540 1871
+bridge: ok in the release build

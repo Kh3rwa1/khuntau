@@ -1,0 +1,5 @@
+--------- beginning of main
+11-25 14:42:46.982  5448  5448 I SohraiJS: ota: game files 942681b5fc (packed)
+11-25 14:42:54.189  5448  5582 I SohraiJS: ota: update b5dd138fa5 downloaded (1 files, 402 KB); it applies at the next launch
+11-25 14:43:01.257  5448  5699 I SohraiJS: bridge: ready
+11-25 14:43:01.257  5448  5448 I SohraiJS: ready after 14339 ms

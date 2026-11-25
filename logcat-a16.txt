@@ -1,0 +1,14 @@
+--------- beginning of main
+11-25 14:49:13.579  2319  2319 I SohraiJS: ota: game files 942681b5fc (packed)
+11-25 14:49:20.702  2319  2545 I SohraiJS: ota: no update this time (java.net.UnknownHostException: Unable to resolve host "khuntau.dulalkisku0.workers.dev": No address associated with hostname)
+11-25 14:49:22.118  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/board?pid=2r4p6b6z422h0b4q
+11-25 14:49:22.118  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/rooms
+11-25 14:49:22.122  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/board?pid=2r4p6b6z422h0b4q
+11-25 14:49:22.122  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/rooms
+11-25 14:49:31.061  2319  2551 I SohraiJS: bridge: ready
+11-25 14:49:31.062  2319  2319 I SohraiJS: ready after 17683 ms
+11-25 14:49:32.643  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/favicon.ico
+11-25 14:49:35.393  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=2r4p6b6z422h0b4q
+11-25 14:50:04.138  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=2r4p6b6z422h0b4q
+11-25 14:50:34.076  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=2r4p6b6z422h0b4q
+11-25 14:51:04.018  2319  2319 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=2r4p6b6z422h0b4q

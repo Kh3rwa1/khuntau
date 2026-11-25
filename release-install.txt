@@ -1,0 +1,5 @@
+Performing Streamed Install
+Success
+bridge: ok in the release build
+    versionCode=5 minSdk=24 targetSdk=36
+    versionName=1.3.1

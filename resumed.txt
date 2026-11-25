@@ -1,0 +1,1 @@
+    topResumedActivity=ActivityRecord{58ed5db u0 com.skyward.ascent/.MainActivity t8}

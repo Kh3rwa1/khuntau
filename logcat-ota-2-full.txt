@@ -1,0 +1,172 @@
+--------- beginning of main
+11-25 14:44:09.877  7150  7150 I .skyward.ascent: Late-enabling -Xcheck:jni
+11-25 14:44:09.911  7150  7150 I .skyward.ascent: Using CollectorTypeCC GC.
+11-25 14:44:09.913  7150  7150 W .skyward.ascent: Unexpected CPU variant for x86: x86_64.
+11-25 14:44:09.913  7150  7150 W .skyward.ascent: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+11-25 14:44:10.069  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 171979766; UID 10192; state: ENABLED
+11-25 14:44:10.069  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 242716250; UID 10192; state: ENABLED
+11-25 14:44:10.094  7150  7150 W ziparchive: Unable to open '/data/app/~~BQG-UmZwOo7-xLCG406Syg==/com.skyward.ascent-M77IWxh_GTKE6e7lKfgIfQ==/base.dm': No such file or directory
+11-25 14:44:10.094  7150  7150 W ziparchive: Unable to open '/data/app/~~BQG-UmZwOo7-xLCG406Syg==/com.skyward.ascent-M77IWxh_GTKE6e7lKfgIfQ==/base.dm': No such file or directory
+11-25 14:44:10.096  7150  7150 D nativeloader: Configuring clns-6 for other apk /data/app/~~BQG-UmZwOo7-xLCG406Syg==/com.skyward.ascent-M77IWxh_GTKE6e7lKfgIfQ==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~BQG-UmZwOo7-xLCG406Syg==/com.skyward.ascent-M77IWxh_GTKE6e7lKfgIfQ==/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.skyward.ascent
+11-25 14:44:10.106  7150  7150 V GraphicsEnvironment: Currently set values for:
+11-25 14:44:10.106  7150  7150 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+11-25 14:44:10.106  7150  7150 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+11-25 14:44:10.106  7150  7150 V GraphicsEnvironment: ANGLE GameManagerService for com.skyward.ascent: false
+11-25 14:44:10.106  7150  7150 V GraphicsEnvironment: com.skyward.ascent is not listed in per-application setting
+11-25 14:44:10.106  7150  7150 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+11-25 14:44:10.133  7150  7169 D libEGL  : loaded /vendor/lib64/egl/libEGL_emulation.so
+11-25 14:44:10.135  7150  7169 D libEGL  : loaded /vendor/lib64/egl/libGLESv1_CM_emulation.so
+11-25 14:44:10.137  7150  7150 I SohraiJS: ota: game files b5dd138fa5 (1 updated over the air)
+11-25 14:44:10.137  7150  7169 D libEGL  : loaded /vendor/lib64/egl/libGLESv2_emulation.so
+11-25 14:44:10.140  7150  7150 I WebViewFactory: Loading com.google.android.webview version 113.0.5672.136 (code 567263637)
+11-25 14:44:10.141  7150  7150 W ziparchive: Unable to open '/data/app/~~1CQ1weCpJNprlZ4y-FFTuA==/com.google.android.trichromelibrary_567263637-uQbPmlmDPVcAmVMWfYiF3w==/TrichromeLibrary.dm': No such file or directory
+11-25 14:44:10.142  7150  7150 W ziparchive: Unable to open '/data/app/~~1CQ1weCpJNprlZ4y-FFTuA==/com.google.android.trichromelibrary_567263637-uQbPmlmDPVcAmVMWfYiF3w==/TrichromeLibrary.dm': No such file or directory
+11-25 14:44:10.142  7150  7150 W .skyward.ascent: Entry not found
+11-25 14:44:10.142  7150  7150 D nativeloader: Configuring clns-7 for other apk /data/app/~~1CQ1weCpJNprlZ4y-FFTuA==/com.google.android.trichromelibrary_567263637-uQbPmlmDPVcAmVMWfYiF3w==/TrichromeLibrary.apk. target_sdk_version=34, uses_libraries=ALL, library_path=/data/app/~~O31Wg1avlYd66oU1lovKyQ==/com.google.android.webview-CogpTiL4ttYP_DSZXGE7OA==/lib/x86_64:/data/app/~~O31Wg1avlYd66oU1lovKyQ==/com.google.android.webview-CogpTiL4ttYP_DSZXGE7OA==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~1CQ1weCpJNprlZ4y-FFTuA==/com.google.android.trichromelibrary_567263637-uQbPmlmDPVcAmVMWfYiF3w==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+11-25 14:44:10.148  7150  7150 D nativeloader: Configuring clns-8 for other apk /data/app/~~O31Wg1avlYd66oU1lovKyQ==/com.google.android.webview-CogpTiL4ttYP_DSZXGE7OA==/WebViewGoogle.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~O31Wg1avlYd66oU1lovKyQ==/com.google.android.webview-CogpTiL4ttYP_DSZXGE7OA==/lib/x86_64:/data/app/~~O31Wg1avlYd66oU1lovKyQ==/com.google.android.webview-CogpTiL4ttYP_DSZXGE7OA==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~1CQ1weCpJNprlZ4y-FFTuA==/com.google.android.trichromelibrary_567263637-uQbPmlmDPVcAmVMWfYiF3w==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+11-25 14:44:10.174  7150  7150 W .skyward.ascent: Accessing hidden method Landroid/os/Trace;->isTagEnabled(J)Z (unsupported, reflection, allowed)
+11-25 14:44:10.174  7150  7150 W .skyward.ascent: Accessing hidden method Landroid/os/Trace;->traceBegin(JLjava/lang/String;)V (unsupported, reflection, allowed)
+11-25 14:44:10.174  7150  7150 W .skyward.ascent: Accessing hidden method Landroid/os/Trace;->traceEnd(J)V (unsupported, reflection, allowed)
+11-25 14:44:10.174  7150  7150 W .skyward.ascent: Accessing hidden method Landroid/os/Trace;->asyncTraceBegin(JLjava/lang/String;I)V (unsupported, reflection, allowed)
+11-25 14:44:10.174  7150  7150 W .skyward.ascent: Accessing hidden method Landroid/os/Trace;->asyncTraceEnd(JLjava/lang/String;I)V (unsupported, reflection, allowed)
+11-25 14:44:10.176  7150  7150 I cr_WVCFactoryProvider: Loaded version=113.0.5672.136 minSdkVersion=29 isBundle=false multiprocess=true packageId=2
+11-25 14:44:10.183  7150  7175 I cr_VariationsUtils: Failed reading seed file "/data/user/0/com.skyward.ascent/app_webview/variations_seed_new"
+11-25 14:44:10.183  7150  7175 I cr_VariationsUtils: Failed reading seed file "/data/user/0/com.skyward.ascent/app_webview/variations_seed"
+11-25 14:44:10.190  7150  7150 I cr_LibraryLoader: Successfully loaded native library
+11-25 14:44:10.190  7150  7150 I cr_CachingUmaRecorder: Flushed 8 samples from 8 histograms.
+11-25 14:44:10.209  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 183155436; UID 10192; state: ENABLED
+11-25 14:44:10.243  7150  7181 W chromium: [WARNING:dns_config_service_android.cc(115)] Failed to read DnsConfig.
+11-25 14:44:10.273  7150  7181 E chromium: [ERROR:simple_file_enumerator.cc(21)] opendir /data/user/0/com.skyward.ascent/cache/WebView/Default/HTTP Cache/Code Cache/wasm: No such file or directory (2)
+11-25 14:44:10.273  7150  7181 E chromium: [ERROR:simple_index_file.cc(614)] Could not reconstruct index from disk
+11-25 14:44:10.273  7150  7182 E chromium: [ERROR:simple_file_enumerator.cc(21)] opendir /data/user/0/com.skyward.ascent/cache/WebView/Default/HTTP Cache/Code Cache/js: No such file or directory (2)
+11-25 14:44:10.273  7150  7182 E chromium: [ERROR:simple_index_file.cc(614)] Could not reconstruct index from disk
+11-25 14:44:10.278  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 214741472; UID 10192; state: ENABLED
+11-25 14:44:10.279  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 171228096; UID 10192; state: ENABLED
+11-25 14:44:10.291  7150  7150 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+11-25 14:44:10.321  7150  7198 W cr_media: BLUETOOTH_CONNECT permission is missing.
+11-25 14:44:10.325  7150  7198 W cr_media: registerBluetoothIntentsIfNeeded: Requires BLUETOOTH permission
+11-25 14:44:10.347  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 237531167; UID 10192; state: DISABLED
+11-25 14:44:10.349  7150  7150 W OpenGLRenderer: Unknown dataspace 0
+11-25 14:44:10.357  7150  7182 I SohraiJS: ota: serving index.html (402 KB) from the downloaded files
+11-25 14:44:10.424  7150  7150 D CompatibilityChangeReporter: Compat change id reported: 193247900; UID 10192; state: ENABLED
+11-25 14:44:10.473  7150  7167 W OpenGLRenderer: Failed to initialize 101010-2 format, error = EGL_SUCCESS
+11-25 14:44:10.508  7150  7167 I Gralloc4: mapper 4.x is not supported
+11-25 14:44:12.668  7150  7167 D EGL_emulation: app_time_stats: avg=639.56ms min=96.30ms max=1641.10ms count=3
+11-25 14:44:12.688  7150  7164 I OpenGLRenderer: Davey! duration=1764ms; Flags=0, FrameTimelineVsyncId=40365, IntendedVsync=315521406987, Vsync=315621406983, InputEventId=0, HandleInputStart=315645452308, AnimationStart=315645456074, PerformTraversalsStart=315646004121, DrawStart=315646156799, FrameDeadline=315654740315, FrameInterval=315637771616, FrameStartTime=16666666, SyncQueued=315648725242, SyncStart=315651502817, IssueDrawCommandsStart=315651529507, SwapBuffers=317228992818, FrameCompleted=317288240874, DequeueBufferDuration=3896, QueueBufferDuration=290273, GpuCompleted=317288240874, SwapBuffersCompleted=317275984864, DisplayPresentTime=0, CommandSubmissionCompleted=317228992818, 
+11-25 14:44:13.388  7150  7150 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/board?pid=055z302f581e4j4m
+11-25 14:44:16.316  7150  7218 I SohraiJS: ota: no update this time (java.net.UnknownHostException: Unable to resolve host "khuntau.dulalkisku0.workers.dev": No address associated with hostname)
+11-25 14:44:18.164  7150  7167 D EGL_emulation: app_time_stats: avg=5495.98ms min=5495.98ms max=5495.98ms count=1
+11-25 14:44:18.172  7150  7150 I Choreographer: Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-25 14:44:18.321  7150  7198 I AAudio  : AAudioStreamBuilder_openStream() called ----------------------------------------
+11-25 14:44:18.321  7150  7198 I AudioStreamBuilder: rate   =  44100, channels  = 2, channelMask = 0x80000003, format   = 5, sharing = SH, dir = OUTPUT
+11-25 14:44:18.321  7150  7198 I AudioStreamBuilder: device =      0, sessionId = -1, perfMode = 11, callback: ON with frames = 4360
+11-25 14:44:18.321  7150  7198 I AudioStreamBuilder: usage  =      1, contentType = 0, inputPreset = 0, allowedCapturePolicy = 0
+11-25 14:44:18.321  7150  7198 I AudioStreamBuilder: privacy sensitive = false, opPackageName = (null), attributionTag = (null)
+11-25 14:44:18.321  7150  7198 D AudioStreamBuilder: build() MMAP not used because AAUDIO_PERFORMANCE_MODE_LOW_LATENCY not requested.
+11-25 14:44:18.322  7150  7198 D .skyward.ascent: PlayerBase::PlayerBase()
+11-25 14:44:18.322  7150  7198 D AudioStreamTrack: open(), request notificationFrames = 0, frameCount = 0
+11-25 14:44:18.328  7150  7198 D AudioStreamTrack: open() flags changed from 0x00000008 to 0x00000000
+11-25 14:44:18.328  7150  7198 D AudioStreamTrack: open() perfMode changed from 11 to 10
+11-25 14:44:18.328  7150  7198 D AAudioStream: setState(s#1) from 0 to 2
+11-25 14:44:18.329  7150  7198 I AAudio  : AAudioStreamBuilder_openStream() returns 0 = AAUDIO_OK for s#1 ----------------
+11-25 14:44:18.397  7150  7198 D AAudio  : AAudioStream_requestStart(s#1) called --------------
+11-25 14:44:18.397  7150  7198 D AAudioStream: setState(s#1) from 2 to 3
+11-25 14:44:18.399  7150  7198 D AAudio  : AAudioStream_requestStart(s#1) returned 0 ---------
+11-25 14:44:18.400  7150  7163 D AudioStreamLegacy: onAudioDeviceUpdate(deviceId = 2)
+11-25 14:44:18.424  7150  7261 D AAudioStream: setState(s#1) from 3 to 4
+11-25 14:44:18.426  7150  7254 I SohraiJS: bridge: ready
+11-25 14:44:18.426  7150  7150 I SohraiJS: ready after 8303 ms
+11-25 14:44:19.225  7150  7167 D EGL_emulation: app_time_stats: avg=263.11ms min=78.06ms max=732.55ms count=4
+11-25 14:44:19.512  7150  7150 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/favicon.ico
+11-25 14:44:20.508  7150  7167 D EGL_emulation: app_time_stats: avg=256.70ms min=78.77ms max=464.95ms count=5
+11-25 14:44:20.771  7150  7150 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=055z302f581e4j4m
+11-25 14:44:21.599  7150  7167 D EGL_emulation: app_time_stats: avg=121.11ms min=71.64ms max=139.21ms count=9
+11-25 14:44:22.629  7150  7167 D EGL_emulation: app_time_stats: avg=128.69ms min=69.33ms max=158.90ms count=8
+11-25 14:44:23.708  7150  7167 D EGL_emulation: app_time_stats: avg=134.81ms min=64.75ms max=173.25ms count=8
+11-25 14:44:24.753  7150  7167 D EGL_emulation: app_time_stats: avg=116.06ms min=88.45ms max=155.38ms count=9
+11-25 14:44:25.809  7150  7167 D EGL_emulation: app_time_stats: avg=117.28ms min=75.26ms max=165.85ms count=9
+11-25 14:44:26.869  7150  7167 D EGL_emulation: app_time_stats: avg=117.80ms min=84.69ms max=143.72ms count=9
+11-25 14:44:27.879  7150  7167 D EGL_emulation: app_time_stats: avg=109.80ms min=76.45ms max=150.91ms count=9
+11-25 14:44:28.213  7150  7198 D AAudio  : AAudioStream_requestStop(s#1) called
+11-25 14:44:28.213  7150  7198 D AAudioStream: setState(s#1) from 4 to 9
+11-25 14:44:28.213  7150  7198 D AudioTrack: stop(18): called with 433296 frames delivered
+11-25 14:44:28.214  7150  7198 D AAudioStream: setState(s#1) from 9 to 10
+11-25 14:44:28.905  7150  7167 D EGL_emulation: app_time_stats: avg=108.47ms min=79.81ms max=129.04ms count=9
+11-25 14:44:29.954  7150  7167 D EGL_emulation: app_time_stats: avg=115.61ms min=59.83ms max=156.15ms count=9
+11-25 14:44:31.034  7150  7167 D EGL_emulation: app_time_stats: avg=117.20ms min=99.71ms max=165.54ms count=9
+11-25 14:44:32.108  7150  7167 D EGL_emulation: app_time_stats: avg=113.37ms min=71.68ms max=176.32ms count=9
+11-25 14:44:33.173  7150  7167 D EGL_emulation: app_time_stats: avg=106.53ms min=70.05ms max=139.21ms count=10
+11-25 14:44:34.205  7150  7167 D EGL_emulation: app_time_stats: avg=112.22ms min=76.49ms max=145.61ms count=9
+11-25 14:44:34.220  7150  7198 D AAudio  : AAudioStream_close(s#1) called ---------------
+11-25 14:44:34.221  7150  7198 D AAudioStream: setState(s#1) from 10 to 11
+11-25 14:44:34.225  7150  7198 D AAudioStream: setState(s#1) from 11 to 12
+11-25 14:44:34.226  7150  7198 D AAudioStream: ~AudioStream(s#1) mPlayerBase strongCount = 2
+11-25 14:44:34.226  7150  7198 D AAudio  : AAudioStream_close(s#1) returned 0 ---------
+11-25 14:44:35.157  7150  7164 D .skyward.ascent: PlayerBase::~PlayerBase()
+11-25 14:44:35.224  7150  7167 D EGL_emulation: app_time_stats: avg=109.50ms min=72.69ms max=187.41ms count=9
+11-25 14:44:36.268  7150  7167 D EGL_emulation: app_time_stats: avg=115.90ms min=91.25ms max=149.27ms count=9
+11-25 14:44:37.366  7150  7167 D EGL_emulation: app_time_stats: avg=101.23ms min=66.39ms max=163.44ms count=10
+11-25 14:44:38.399  7150  7167 D EGL_emulation: app_time_stats: avg=101.05ms min=64.93ms max=119.60ms count=9
+11-25 14:44:39.517  7150  7167 D EGL_emulation: app_time_stats: avg=107.17ms min=73.64ms max=140.75ms count=10
+11-25 14:44:40.587  7150  7167 D EGL_emulation: app_time_stats: avg=103.16ms min=59.88ms max=139.97ms count=10
+11-25 14:44:41.639  7150  7167 D EGL_emulation: app_time_stats: avg=107.86ms min=56.32ms max=145.69ms count=9
+11-25 14:44:42.658  7150  7167 D EGL_emulation: app_time_stats: avg=113.08ms min=79.25ms max=130.37ms count=9
+11-25 14:44:43.773  7150  7167 D EGL_emulation: app_time_stats: avg=110.72ms min=72.29ms max=159.69ms count=10
+11-25 14:44:44.830  7150  7167 D EGL_emulation: app_time_stats: avg=117.31ms min=84.06ms max=147.89ms count=9
+11-25 14:44:45.957  7150  7167 D EGL_emulation: app_time_stats: avg=105.40ms min=68.18ms max=151.24ms count=10
+11-25 14:44:47.003  7150  7167 D EGL_emulation: app_time_stats: avg=100.54ms min=72.29ms max=159.42ms count=10
+11-25 14:44:48.065  7150  7167 D EGL_emulation: app_time_stats: avg=132.79ms min=112.00ms max=170.59ms count=8
+11-25 14:44:49.114  7150  7167 D EGL_emulation: app_time_stats: avg=104.85ms min=65.50ms max=139.38ms count=10
+11-25 14:44:49.581  7150  7150 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=055z302f581e4j4m
+11-25 14:44:50.141  7150  7167 D EGL_emulation: app_time_stats: avg=114.05ms min=77.83ms max=135.31ms count=9
+11-25 14:44:51.161  7150  7167 D EGL_emulation: app_time_stats: avg=113.26ms min=105.28ms max=123.00ms count=9
+11-25 14:44:52.260  7150  7167 D EGL_emulation: app_time_stats: avg=109.91ms min=88.72ms max=139.50ms count=10
+11-25 14:44:53.361  7150  7167 D EGL_emulation: app_time_stats: avg=99.28ms min=75.38ms max=134.54ms count=11
+11-25 14:44:54.367  7150  7167 D EGL_emulation: app_time_stats: avg=111.74ms min=87.17ms max=144.32ms count=9
+11-25 14:44:55.432  7150  7167 D EGL_emulation: app_time_stats: avg=106.52ms min=73.25ms max=123.21ms count=10
+11-25 14:44:56.498  7150  7167 D EGL_emulation: app_time_stats: avg=106.48ms min=60.44ms max=159.97ms count=10
+11-25 14:44:57.576  7150  7167 D EGL_emulation: app_time_stats: avg=119.66ms min=57.48ms max=164.52ms count=9
+11-25 14:44:58.620  7150  7167 D EGL_emulation: app_time_stats: avg=101.72ms min=71.69ms max=163.75ms count=10
+11-25 14:44:59.677  7150  7167 D EGL_emulation: app_time_stats: avg=105.66ms min=58.79ms max=178.74ms count=10
+11-25 14:45:00.720  7150  7167 D EGL_emulation: app_time_stats: avg=115.81ms min=79.90ms max=151.70ms count=9
+11-25 14:45:01.724  7150  7167 D EGL_emulation: app_time_stats: avg=111.58ms min=75.97ms max=143.30ms count=9
+11-25 14:45:02.768  7150  7167 D EGL_emulation: app_time_stats: avg=110.40ms min=60.24ms max=154.92ms count=9
+11-25 14:45:03.846  7150  7167 D EGL_emulation: app_time_stats: avg=119.74ms min=71.66ms max=185.49ms count=9
+11-25 14:45:04.877  7150  7167 D EGL_emulation: app_time_stats: avg=113.92ms min=93.21ms max=126.25ms count=9
+11-25 14:45:05.979  7150  7167 D EGL_emulation: app_time_stats: avg=104.84ms min=64.15ms max=151.23ms count=10
+11-25 14:45:07.084  7150  7167 D EGL_emulation: app_time_stats: avg=110.42ms min=78.34ms max=119.72ms count=10
+11-25 14:45:08.141  7150  7167 D EGL_emulation: app_time_stats: avg=105.33ms min=73.84ms max=158.14ms count=10
+11-25 14:45:09.205  7150  7167 D EGL_emulation: app_time_stats: avg=118.21ms min=99.10ms max=145.05ms count=9
+11-25 14:45:10.275  7150  7167 D EGL_emulation: app_time_stats: avg=106.98ms min=71.38ms max=151.06ms count=10
+11-25 14:45:11.303  7150  7167 D EGL_emulation: app_time_stats: avg=102.77ms min=63.78ms max=156.50ms count=10
+11-25 14:45:12.424  7150  7167 D EGL_emulation: app_time_stats: avg=111.99ms min=95.92ms max=128.44ms count=10
+11-25 14:45:13.464  7150  7167 D EGL_emulation: app_time_stats: avg=102.83ms min=63.37ms max=151.48ms count=10
+11-25 14:45:14.472  7150  7167 D EGL_emulation: app_time_stats: avg=110.96ms min=67.67ms max=166.18ms count=9
+11-25 14:45:15.498  7150  7167 D EGL_emulation: app_time_stats: avg=104.41ms min=66.12ms max=145.70ms count=9
+11-25 14:45:16.640  7150  7167 D EGL_emulation: app_time_stats: avg=125.30ms min=76.27ms max=202.58ms count=9
+11-25 14:45:17.703  7150  7167 D EGL_emulation: app_time_stats: avg=116.24ms min=79.58ms max=176.03ms count=9
+11-25 14:45:18.723  7150  7167 D EGL_emulation: app_time_stats: avg=98.31ms min=70.72ms max=122.33ms count=10
+11-25 14:45:19.504  7150  7150 W SohraiJS: load error -2 net::ERR_INTERNET_DISCONNECTED for https://khuntau.dulalkisku0.workers.dev/api/here?pid=055z302f581e4j4m
+11-25 14:45:19.794  7150  7167 D EGL_emulation: app_time_stats: avg=118.95ms min=71.85ms max=151.71ms count=9
+11-25 14:45:20.801  7150  7167 D EGL_emulation: app_time_stats: avg=107.83ms min=62.16ms max=150.74ms count=9
+11-25 14:45:21.968  7150  7167 D EGL_emulation: app_time_stats: avg=116.62ms min=68.84ms max=171.88ms count=10
+11-25 14:45:23.005  7150  7167 D EGL_emulation: app_time_stats: avg=103.66ms min=69.55ms max=140.02ms count=10
+11-25 14:45:24.097  7150  7167 D EGL_emulation: app_time_stats: avg=106.02ms min=77.11ms max=148.10ms count=10
+11-25 14:45:25.177  7150  7167 D EGL_emulation: app_time_stats: avg=107.86ms min=67.19ms max=137.84ms count=10
+11-25 14:45:26.243  7150  7167 D EGL_emulation: app_time_stats: avg=118.45ms min=63.76ms max=160.86ms count=9
+11-25 14:45:27.289  7150  7167 D EGL_emulation: app_time_stats: avg=115.89ms min=81.47ms max=146.42ms count=9
+11-25 14:45:28.344  7150  7167 D EGL_emulation: app_time_stats: avg=117.17ms min=76.17ms max=187.50ms count=9
+11-25 14:45:29.380  7150  7167 D EGL_emulation: app_time_stats: avg=114.67ms min=91.15ms max=166.17ms count=9
+11-25 14:45:30.467  7150  7167 D EGL_emulation: app_time_stats: avg=107.28ms min=63.00ms max=162.02ms count=10
+11-25 14:45:31.471  7150  7167 D EGL_emulation: app_time_stats: avg=111.49ms min=75.00ms max=156.44ms count=9
+11-25 14:45:32.484  7150  7167 D EGL_emulation: app_time_stats: avg=112.07ms min=70.98ms max=146.53ms count=9
+11-25 14:45:33.628  7150  7167 D EGL_emulation: app_time_stats: avg=114.34ms min=75.78ms max=209.04ms count=10
+11-25 14:45:34.636  7150  7167 D EGL_emulation: app_time_stats: avg=104.57ms min=69.17ms max=152.29ms count=9
+11-25 14:45:35.690  7150  7167 D EGL_emulation: app_time_stats: avg=112.39ms min=65.03ms max=189.14ms count=9
+11-25 14:45:36.755  7150  7167 D EGL_emulation: app_time_stats: avg=112.07ms min=66.78ms max=158.61ms count=9
+11-25 14:45:37.779  7150  7167 D EGL_emulation: app_time_stats: avg=113.74ms min=80.57ms max=150.90ms count=9
+11-25 14:45:38.887  7150  7167 D EGL_emulation: app_time_stats: avg=104.35ms min=60.64ms max=137.71ms count=10
+11-25 14:45:39.975  7150  7167 D EGL_emulation: app_time_stats: avg=120.89ms min=72.31ms max=158.01ms count=9
+11-25 14:45:41.030  7150  7167 D EGL_emulation: app_time_stats: avg=117.20ms min=80.02ms max=143.79ms count=9
+11-25 14:45:42.079  7150  7167 D EGL_emulation: app_time_stats: avg=115.22ms min=60.97ms max=170.64ms count=9
+11-25 14:45:43.146  7150  7167 D EGL_emulation: app_time_stats: avg=118.46ms min=79.83ms max=170.08ms count=9
