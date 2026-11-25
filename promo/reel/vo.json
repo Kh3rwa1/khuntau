@@ -5,61 +5,75 @@
    "id": "l1",
    "at": "start",
    "hi": "हर सोहराय पे, ये गुस्सैल बैल खूँटे से बँधता है।",
-   "cap": "Har Sohrai pe..."
+   "cap": "Har Sohrai pe... | ye gussail bail!",
+   "el": "[dramatic] हर सोहराय पे... ये गुस्सैल बैल!"
   },
   {
    "id": "l2",
    "at": "crane",
    "hi": "और खूँटे के ऊपर? गरम-गरम पीठा!",
-   "cap": "...aur khunte pe | garam PITHA!"
+   "cap": "...aur khunte pe? | garam PITHA!",
+   "el": "[excited] और खूँटे पे? गरम पीठा!"
   },
   {
    "id": "l3",
    "at": "gogo",
    "hi": "गोगो बोली, बेटा, पहले त्योहार तो मनाओ!",
-   "cap": "\"Beta, pehle | tyohar manao!\""
+   "cap": "Gogo boli: | \"Pehle tyohar manao!\"",
+   "el": "[softly] गोगो बोली, पहले त्योहार मनाओ।"
   },
   {
    "id": "l4",
    "at": "days",
    "hi": "पाँच दिन। दीवार पे रंग, आँगन में अल्पना, पूरा गाँव एक साथ।",
-   "cap": "Paanch din. | Poora gaon | ek saath."
+   "cap": "Paanch din. | Poora gaon | ek saath.",
+   "el": "[warm] पाँच दिन। दीवार पे रंग, आँगन में अल्पना... पूरा गाँव, एक साथ।",
+   "tempo": 1.2
   },
   {
    "id": "l5a",
    "at": "drum",
    "hi": "तमाक बजाओ!",
-   "cap": "Tamak bajao!"
+   "cap": "Tamak bajao!",
+   "el": "[energetic] तमाक बजाओ!"
   },
   {
    "id": "l5b",
    "at": "bow",
    "hi": "तीर चलाओ!",
-   "cap": "Teer chalao!"
+   "cap": "Teer chalao!",
+   "el": "[energetic] तीर चलाओ!"
   },
   {
    "id": "l5c",
    "at": "fish",
    "hi": "मछली पकड़ो!",
-   "cap": "Machhli pakdo!"
+   "cap": "Machhli pakdo!",
+   "el": "[energetic] मछली पकड़ो!"
   },
   {
    "id": "l5d",
    "at": "reap",
    "hi": "धान काटो!",
-   "cap": "Dhaan kaato!"
+   "cap": "Dhaan kaato!",
+   "el": "[energetic] धान काटो!"
   },
   {
    "id": "l6a",
    "at": "round",
    "hi": "फिर आया खुंटाऊ का दिन।",
-   "cap": "Phir aaya | KHUNTAU!"
+   "cap": "Phir aaya | KHUNTAU!",
+   "el": "[dramatic] फिर आया... खुंटाउ!",
+   "capOnly": true,
+   "_": "said aloud it pushed the grab line past the snatch: caption only"
   },
   {
    "id": "l6b",
    "at": "hide",
    "hi": "कपड़ा दिखाओ, और रुको...",
-   "cap": "Kapda dikhao... | aur ruko..."
+   "cap": "Kapda dikhao... | ruko...",
+   "el": "[whispers] कपड़ा दिखाओ... रुको...",
+   "tempo": 1.15
   },
   {
    "id": "l6c",
@@ -73,31 +87,38 @@
    "id": "l6d",
    "at": "grab",
    "hi": "अब! पीठा छीनो!",
-   "cap": "Ab! PITHA | CHHEENO!"
+   "cap": "Ab! PITHA | CHHEENO!",
+   "el": "[excited] अब! पीठा छीनो!"
   },
   {
    "id": "l7",
    "at": "cheer",
    "hi": "पूरा गांव बोला, जोहार!",
-   "cap": "JOHAR!"
+   "cap": "JOHAR!",
+   "el": "[excited] पूरा गाँव बोला... जोहार!"
   },
   {
    "id": "l8",
    "at": "end",
    "hi": "सोहराय। अब गूगल प्ले पे अवेलेबल।",
-   "cap": ""
+   "cap": "",
+   "el": "[dramatic] सोहराय। अब Google Play पे available."
   },
   {
    "id": "l9",
    "at": "end2",
    "hi": "फ़्री है, ऑफ़ लाइन भी चलता है।",
-   "cap": ""
+   "cap": "",
+   "el": "Free है, offline भी चलता है।"
   },
   {
    "id": "l10",
    "at": "end3",
    "hi": "अभी डाउनलोड करो!",
-   "cap": ""
+   "cap": "",
+   "el": "[excited] अभी डाउनलोड करो!"
   }
- ]
+ ],
+ "_el": "'el' = the ElevenLabs v3 script: acting directions in [brackets] and pauses (...); English words in Latin so they are said as English",
+ "_tempo": "'tempo' speeds a line up without changing its pitch (ffmpeg atempo); 'capOnly' shows the caption at the cue with no voice"
 }

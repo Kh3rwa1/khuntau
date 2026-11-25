@@ -47,7 +47,9 @@ const bonkT = vt('S34', ev('S34', 'bonk')), snatchT = vt('S34', ev('S34', 'snatc
 const CUE = { start: 0.15, crane: T_(4) + 0.55, gogo: T_(8) + 0.2, days: T_(12) + 0.1, drum: T_(20) + 0.08, bow: T_(22) + 0.08, fish: T_(24) + 0.08, reap: T_(26) + 0.08,
   round: T_(26) + 1.1 /* leads into the ring: a J-cut over the last of the paddy */, hide: hideT, bonk: bonkT + 0.1, grab: bonkT + 0.15, cheer: snatchT + 1.6, end: T_(40) + 0.15, end2: T_(40) + 2.9, end3: T_(40) + 5.6 };
 const vo = []; let free = 0;
-for (const ln of VO) { if (ln.skip) continue; const file = `${OUT}/vo/${VOICE}/${ln.id}.wav`, d = dur(file), at = Math.max(CUE[ln.at], free + 0.08); vo.push({ ...ln, file, sec: at, end: at + d }); free = at + d; }
+for (const ln of VO) { if (ln.skip) continue;
+  if (ln.capOnly) { const at = Math.max(CUE[ln.at], free + 0.08); vo.push({ ...ln, file: null, sec: at, end: at + 1.4 }); continue; } // a caption with no voice: takes no time from the next line
+  const file = `${OUT}/vo/${VOICE}/${ln.id}.wav`, d = dur(file) / (ln.tempo || 1), at = Math.max(CUE[ln.at], free + 0.08); vo.push({ ...ln, file, sec: at, end: at + d }); free = at + d; }
 const over = vo.filter(v => v.end > N / FPS - 0.3); if (over.length) throw new Error('voice runs past the end: ' + over.map(v => v.id));
 
 // ---- the words: captions follow the voice (Rubik Dirt, the game's textured face); the end card names the Play badge ----
@@ -111,11 +113,12 @@ async function main() {
   if (stills) return console.log('stills in', dir);
   const posterF = N - 15; fs.copyFileSync(`${dir}/${String(posterF).padStart(4, '0')}.jpg`, `${OUT}/sohrai-reel.jpg`); fs.copyFileSync(`${OUT}/sohrai-reel.jpg`, `${dir}/0000.jpg`); // the poster (end card with the badge) is also frame 0
   const D = N / FPS, inputs = ['-ss', String(MUSIC_IN), '-t', String(D + 0.5), '-i', 'promo/trailer/music/sohrai.mp3'], ch = [];
-  vo.forEach((v, i) => { inputs.push('-i', v.file); ch.push(`[${i + 1}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=4dB,adelay=${Math.round(v.sec * 1000)}|${Math.round(v.sec * 1000)}[v${i}]`); });
-  const o = vo.length + 1;
+  const said = vo.filter(v => v.file);
+  said.forEach((v, i) => { inputs.push('-i', v.file); ch.push(`[${i + 1}:a]aformat=sample_rates=48000:channel_layouts=stereo,${v.tempo ? `atempo=${v.tempo},` : ''}volume=4dB,adelay=${Math.round(v.sec * 1000)}|${Math.round(v.sec * 1000)}[v${i}]`); });
+  const o = said.length + 1;
   sfx.forEach((s, i) => { inputs.push('-i', s.file); ch.push(`[${o + i}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=${s.db}dB,adelay=${Math.round(s.sec * 1000)}|${Math.round(s.sec * 1000)}[s${i}]`); });
   const fc = [...ch,
-    `${vo.map((_, i) => `[v${i}]`).join('')}amix=inputs=${vo.length}:normalize=0:duration=longest,apad=whole_dur=${D.toFixed(3)},asplit=2[voice][key]`,
+    `${said.map((_, i) => `[v${i}]`).join('')}amix=inputs=${said.length}:normalize=0:duration=longest,apad=whole_dur=${D.toFixed(3)},asplit=2[voice][key]`,
     `[0:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=-3dB,afade=t=in:d=0.02,afade=t=out:st=${(D - 1.6).toFixed(2)}:d=1.6[m0]`,
     `[m0][key]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[m]`, // the music steps back while the voice speaks
     `[m][voice]${sfx.map((_, i) => `[s${i}]`).join('')}amix=inputs=${sfx.length + 2}:normalize=0:duration=first,atrim=0:${D.toFixed(3)},loudnorm=I=-14:TP=-1.5:LRA=11[a]`].join(';');
