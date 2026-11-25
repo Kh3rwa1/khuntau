@@ -18,10 +18,15 @@ PAD = 6               # transparent gap between cells, so mip levels do not blee
 FEATHER = 0.07        # share of the width/height over which a cell's edges fade out
 
 
-def cut(src_path, box, tol, raw=False):
+def cut(src_path, box, tol, raw=False, dots=()):
     """One cell: repaint the dark background connected to the cut's border (inner dark outlines are kept), scale,
-    fade the edges."""
-    im = Image.open(src_path).convert('RGB').crop(box)
+    fade the edges. dots: [x, y, radius] in source pixels, painted out first (a forehead dot the image tool added:
+    the women on the wall in Dulor's photos have none; see tools/days.py)."""
+    im = Image.open(src_path).convert('RGB')
+    for i, (dx, dy, dr) in enumerate(dots):
+        from days import paint_out
+        paint_out(im, dx, dy, dr, 'skin', 50 + i)
+    im = im.crop(box)
     if raw:  # a portrait for the dialogue box: kept as painted, opaque, no fade
         return im.resize((round(im.width * CELL_H / im.height), CELL_H), Image.LANCZOS).convert('RGBA')
     w, h = im.size
@@ -67,7 +72,7 @@ def main(spec_path):
     for c in spec['cuts']:
         if c.get('use') != 'face':
             continue
-        im = cut(os.path.join(base, c['src']), c['box'], 0, raw=True).convert('RGB')
+        im = cut(os.path.join(base, c['src']), c['box'], 0, raw=True, dots=c.get('dots', ())).convert('RGB')
         fn = 'face-' + c['name'].lower() + '.webp'
         im.save(os.path.join(out_dir, fn), 'WEBP', quality=84, method=6)
         faces[c['name']] = {'file': fn, 'aspect': round(im.width / im.height, 4)}

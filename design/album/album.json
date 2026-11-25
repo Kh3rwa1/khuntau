@@ -1,0 +1,18 @@
+{
+ "note": "The album's paintings (public/album.js), made with Nano Banana from Dulor's photos of a painted Santal house (25 Nov). Boxes are source pixels [x0, y0, x1, y1]. The finds are in the order of SIGHTS in public/story.js: the atlas is read by position.",
+ "cell": 320,
+ "cols": 5,
+ "finds": [
+  {"id": "nest", "src": "a1.jpg", "box": [55, 80, 435, 440]},
+  {"id": "kite", "src": "a1.jpg", "box": [600, 70, 970, 440]},
+  {"id": "tortoise", "src": "a1.jpg", "box": [50, 665, 470, 930]},
+  {"id": "cat", "src": "a1.jpg", "box": [605, 590, 950, 930]},
+  {"id": "toy", "src": "a2.jpg", "box": [75, 65, 420, 365]},
+  {"id": "hive", "src": "a2.jpg", "box": [680, 25, 995, 270]},
+  {"id": "couple", "src": "a3.jpg", "box": [530, 135, 930, 520], "fade": [0.16, 0, 0.16, 0.05]},
+  {"id": "dogs", "src": "a2.jpg", "box": [40, 760, 485, 940]},
+  {"id": "carrier", "src": "a2.jpg", "box": [730, 390, 950, 962]},
+  {"id": "stall", "src": "a3.jpg", "box": [78, 548, 575, 1012], "fade": [0, 0, 0.14, 0]}
+ ],
+ "complete": {"src": "k1.jpg", "plain": [[0, 0, 896, 262], [0, 975, 896, 1200]]}
+}

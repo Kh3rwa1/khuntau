@@ -17,3 +17,4 @@ promo/**/*.m4a
 twa/app-release*
 twa/app/
 hul/dist/
+__pycache__/

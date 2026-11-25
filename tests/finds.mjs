@@ -45,11 +45,12 @@ check(await ev(() => JSON.parse(localStorage.getItem('khuntau-story')).seen && O
 await ev(() => { __k.game.p.pos.set(0, 0, 14); }); await sleep(300); await page.keyboard.press('Escape');
 await until(() => !document.getElementById('pauseScreen').hidden, 5000);
 check(await ev(() => !document.getElementById('seenBtn').hidden && /10\/10/.test(document.getElementById('seenBtn').textContent) && document.getElementById('seenList').hidden), 'the pause menu shows how many you have seen');
-await ev(() => document.getElementById('seenBtn').click());
-check(await ev(() => !document.getElementById('seenList').hidden && document.querySelectorAll('#seenList li').length === 10), 'and lists them');
+await until(() => __k.album, 15000); await ev(() => document.getElementById('seenBtn').click()); await sleep(300);
+// since 25 Nov the button opens the album (album.js): each thing seen is a painted stamp with its name
+check(await ev(() => !document.getElementById('album').hidden && document.querySelectorAll('#album .alb-find:not(.no)').length === 10 && [...document.querySelectorAll('#album .alb-find b')].every(b => b.textContent.length > 5)), 'and the album shows all ten as stamps, by name');
 await page.screenshot({ path: 'tests/out/find-journal.jpg', type: 'jpeg', quality: 78 });
 // with some still unfound, the list gives clues, not names
-await ev(() => { const d = __k.story.debug; delete d.save.seen.nest; delete d.save.seen.cat; d.seenUi(); });
-check(await ev(() => [...document.querySelectorAll('#seenList li.no')].length === 2 && [...document.querySelectorAll('#seenList li.no')].every(li => li.textContent.startsWith('?') && !/nest|cat/i.test(li.textContent))), 'unfound ones show a clue, not their name');
+await ev(() => { const d = __k.story.debug; delete d.save.seen.nest; delete d.save.seen.cat; __k.album.close(); document.getElementById('seenBtn').click(); }); await sleep(300);
+check(await ev(() => { const no = [...document.querySelectorAll('#album .alb-find.no')]; return no.length === 2 && no.every(c => c.disabled && c.textContent.length > 8 && !/nest|cat\b/i.test(c.textContent) && getComputedStyle(c.querySelector('i')).backgroundImage === 'none'); }), 'unfound ones show a clue, not their name or their painting');
 check(realErrors(logs).length === 0, 'no page errors ' + realErrors(logs).join(' | ').slice(0, 300));
 await finish(browser);

@@ -71,7 +71,11 @@ const setV = (p, name, dist = 'Dumka') => j('/api/village', { pid: p, name, dist
   check(t.open >= 1 && t.play >= 1 && t['ch.5'] >= 1, 'counts appear in /api/stats');
   check(!Object.keys(t).some(k => /evil|script/.test(k)), 'unknown step names are dropped');
   const before = t.open; await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: ['open', 'open', 'open'] }) });
-  check(((await j('/api/stats?days=1')).d.days[today] || {}).open === before + 1, 'a step repeated in one batch counts once'); }
+  check(((await j('/api/stats?days=1')).d.days[today] || {}).open === before + 1, 'a step repeated in one batch counts once');
+  // the album's steps (25 Nov): a festival card shown, shared, opened by somebody else; the album opened
+  await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: ['keep.show', 'keep.share', 'keep.open', 'album.open', 'album.view', 'keep.steal', 'album.'] }) });
+  const t2 = (await j('/api/stats?days=1')).d.days[today] || {};
+  check(['keep.show', 'keep.share', 'keep.open', 'album.open', 'album.view'].every(k => t2[k] >= 1) && !('keep.steal' in t2) && !('album.' in t2), 'the album\'s steps are counted, and nothing else under their names'); }
 
 // ---------- abuse limits (per IP; Cloudflare sets cf-connecting-ip, the local run trusts the header) ----------
 const jip = async (ip, path, body) => (await fetch(BASE + path, { method: 'POST', headers: { 'cf-connecting-ip': ip }, body: JSON.stringify(body) })).status;

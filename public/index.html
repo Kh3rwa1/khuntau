@@ -402,6 +402,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
       <button class="boardline" id="animalBtn" type="button"><span>In the ring: <b id="animalName">Brown bull</b></span><u>Change</u></button>
       <button class="boardline" id="boardBtn" type="button"><span id="boardLine">Today's board</span><u>See board</u></button>
       <button class="boardline" id="villageBtn" type="button"><span id="villageLine">Play for your village</span><u id="villageCta">Choose</u></button>
+      <button class="boardline" id="albumBtn" type="button" hidden><span id="albumLine">Album</span><u>Open</u></button>
       <button class="boardline remind" id="remindBtn" type="button" hidden><span>Get a reminder every evening</span><u>Turn on</u></button>
     </div>
     <p class="offline-note" id="offlineNote" hidden>You are offline. Solo play works; the board and friends need internet.</p>
@@ -1165,7 +1166,7 @@ for (const l of [houseWalls, housePlinth.concat(houseWood), houseTiles, houseDoo
    and carries the story's motifs. Lit exactly like the wall (same shading, eave, shadows) so each panel's charcoal
    background disappears into the band. Neighbouring panels use different cells, and every other one is mirrored. */
 const MURAL = { y0: 0.88, y1: 1.94, door: 0.72, edge: 0.2, off: 0.012 };
-let murals = null, muralsP = null, talk = null;
+let murals = null, muralsP = null, talk = null, album = null;
 // where a point of the world is on the screen (CSS pixels), or null when it is behind the camera or off screen
 const toScreenV = new THREE.Vector3();
 function toScreen(x, y, z) { toScreenV.set(x, y, z).project(camera); if (toScreenV.z > 1 || Math.abs(toScreenV.x) > 1.05 || Math.abs(toScreenV.y) > 1.05) return null; return { x: (toScreenV.x + 1) / 2 * innerWidth, y: (1 - toScreenV.y) / 2 * innerHeight }; }
@@ -1944,7 +1945,7 @@ function tint(a, map) {
 function shadows(a) { a.root.traverse(o => { if (o.isMesh) o.castShadow = true; }); }
 
 let bull, player, story = null, life = null; const crowd = [];
-function renderStoryBtn() { if (!story) return; $('playSub').textContent = story.label(); const ol = story.dayOl ? story.dayOl() : ''; $('dayOl').textContent = ol; $('dayOl').hidden = !ol; }
+function renderStoryBtn() { if (!story) return; if (album) album.refresh(); $('playSub').textContent = story.label(); const ol = story.dayOl ? story.dayOl() : ''; $('dayOl').textContent = ol; $('dayOl').hidden = !ol; }
 /* ---------- drum troupe: one dhamsa, two madal ---------- */
 const drummers = []; let drumHeat = 1;
 const leatherMat = Mat({ color: 0xe2cfa6, roughness: 0.85 });
@@ -2213,6 +2214,7 @@ function onCrowdLoaded() {
     market.couple = { boy, girl, x: cx, z: cz, tan, out: [Math.cos(ang), Math.sin(ang)], k: 0, away: 9, seenBy: false }; }
   setTimeout(registerSW, 1500);
   import('./talk.js').then(m => { talk = m.initTalk({ $, meta, game, track, sfx, spot: talkSpot, story: () => story, project: toScreen, named: n => { if ($('nameIn') && !$('nameIn').value) $('nameIn').value = n; } }); }).catch(e => console.error(e)); // village talk
+  import('./album.js').then(m => { album = m.initAlbum({ $, track, story: () => story, pause: () => openPause() }); }).catch(e => console.error(e)); // the album: festival day cards, things seen
   muralsP = loadMurals(); // painted figures on the houses' wall bands (one draw); the story's wall motifs use them too
   import('./life.js').then(m => { life = m.initLife({ THREE, scene, game, houses, props: villageProps, QUALITY, perf, Mat, mergeGeometries, bakeStatic, sfx }); }).catch(e => console.error(e)); // chickens, goats, birds, smoke, straw
   { let l = null; try { l = localStorage.getItem('khuntau-lang'); if (!l && /^hi\b/i.test(navigator.language || '')) { l = 'hi'; localStorage.setItem('khuntau-lang', l); } } catch (e) {} // before the story loads: it reads the saved language
@@ -2220,7 +2222,7 @@ function onCrowdLoaded() {
     row.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const v = b.dataset.l; try { localStorage.setItem('khuntau-lang', v); } catch (e2) {}
       if (story && story.setLang) story.setLang(v); mark(v); track('lang.' + v); if (talk) talk.refresh(); renderStoryBtn(); }); }
   import('./story.js').then(m => {
-    story = m.initStory({ hintHold, hintOff, joyGhost, talk: () => talk, talkSpot, murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
+    story = m.initStory({ hintHold, hintOff, joyGhost, talk: () => talk, album: () => album, talkSpot, murals: () => muralsP, props: villageProps, leafCoat, pose: poseFrame, mergeGeometries, THREE, scene, camera, game, input, keys, joy, $, isTouch, reduceMotion, QUALITY, Mat, canvasTex, bakeStatic, wallTex, thatchTex, glowTex, houses, post, pitha, handi, garland, rope, crowd, drummers, loaded, actor, tint, stickFor, emit, sparkPool, dustPool, audio, tone, noise, play, sfx, crowdCheer, hint, toast, pop, buzz, rand, lerp, clamp, turnTo, setMusic, dhamsaMesh, madalMesh, crowdBudget, ANIMALS, setAnimal, addXp, markPlayedToday, ARENA_R, perf,
       bull: () => bull, player: () => player, animal: () => animal,
       BED, musicLevel: v => { MUSIC_VOL.game = v; refreshMusicVol(); }, // the story plays the Khuntau BGM too
       villageRing: (src) => { if (net.village && net.ws) { /* with friends: the khunt starts the round for the whole room */
@@ -2301,7 +2303,7 @@ function flushEv() {
 addEventListener('pagehide', flushEv); document.addEventListener('visibilitychange', () => { if (document.hidden) flushEv(); });
 { // where this visit came from, and whether the player came back
   const q = new URLSearchParams(location.search); track('open');
-  if (q.has('beat')) track('open.challenge'); if (q.has('room')) track('open.room'); if (q.get('src') === 'app') track('open.app');
+  if (q.has('beat')) track('open.challenge'); if (q.has('k')) track('keep.open'); /* came from a shared festival card */ if (q.has('room')) track('open.room'); if (q.get('src') === 'app') track('open.app');
   let first = null, old = false; try { first = localStorage.getItem('khuntau-first'); old = !!localStorage.getItem('khuntau-played'); if (!first) localStorage.setItem('khuntau-first', istDay()); } catch (e) {}
   if (!first && !old) track('open.new');
   else { track('open.return'); const d = first ? Math.round((Date.parse(istDay()) - Date.parse(first)) / 864e5) : -1;
@@ -3858,7 +3860,7 @@ async function onRtc(from, d) {
 if (voiceOk) { $('voiceBtn').hidden = false; $('micBtn').addEventListener('click', toggleVoice); $('voiceBtn').addEventListener('click', toggleVoice); }
 renderVoice();
 if (/[?&]debug\b/.test(location.search)) { window.__sfxLog = []; for (const k of Object.keys(sfx)) { if (k === 'near' || k === 'gate') continue; const f = sfx[k]; sfx[k] = (...a) => { window.__sfxLog.push(k); return f(...a); }; } }
-if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, get talk() { return talk; }, talkSpot, toScreen, COACH, coachStep, coachEnd, get coachDone() { return coachDone; }, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
+if (/[?&]debug\b/.test(location.search)) window.__k = { get story() { return story; }, get bull() { return bull; }, get player() { return player; }, setAnimal, ANIMALS, houses, input, startGame, applyStage, setGold, pitha, closeCall, get boardData() { return boardData; }, set boardData(v) { boardData = v; }, renderer, scene, camera, THREE, perf, QUALITY, crowd, drummers, voice, levels, audio, music, sfx: synthSfx, net, netSend, game, hs, handi, meta, progress, gameOver, award, getTicket, loadVillages, crowdReact, get cine() { return cineR; }, pose, villageProps, market, paddyFields, rope, bendRope, flames, dustPool, sparkPool, get life() { return life; }, sun, loaded, sky: skyMesh, get charMat() { return charMat; }, fx, wallMat, thatchMat, get murals() { return murals; }, MURAL, scoreCard, get talk() { return talk; }, get album() { return album; }, talkSpot, toScreen, COACH, coachStep, coachEnd, get coachDone() { return coachDone; }, draw, view, stepUp, stepDown, RULES, DAY_RULES, HELP, buildMod, leaveRing, hitPlayer, temper, mod, soloRun, REAL, REAL_FILES, coupleTalk, BED, bedCycle, CHEER, MUSIC_VOL, STAGES, stageOf, enterSharedVillage, leaveSharedVillage };
 
 /* ---------- pause, quit, full screen ---------- */
 function openPause() {
@@ -3889,7 +3891,7 @@ $('pauseBtn').addEventListener('click', openPause);
 $('resumeBtn').addEventListener('click', closePause);
 $('quitBtn').addEventListener('click', quitToMenu);
 // the Android app's back button: pause or resume; false tells the app there was nothing to close, so it may leave
-window.__appBack = () => { if (talk && talk.isOpen()) { talk.close(); return true; } if (game.menuOpen) { closePause(); return true; } if (game.mode === 'play' || game.mode === 'story') { openPause(); return true; } return false; };
+window.__appBack = () => { if (album && album.isOpen()) { album.close(); return true; } if (talk && talk.isOpen()) { talk.close(); return true; } if (game.menuOpen) { closePause(); return true; } if (game.mode === 'play' || game.mode === 'story') { openPause(); return true; } return false; };
 addEventListener('keydown', e => {
   if (e.code !== 'Escape' && e.code !== 'KeyP') return;
   if (document.activeElement?.tagName === 'INPUT') return;

@@ -47,6 +47,7 @@ export function initStory(C) {
   function festCheck() { if (!GATED || F.fin || F.on) return; const d = festDay(), td = today();
     const ok = d === 1 ? !!save.oiled : d === 2 ? !!save.alpana : d === 3 ? save.ch >= 5 : d === 4 ? !!td.jale : !!td.fish; if (!ok) return;
     F.on = dateKey(); if (d === 5) F.fin = 1; persist(); S.objKey = ''; if (C.track) C.track('fest.' + d); C.markPlayedToday(); if (C.festDone) C.festDone(d);
+    S.keep = { d, at: now() + (d === 3 ? 6.5 : 2.6) + 4.4 }; /* after the banner: the day's painting, yours to keep and share (album.js) */
     setTimeout(() => { if (!S.on) return; C.crowdCheer(0.8); if (d === 5) { C.addXp(100, 'Sohrai complete'); banner(tr('Sohrai complete!'), tr('You lived all five days. Johar!'), 'ᱥᱚᱦᱨᱟᱭ'); setTimeout(() => pop('+100 XP', tr('Sohrai complete')), 2600); }
       else { C.addXp(20, 'Sohrai day done'); banner(tr('Day ' + d + ' done: ' + FEST[d - 1][0]), tr('Day ' + (d + 1) + ' (' + FEST[d][0] + ') opens tomorrow'), OLD[d - 1]); } }, d === 3 ? 6500 : 2600); }
   // A free world: nothing is locked. But do a thing on the wrong day and the Majhi or a village elder tells you off first
@@ -1155,11 +1156,11 @@ export function initStory(C) {
   function sightAt(id) { const st = C.sights ? C.sights() : {}; if (W.finds && W.finds[id]) return [W.finds[id]]; if (id === 'dogs') return (st.dogs || []).map(d => Array.isArray(d) ? { x: d[0], z: d[1] } : d); if (id === 'couple') return st.couple && st.couple.caught ? [st.couple] : []; return st[id] ? [st[id]] : []; }
   function sightsCheck(dt) { sightT -= dt; if (sightT > 0 || S.dlg || S.mode !== 'walk') return; sightT = 0.3; const seen = save.seen || (save.seen = {}), p = game.p.pos;
     for (const [id, name, , r] of SIGHTS) { if (seen[id]) continue; const R = r || 7; if (!sightAt(id).some(q => Math.hypot(q.x - p.x, q.z - p.z) < R)) continue;
-      seen[id] = 1; persist(); const n = SIGHTS.filter(s => seen[s[0]]).length; C.addXp(5, 'Seen in the village'); C.hint(tr('Seen:') + ' ' + tr(name) + ' (' + n + '/' + SIGHTS.length + ')', 3000); /* the hint bubble wraps; the big toast ran off both edges of a phone */ C.sfx.clink && C.sfx.clink(0.8); C.buzz(25); if (C.track) C.track('found');
+      seen[id] = 1; persist(); const n = SIGHTS.filter(s => seen[s[0]]).length; C.addXp(5, 'Seen in the village'); { const al = C.album && C.album(); if (al) al.stamp(id); } C.hint(tr('Seen:') + ' ' + tr(name) + ' (' + n + '/' + SIGHTS.length + ')', 3000); /* the hint bubble wraps; the big toast ran off both edges of a phone */ C.sfx.clink && C.sfx.clink(0.8); C.buzz(25); if (C.track) C.track('found');
       if (n === SIGHTS.length) setTimeout(() => { C.addXp(30, 'You know this village'); pop('+30 XP', 'You know every corner of this village'); C.crowdCheer(0.5); }, 2800); seenUi(); break; } }
   function seenUi() { const b = $('seenBtn'), l = $('seenList'); if (!b || !l) return; const seen = save.seen || {}, n = SIGHTS.filter(s => seen[s[0]]).length;
     b.hidden = !S.on; b.textContent = tr('Seen in the village:') + ' ' + n + '/' + SIGHTS.length; l.innerHTML = ''; for (const [id, name, clue] of SIGHTS) { const li = document.createElement('li'); li.className = seen[id] ? '' : 'no'; li.textContent = seen[id] ? '✓ ' + tr(name) : '? ' + tr(clue); l.appendChild(li); } }
-  if ($('seenBtn')) $('seenBtn').addEventListener('click', () => { seenUi(); $('seenList').hidden = !$('seenList').hidden; });
+  if ($('seenBtn')) $('seenBtn').addEventListener('click', () => { const al = C.album && C.album(); if (al) { al.open('pause'); return; } seenUi(); $('seenList').hidden = !$('seenList').hidden; });
   function pondUpdate(dt, tn) {
     sightsCheck(dt);
     { const n = save.td && save.td.fishN || 0; if (fish.flop > 0) { fish.flop = Math.max(0, fish.flop - dt); basketFish(n, fish.flop); W.catchN = n; if (fish.flop > 0.3 && C.sfx.flop && C.sfx.gate('flop', 0.3)) C.sfx.flop(0.8); } else if (n !== W.catchN) { W.catchN = n; basketFish(n); } }
@@ -1202,6 +1203,7 @@ export function initStory(C) {
     const p = game.p, pl = C.player(), bull = C.bull(), tn = now();
     S.lock -= dt; S.tipsy = Math.max(0, S.tipsy - dt); S.boost -= dt; S.bullReact -= dt; S.sat -= dt;
     const free = S.mode === 'walk' && !S.dlg && !pick.on && S.lock <= 0;
+    if (S.keep && tn >= S.keep.at && free && !cine.shot && !S.dayCard && !game.menuOpen) { const k = S.keep, al = C.album && C.album(); S.keep = null; if (al) al.keep(k.d); }
     // a new player's first lesson: how to walk. It comes up when they are free (not under the day card or Gogo's
     // words), stays until they have walked a few steps, and a ghost stick shows where to drag on a phone.
     if (S.teach === 'walk' && save.ch >= 1) { S.teach = ''; if (S.teachOn) { S.teachOn = false; C.hintOff(); C.joyGhost(false); } save.w = 1; persist(); } /* they reached the handi: they can walk */
@@ -1453,6 +1455,10 @@ export function initStory(C) {
     setLang: (l) => { if (!LANGS.includes(l) || l === LANG) return; LANG = l; try { localStorage.setItem('khuntau-lang', LANG); } catch (e) {} applyLang(); },
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     seenUi, // the journal of things seen, for the pause menu
+    // for album.js: which festival days are kept (the day in hand counts once its part is done) and which things are seen
+    albumData: () => { const seen = save.seen || {}, d = festDay(), split = (n) => { const s = tr('Day ' + n + ' of Sohrai: ' + FEST[n - 1][0]), i = s.lastIndexOf(': '); return i > 0 ? s.slice(i + 2) : FEST[n - 1][0]; };
+      return { lang: LANG, fin: !!F.fin, days: FEST.map((f, i) => ({ n: i + 1, name: split(i + 1), ol: OLD[i], task: tr(f[1]), done: !!F.fin || i + 1 < d || (i + 1 === d && !!F.on), next: i < 4 ? tr('Day ' + (i + 2) + ' (' + FEST[i + 1][0] + ') opens tomorrow') : '' })),
+        sights: SIGHTS.map(([id, name, clue]) => ({ id, name: tr(name), clue: tr(clue), seen: !!seen[id] })) }; },
     dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
     debug: { dayCard, SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
