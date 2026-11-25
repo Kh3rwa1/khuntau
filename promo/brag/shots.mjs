@@ -138,8 +138,10 @@ export const SHOTS = [
         for (const p of P) { let d = (p.a0 + p.a1) / 2 - want; d = Math.abs(Math.atan2(Math.sin(d), Math.cos(d))); if (d < bd) { bd = d; best = p; } }
         const am = (best.a0 + best.a1) / 2 + 0.035, ox = Math.cos(am), oz = Math.sin(am), r = best.r0 + 0.35;
         const d = __k.story.debug, p = __k.game.p; p.pos.set(ox * r, 0, oz * r); p.yaw = Math.atan2(ox, oz); d.S.mode = 'walk'; d.S.dlg = null;
-        const tx = -oz, tz = ox, cx = ox * (r - 2.4) + tx * 1.6, cz = oz * (r - 2.4) + tz * 1.6;
-        window.__cam = (c, t) => { const k = e(t / 2.6); c.fov = 46; c.position.set(cx + tx * 0.5 * k, 0.95 + 0.15 * k, cz + tz * 0.5 * k); c.lookAt(ox * (r + 1.6), 0.95, oz * (r + 1.6)); };`));
+        // from the player's side, a little ahead: the scarecrow stands in the plot beyond, the cut sheaves fall to the
+        // other side, the low sun rakes across the paddy (a camera behind the player put the sheaves in front of the lens)
+        const tx = -oz, tz = ox, cx = ox * (r + 0.7) + tx * 3.4, cz = oz * (r + 0.7) + tz * 3.4;
+        window.__cam = (c, t) => { const k = e(t / 2.6); c.fov = 44; c.position.set(cx - ox * 0.3 * k, 1.35 - 0.1 * k, cz - oz * 0.3 * k); c.lookAt(ox * (r + 1.3) + tx * 0.2, 0.95, oz * (r + 1.3) + tz * 0.2); };`));
       for (let i = 0; i < 6; i++) await ctx.step(-1);
     },
     async at(ctx, i) { if (i % 16 === 4) { await ctx.ev(i => { const d = __k.story.debug, p = __k.game.p; if (i > 4) p.pos.set(p.pos.x + Math.sin(p.yaw) * 0.45, 0, p.pos.z + Math.cos(p.yaw) * 0.45); d.S.act = true; }, i); return 'cut-' + i; } },
