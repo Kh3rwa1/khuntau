@@ -154,12 +154,18 @@ export const SHOTS = [
     id: 'S9', frames: 110,
     async setup(ctx) {
       await toRing(ctx); await ui(ctx, ['film-clean']);
+      // the bull stands three-quarter to the lens beside the khunt, held there every frame: left in 'watch' he turns to
+      // face the player, which put his rump to the camera (take 1). Low camera on the sun's side, slow push in; sky above for the words
       await ctx.ev(new Function(sunAxis + ease + `
-        const g = __k.game; __k.setGold(false); g.b.pos.set(sx * 1.2 - px * 1.7, 0, sz * 1.2 - pz * 1.7); g.b.yaw = Math.atan2(sx + px * 0.6, sz + pz * 0.6); g.b.state = 'watch'; g.b.t = 0;
-        g.p.pos.set(-sx * 4 + px * 3, 0, -sz * 4 + pz * 3); g.p.state = 'free';
-        window.__cam = (c, t) => { __k.player.root.visible = true; const k = e(t / 3.6), a0 = Math.atan2(sx, sz) + 0.22 - 0.2 * k, r = 6.4 - 0.6 * k;
-          c.fov = 48; c.position.set(Math.sin(a0) * r, 0.55 + 0.25 * k, Math.cos(a0) * r); c.lookAt(-px * 0.6, 2.35, -pz * 0.6); };`));
+        const g = __k.game; __k.setGold(false);
+        const bx = px * 2.3 + sx * 0.9, bz = pz * 2.3 + sz * 0.9, dx = sx - px * 0.9, dz = sz - pz * 0.9;
+        g.b.pos.set(bx, 0, bz); g.b.yaw = Math.atan2(dx, dz); g.b.state = 'watch'; g.b.t = 0;
+        g.p.pos.set(-px * 2.0 - sx * 0.6, 0, -pz * 2.0 - sz * 0.6); g.p.state = 'free'; g.p.yaw = Math.atan2(px, pz);
+        window.__hold = { b: g.b.pos.clone(), by: g.b.yaw, p: g.p.pos.clone(), py: g.p.yaw };
+        window.__cam = (c, t) => { __k.player.root.visible = true; const k = e(t / 3.6), a0 = Math.atan2(sx, sz) + 0.16 - 0.1 * k, r = 10.2 - 1.0 * k;
+          c.fov = 48; c.position.set(Math.sin(a0) * r, 0.85 + 0.15 * k, Math.cos(a0) * r); c.lookAt(px * 1.5, 2.5, pz * 1.5); };`));
       for (let i = 0; i < 6; i++) await ctx.step(-1);
     },
+    async at(ctx) { await ctx.ev(() => { const g = __k.game, h = window.__hold; g.b.state = 'watch'; g.b.t = 0; g.b.pos.copy(h.b); g.b.yaw = h.by; g.p.pos.copy(h.p); g.p.yaw = h.py; g.p.vel.set(0, 0, 0); }); },
   },
 ];
