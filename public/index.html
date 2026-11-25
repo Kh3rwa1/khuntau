@@ -113,7 +113,7 @@ body { font-family: var(--font-ui); touch-action: none; -webkit-user-select: non
 .overlay { overflow-y: auto; place-items: start center; -webkit-overflow-scrolling: touch; }
 @media (max-height: 600px) { .card .how, .card .lede, .card .olchiki, .card .vilhow { display: none; } h1 { font-size: 56px; } .card { gap: 10px; } }
 .olchiki { font-family: var(--font-olchiki); font-size: 18px; color: var(--saffron); letter-spacing: .08em; }
-.olchiki.day { font-size: 15px; margin: -8px 0 0; opacity: .9; }
+.olchiki.day { font-size: 15px; margin: -8px 0 0; opacity: .9; min-height: 1.36em; }
 .home-a, .home-r, .home-b { display: contents; }
 /* laptops and monitors: the home screen was a phone column you had to scroll. Title and Play on the left, today's panel on the right. */
 @media (min-width: 900px) and (min-height: 520px) {
@@ -142,6 +142,18 @@ h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: c
 #micBtn.muted { background: var(--ochre); border-color: transparent; }
 /* minimal home */
 .home { gap: 10px; }
+/* Nothing on the home screen may move once it is drawn (25 Nov): rows jumped under the thumb five times while it loaded.
+   1. Line heights are written out. They were 'normal', which is the font's own: 1.21 in the stand-in font, 1.6 once
+      Baloo 2 had arrived (every row grew 6 px), and 1.36 for Noto Sans Ol Chiki. The numbers are those fonts' own, so
+      the screen looks as it did, from the first paint.
+   2. The loading bar hangs above PLAY without taking a row (.playwrap): its row used to close up when loading ended.
+   3. What arrives late has its place from the start: the line under PLAY, the day's name, the talk and album rows
+      (unseen until they have something to show), and a row's words never wrap onto a second line. */
+.home, .home button, .home input { line-height: 1.6; }
+.home .olchiki { line-height: 1.36; }
+.playwrap { position: relative; display: grid; justify-items: center; margin-top: 14px; }
+.playwrap .bar { position: absolute; left: 50%; top: -15px; transform: translateX(-50%); }
+.playwrap .btn.play { margin-top: 0; }
 .tag { margin: 0; font-size: 18px; opacity: .9; }
 .challenge { margin: 6px 0 0; background: var(--saffron); color: var(--ink); font-weight: 800; font-size: 16px; padding: 8px 16px; border-radius: 999px; }
 .btn.play { font-size: 24px; padding: 18px 64px; min-width: 240px; margin-top: 14px; }
@@ -157,7 +169,10 @@ h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: c
 .boardline { all: unset; cursor: pointer; font-size: 13px; padding: 4px 0 0; border-top: 1px solid rgba(246,238,221,.14); margin-top: 2px; display: flex; justify-content: space-between; gap: 8px; }
 .boardline:focus-visible { outline: 2px solid var(--saffron); outline-offset: 2px; border-radius: 4px; }
 .boardline.remind { border-top: 0; padding-top: 0; }
-.boardline u { color: var(--saffron); text-underline-offset: 3px; white-space: nowrap; }
+.boardline u { color: var(--saffron); text-underline-offset: 3px; white-space: nowrap; flex: none; }
+.boardline span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a player with a village: its standing is a long line ('X is #2 today · 12 to pass Y'). Two lines, kept from the start. */
+#villageBtn.vil span { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: 3.2em; }
 .shirts { display: flex; gap: 8px; justify-content: center; padding-top: 2px; }
 .shirts button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(246,238,221,.35); padding: 0; cursor: pointer; position: relative; }
 .shirts button.on { border-color: var(--saffron); box-shadow: 0 0 0 2px var(--saffron); }
@@ -211,7 +226,7 @@ select.vil { font: 700 16px var(--font-ui); color: var(--ink); background: var(-
 .vilform { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 .vilform input { width: min(300px, 100%); text-align: center; }
 .vilhow { font-size: 13px; opacity: .8; max-width: 320px; margin: 0; }
-.playsub { margin: -6px 0 0; font-size: 13px; opacity: .85; min-height: 1em; }
+.playsub { margin: -6px 0 0; font-size: 13px; opacity: .85; min-height: 1.6em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 #codeIn { width: 120px; text-align: center; letter-spacing: .3em; text-transform: uppercase; }
 .btn.small { min-width: 0; font-size: 15px; padding: 10px 18px; }
 .or { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
@@ -384,11 +399,10 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
     <h1>Sohrai</h1>
     <p class="tag">Snatch the pitha. Dodge the bull.</p>
     <p class="challenge" id="challenge" hidden></p>
-    <div class="bar" id="loadBar"><i></i></div>
-    <button class="btn play" id="startBtn" disabled>Loading…</button>
+    <div class="playwrap"><div class="bar" id="loadBar"><i></i></div><button class="btn play" id="startBtn" disabled>Loading…</button></div>
     <p class="playsub" id="playSub"></p>
     <div class="langrow" id="langRow" aria-label="Language"><button type="button" data-l="en" lang="en">English</button><button type="button" data-l="hi" lang="hi">हिन्दी</button></div>
-    <p class="olchiki day" id="dayOl" lang="sat" hidden></p>
+    <p class="olchiki day" id="dayOl" lang="sat"></p>
     <div class="storyrow"><button class="linkbtn" id="quickBtn" type="button" disabled>Quick round at the khunt</button></div>
     <p class="bestline" id="bestLine" hidden></p>
     </div>
@@ -403,7 +417,7 @@ html.story-on:not(.touch) #prompt { bottom: calc(40px + env(safe-area-inset-bott
       <button class="boardline" id="animalBtn" type="button"><span>In the ring: <b id="animalName">Brown bull</b></span><u>Change</u></button>
       <button class="boardline" id="boardBtn" type="button"><span id="boardLine">Today's board</span><u>See board</u></button>
       <button class="boardline" id="villageBtn" type="button"><span id="villageLine">Play for your village</span><u id="villageCta">Choose</u></button>
-      <button class="boardline" id="albumBtn" type="button" hidden><span id="albumLine">Album</span><u>Open</u></button>
+      <button class="boardline" id="albumBtn" type="button" style="visibility:hidden"><span id="albumLine">Album</span><u>Open</u></button>
       <button class="boardline remind" id="remindBtn" type="button" hidden><span>Get a reminder every evening</span><u>Turn on</u></button>
     </div>
     <p class="offline-note" id="offlineNote" hidden>You are offline. Solo play works; the board and friends need internet.</p>
@@ -1946,7 +1960,7 @@ function tint(a, map) {
 function shadows(a) { a.root.traverse(o => { if (o.isMesh) o.castShadow = true; }); }
 
 let bull, player, story = null, life = null; const crowd = [];
-function renderStoryBtn() { if (!story) return; if (album) album.refresh(); $('playSub').textContent = story.label(); const ol = story.dayOl ? story.dayOl() : ''; $('dayOl').textContent = ol; $('dayOl').hidden = !ol; }
+function renderStoryBtn() { if (!story) return; if (album) album.refresh(); $('playSub').textContent = story.label(); const ol = story.dayOl ? story.dayOl() : ''; $('dayOl').textContent = ol; /* its line is always there: it used to appear when the story had loaded and push the rows down */ }
 /* ---------- drum troupe: one dhamsa, two madal ---------- */
 const drummers = []; let drumHeat = 1;
 const leatherMat = Mat({ color: 0xe2cfa6, roughness: 0.85 });
@@ -2404,7 +2418,7 @@ let vboard = null, vilBack = 'startScreen';
 async function loadVillages() { try { const r = await fetch('/api/vboard?pid=' + meta.pid); if (r.ok) { vboard = await r.json(); renderVillageLine(); } } catch (e) {} return vboard; }
 function renderVillageLine() {
   const v = meta.vil, t = vboard && vboard.today && vboard.today.me;
-  $('villageCta').textContent = v ? 'Change' : 'Choose';
+  $('villageCta').textContent = v ? 'Change' : 'Choose'; $('villageBtn').classList.toggle('vil', !!v);
   $('villageLine').textContent = !v ? 'Play for your village' : !t ? `Playing for ${v.v}` : t.rank ? `${v.v} is #${t.rank} today` + (t.above ? ` · ${t.above.p - t.p + 1} to pass ${t.above.v}` : '') : `${v.v}: ${t.n} of 3 players needed today`;
   if (v && vboard && vboard.fest > 0) $('villageLine').textContent += ` · ${vboard.fest} kept the festival today`;
 }
@@ -2443,7 +2457,7 @@ $('vilSave').addEventListener('click', async () => {
 $('vilClose').addEventListener('click', () => { $('villageScreen').hidden = true; $(vilBack).hidden = false; });
 $('villageBtn').addEventListener('click', () => openVillage('startScreen'));
 $('vilAsk').addEventListener('click', () => openVillage('overScreen'));
-if (meta.vil) loadVillages(); else renderVillageLine();
+renderVillageLine(); if (meta.vil) loadVillages(); // the line and its height at once; the standing when it arrives
 
 // after any run (solo or online): streak, XP, missions, board
 async function finishRun(pts, online) {
