@@ -35,9 +35,10 @@ async function act(ctx, pos, label) {
 }
 const sunAxis = `const s = __k.sun.position, a = Math.atan2(s.x, s.z), sx = Math.sin(a), sz = Math.cos(a), px = -sz, pz = sx;`;
 const ease = 'const e = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);';
+const S8_SIDE = Number(process.env.S8_SIDE || 1), S8_H = Number(process.env.S8_H || 1.45); // the reaping camera: which side of the player, how high (2.15 on side 1 put it inside a tree)
 
 export const SHOTS = [
-  { // 1 HOOK: point of view. The garlanded bull winds up and charges straight at you; the sun is behind you
+  { // 1 HOOK: point of view. The bull winds up and charges straight at you; the sun is behind you
     id: 'S1', frames: 120,
     async setup(ctx) {
       await toRing(ctx); await ui(ctx, ['film-clean']);
@@ -61,15 +62,19 @@ export const SHOTS = [
       for (let i = 0; i < 4; i++) await ctx.step(-1);
     },
   },
-  { // 3+4 THE ROUND, one take on the phone screen: tap HIDE, he charges and slams the post, tap GRAB, golden pitha
+  { // 3+4 THE ROUND, one take on the phone screen: tap HIDE, he charges and slams the post, step in, tap GRAB, golden pitha
     id: 'S34', frames: 250,
     async setup(ctx) {
       await toRing(ctx); await ui(ctx, ['film-ring']); // each shot opens its own place: filmed alone, this one stayed on the home screen
+      // How the round is really won: stand just off his line beside the post. With the post straight between you he walks
+      // round it and comes from the side (take 3: horned, no pitha); 0.8 m off the line he runs at you and the post stops him.
+      // His horns reach 1 m ahead of his body and he covers about 0.23 m a frame, so you stand 1.8 m past the post along his
+      // line (2 m from it) and step into the dotted ring once he is stunned.
       await ctx.ev(new Function(sunAxis + `
         const g = __k.game; window.__cam = null; __k.player.root.visible = true; __k.setGold(true);
-        const dx = -sx * 0.6 + px * 0.8, dz = -sz * 0.6 + pz * 0.8, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
-        g.b.pos.set(ux * 3.6, 0, uz * 3.6); g.b.yaw = Math.atan2(-ux, -uz); g.b.state = 'watch'; g.b.t = 0;
-        g.p.pos.set(-ux * 1.38, 0, -uz * 1.38); /* inside the 1.45 m grab circle, but far enough that he hits the post before his horns reach you */ g.p.state = 'free'; g.p.yaw = Math.atan2(ux, uz); g.lives = 3; g.pitha = 0;
+        const dx = -sx * 0.6 + px * 0.8, dz = -sz * 0.6 + pz * 0.8, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, wx = uz, wz = -ux;
+        g.b.pos.set(ux * 3.6 + wx * 0.8, 0, uz * 3.6 + wz * 0.8); g.b.yaw = Math.atan2(-ux, -uz); g.b.state = 'watch'; g.b.t = 0;
+        g.p.pos.set(-ux * 1.8 + wx * 0.8, 0, -uz * 1.8 + wz * 0.8); g.p.state = 'free'; g.p.yaw = Math.atan2(ux, uz); g.lives = 3; g.pitha = 0;
         window.__hold = { b: g.b.pos.clone(), by: g.b.yaw, p: g.p.pos.clone(), py: g.p.yaw };`));
       for (let i = 0; i < 20; i++) await ctx.step(-1);
       this.btn = await rects(ctx, ['hideBtn', 'rollBtn', 'grabBtn']);
@@ -78,10 +83,30 @@ export const SHOTS = [
       // until the bait he stands still where he was put: left alone he charges on his own, from wherever he wandered (take 2)
       if (i < 45) await ctx.ev(() => { const g = __k.game, h = window.__hold; g.b.state = 'watch'; g.b.t = 0; g.b.pos.copy(h.b); g.b.yaw = h.by; g.p.pos.copy(h.p); g.p.yaw = h.py; g.p.vel.set(0, 0, 0); g.lives = 3; });
       if (i === 45) { await ctx.ev(() => { __k.input.tease = true; }); return 'tap-hide'; } // late enough that the slam on the post can sit on a bar line with the tap still in the scene
-      const s = await ctx.ev(() => ({ b: __k.game.b.state, n: __k.game.pitha }));
+      const s = await ctx.ev(() => ({ b: __k.game.b.state, n: __k.game.pitha, lives: __k.game.lives, r: __k.game.p.pos.length() }));
+      if (s.lives < 3 && !this.hit) { this.hit = 1; return 'HORNED'; }
       if (s.b === 'charge' && !this.c) { this.c = 1; return 'charge'; }
       if ((s.b === 'stunned' || s.b === 'recover') && !this.st) { this.st = i; return 'bonk'; }
-      if (this.st && i === this.st + 10) { await ctx.ev(() => { __k.input.grab = true; }); return 'tap-grab'; }
+      if (this.st && !this.walked && i >= this.st + 2) { // the stick toward the post (the keys nearest its direction on screen) until inside the dotted ring
+        const keys = await ctx.ev(() => { const k = __k, p = k.game.p.pos, c = k.camera.position, T = k.THREE;
+          const d = new T.Vector3(-p.x, 0, -p.z).normalize(), f = new T.Vector3(p.x - c.x, 0, p.z - c.z).normalize(), r = new T.Vector3().crossVectors(f, new T.Vector3(0, 1, 0)).normalize();
+          const y = -d.dot(f), x = d.dot(r), out = []; if (x > 0.38) out.push('KeyD'); if (x < -0.38) out.push('KeyA'); if (y > 0.38) out.push('KeyS'); if (y < -0.38) out.push('KeyW'); return out; });
+        const up = s.r < 1.3;
+        await ctx.ev(([codes, up]) => { for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) dispatchEvent(new KeyboardEvent(up || !codes.includes(code) ? 'keyup' : 'keydown', { code })); }, [keys, up]);
+        if (up) { this.walked = i; return 'in-ring'; }
+      }
+      if (this.walked && i === this.walked + 1) { // the game's own slow-motion close-up of the snatch is kept, but seen from the side away from the
+        // bull: from where the game put it, his body filled the frame and hid the pitha (take 4). A hard cut into it, then it drifts up.
+        await ctx.ev(() => { const c = __k.cine; let cur = c.shot;
+          Object.defineProperty(c, 'shot', { configurable: true, get() { return cur; }, set(v) {
+            if (v && !v.mine) { const p = __k.game.p.pos, b = __k.game.b.pos, L0 = Math.hypot(p.x, p.z), ux = p.x / L0, uz = p.z / L0, mx = p.x * 0.5, mz = p.z * 0.5;
+              const h = document.documentElement; h.classList.remove('film-ring'); h.classList.add('film-clean'); // the buttons go on the shot's first frame (one frame of them showed: take 5)
+              let nx = uz, nz = -ux; if ((b.x - mx) * nx + (b.z - mz) * nz > 0) { nx = -nx; nz = -nz; }
+              const cx = mx + nx * 4.1 - ux * 1.1, cz = mz + nz * 4.1 - uz * 1.1; let first = true; v.mine = true;
+              v.at = (t, P, L) => { P.set(cx, 1.25 + t * 0.2, cz); L.set(mx * 0.7, 1.8, mz * 0.7); const r = { zoom: 0.95, snap: first ? 0 : 0.0004 }; first = false; return r; }; } // snap 0 = a true cut: the game's smoothing is 1 - snap^dt, and on a shot's first frame dt is tiny
+            cur = v; } });
+          __k.input.grab = true; });
+        return 'tap-grab'; }
       if (s.n >= 1 && !this.got) { this.got = 1; await ui(ctx, ['film-clean']); return 'snatch'; }
     },
     async after() { return { buttons: this.btn }; },
@@ -139,17 +164,33 @@ export const SHOTS = [
       await ctx.ev(new Function(sunAxis + ease + `
         const P = __k.paddyFields.plots.filter(p => p.crow), want = Math.atan2(-sz, -sx); let best = P[0], bd = 9;
         for (const p of P) { let d = (p.a0 + p.a1) / 2 - want; d = Math.abs(Math.atan2(Math.sin(d), Math.cos(d))); if (d < bd) { bd = d; best = p; } }
-        const am = (best.a0 + best.a1) / 2 + 0.035, ox = Math.cos(am), oz = Math.sin(am), r = best.r0 + 0.35;
-        const d = __k.story.debug, p = __k.game.p; p.pos.set(ox * r, 0, oz * r); p.yaw = Math.atan2(ox, oz); d.S.mode = 'walk'; d.S.dlg = null;
-        // from the player's side, a little ahead: the scarecrow stands in the plot beyond, the cut sheaves fall to the
-        // other side, the low sun rakes across the paddy (a camera behind the player put the sheaves in front of the lens)
-        const tx = -oz, tz = ox, cx = ox * (r + 0.7) + tx * 3.4, cz = oz * (r + 0.7) + tz * 3.4;
-        window.__cam = (c, t) => { const k = e(t / 2.6); c.fov = 44; c.position.set(cx - ox * 0.3 * k, 1.35 - 0.1 * k, cz - oz * 0.3 * k); c.lookAt(ox * (r + 1.3) + tx * 0.2, 0.95, oz * (r + 1.3) + tz * 0.2); };`));
+        const am = (best.a0 + best.a1) / 2 + 0.035, ox = Math.cos(am), oz = Math.sin(am), r = best.r0 + 0.35, tx = -oz, tz = ox;
+        // he works the first row of the plot, turned a little out into it; the camera stands on the grass inside the plot's
+        // edge, three-quarter in front of him, so no paddy is between it and him and the sun (behind the village) is at its back.
+        // (Takes 2-3: cameras out in the plot saw stalks, a head, a tree trunk; and stepping 0.45 m between strokes was a jump cut)
+        const fx = tx * 0.92 + ox * 0.39, fz = tz * 0.92 + oz * 0.39;
+        const d = __k.story.debug, p = __k.game.p; p.pos.set(ox * r, 0, oz * r); p.yaw = Math.atan2(fx, fz); d.S.mode = 'walk'; d.S.dlg = null;
+        window.__y0 = p.yaw;
+        const Q = { x: ox * r, z: oz * r }, cx = Q.x - ox * 2.7 + tx * 2.3 * ${S8_SIDE}, cz = Q.z - oz * 2.7 + tz * 2.3 * ${S8_SIDE};
+        window.__s8 = { fy: Math.atan2(fx, fz), tx, tz }; const sm = { x: Q.x, z: Q.z };
+        window.__cam = (c, t) => { const pp = __k.game.p.pos; sm.x += (pp.x - sm.x) * 0.1; sm.z += (pp.z - sm.z) * 0.1; /* follows him along the row, smoothly: he moves in short steps */
+          const mx = (sm.x - Q.x) * 0.55, mz = (sm.z - Q.z) * 0.55; c.fov = 44; c.position.set(cx + mx, ${S8_H}, cz + mz); c.lookAt(sm.x + ox * 0.7, 0.85, sm.z + oz * 0.7); };`));
       for (let i = 0; i < 6; i++) await ctx.step(-1);
     },
-    async at(ctx, i) { if (i % 16 === 4) { await ctx.ev(i => { const d = __k.story.debug, p = __k.game.p; if (i > 4) p.pos.set(p.pos.x + Math.sin(p.yaw) * 0.45, 0, p.pos.z + Math.cos(p.yaw) * 0.45); d.S.act = true; }, i); return 'cut-' + i; } },
+    async at(ctx, i) { // a stroke, then a short step along the row, as you really reap: one stroke cuts all within reach (standing still gave two strokes, then nothing)
+      const k = i % 20;
+      if (k < 2) await ctx.ev(() => { const p = __k.game.p, s = window.__s8; let d = s.fy - 0.14 - p.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); p.yaw += d * 0.5; }); // turn back toward the paddy after the step
+      if (k >= 2 && k < 16) await ctx.ev(k => { const p = __k.game.p, s = window.__s8; p.yaw = s.fy + (k - 9) * 0.02; if (k === 2) __k.story.debug.S.act = true; }, k);
+      if (k >= 16) { // the stick along the row (the keys nearest that direction on screen), three frames, then let go
+        await ctx.ev(up => { const k = __k, p = k.game.p.pos, c = k.camera.position, T = k.THREE, s = window.__s8, codes = [];
+          const d = new T.Vector3(s.tx, 0, s.tz), f = new T.Vector3(p.x - c.x, 0, p.z - c.z).normalize(), r = new T.Vector3().crossVectors(f, new T.Vector3(0, 1, 0)).normalize(), y = -d.dot(f), x = d.dot(r);
+          if (x > 0.38) codes.push('KeyD'); if (x < -0.38) codes.push('KeyA'); if (y > 0.38) codes.push('KeyS'); if (y < -0.38) codes.push('KeyW');
+          for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) dispatchEvent(new KeyboardEvent(up || !codes.includes(code) ? 'keyup' : 'keydown', { code })); }, k === 19);
+      }
+      if (k === 2) return 'cut-' + i;
+    },
   },
-  { // 9 OUTRO: back at the khunt. A low camera from the sun's side looks up at the garlanded bull and the post with its
+  { // 9 OUTRO: back at the khunt. A low camera from the sun's side looks up at the bull and the post with its
     // pitha, the sky above left for the title. (A crane over the paddy ran into a tree: 25 Nov, first take.)
     id: 'S9', frames: 110,
     async setup(ctx) {

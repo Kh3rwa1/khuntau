@@ -30,6 +30,7 @@ function word(it, t) { // one line of type: slams in (big words) or rises in (sm
   g.save(); g.globalAlpha = a; g.translate(it.x, it.y + dy); g.rotate(rot); g.scale(s, s);
   g.font = it.font; g.textAlign = 'center'; g.textBaseline = 'middle';
   if (it.ls) g.letterSpacing = it.ls + 'px';
+  { const w = g.measureText(it.text).width, mw = it.maxW || 940; if (w > mw) g.scale(mw / w, mw / w); } // every line fits inside 70 px margins at rest (a phone's edges and the reply field)
   const size = parseFloat(it.font.match(/(\d+)px/)[1]);
   if (it.glow !== false) { g.shadowColor = 'rgba(20,10,6,.55)'; g.shadowBlur = size * 0.35; g.fillStyle = 'rgba(0,0,0,0)'; }
   if (it.shadow !== false) { g.fillStyle = it.shadowColor || OCHRE; g.fillText(it.text, 0, size * 0.065); g.shadowBlur = 0; }

@@ -29,7 +29,7 @@ const inR = cut('S34', F(8), F(16), ev('S34', 'bonk') - (F(12) - F(8)));
 // bars 5-6: the village, a cut every two beats
 const hits = evp('S5', 'hit-T'); cut('S5', F(16), F(18), hits.find(h => h >= 20) ?? 24);
 cut('S6', F(18), F(20), ev('S6', 'release') - 4);
-cut('S7', F(20), F(22), ev('S7', 'land') - 14);
+cut('S7', F(20), F(22), ev('S7', 'land') - 17); // ends on the fish in the air: the game's close-up of the catch gives way to the plain view at land + 30
 const cuts = evp('S8', 'cut-'); cut('S8', F(22), F(24), (cuts[1] ?? 20) - 2);
 // bar 7: the crane up over the village, the title, the end
 cut('S9', F(24), N, 6);
@@ -39,6 +39,7 @@ const videoFrame = (shot, clipFrame) => { const s = sceneOf(shot); return s.f0 +
 const bonkF = videoFrame('S34', ev('S34', 'bonk')), snatchF = videoFrame('S34', ev('S34', 'snatch'));
 
 // ---- the words: Rubik Dirt (the game's own textured title face) for what slams in, Baloo 2 for the lines ----
+const PASTE = '#f6eedd', SAFFRON = '#ffb347', OCHRE = '#b5462a', INK = '#140a06'; // the game's own colours (compose.html draws with the same)
 const RD = px => `${px}px "Rubik Dirt"`, BL = px => `800 ${px}px "Baloo 2"`, OL = px => `700 ${px}px "Noto Sans Ol Chiki"`;
 const words = [], bands = [], taps = [];
 const say = (text, t0, t1, x, y, font, o = {}) => words.push({ text, t0, t1, x, y, font, kind: 'slam', ...o });
@@ -57,7 +58,7 @@ line('The Santal harvest festival game', t(1, 1), t(2, 0) - 0.08, 540, 930, BL(5
 // 3-4 the round (the phone's own score and lamps sit at the top: the words stay below them)
 bands.push({ t0: t(2, 0), t1: t(4, 0) - 0.06, y0: 360, y1: 860, a: 0.3 });
 say('Bait the bull.', t(2, 0) + 0.05, (bonkF / FPS) - 0.04, 540, 600, RD(116), { rot: -0.02 });
-say('Grab the pitha.', snatchF / FPS, t(4, 0) - 0.08, 540, 600, RD(116), { rot: -0.02, color: SAFFRON, shadowColor: '#7a2a14' });
+say('Grab the pitha.', snatchF / FPS - 0.12, t(4, 0) - 0.08, 540, 600, RD(116), { rot: -0.02, color: SAFFRON, shadowColor: '#7a2a14' });
 // 5-6 the village
 bands.push({ t0: t(4, 0), t1: t(6, 0) - 0.06, y0: 250, y1: 760, a: 0.34 });
 line('A WHOLE SANTAL VILLAGE', t(4, 0), t(6, 0) - 0.08, 540, 380, BL(50), { color: SAFFRON, ls: 4, shadowColor: INK });
@@ -101,7 +102,7 @@ async function main() {
   await page.setViewport({ width: 1080, height: 1920 }); await page.goto('http://127.0.0.1:8792/promo/brag/compose.html');
   if (!(await page.evaluate(() => window.ready()))) throw new Error('fonts did not load');
   const dir = stills ? `${WORK}/stills` : `${WORK}/out`; fs.mkdirSync(dir, { recursive: true });
-  const list = stills ? stills.map(s => Math.min(N - 1, Math.round(s * FPS))) : [...Array(N).keys()];
+  const list = stills ? stills.map(s => Math.min(N - 1, Math.round(s * FPS))) : process.env.ENCODE_ONLY ? [] : [...Array(N).keys()]; // ENCODE_ONLY=1: the frames in work/out are kept, only the sound and the file are made again
   for (const f of list) {
     const d = await page.evaluate((f, T) => window.frame(f, T), f, T);
     fs.writeFileSync(stills ? `${dir}/t${(f / FPS).toFixed(2)}.jpg` : `${dir}/${String(f).padStart(4, '0')}.jpg`, Buffer.from(d.split(',')[1], 'base64'));
@@ -117,8 +118,8 @@ async function main() {
   const fc = [`[0:a]aformat=sample_rates=48000:channel_layouts=stereo,afade=t=in:d=0.02,afade=t=out:st=${(dur - 1.3).toFixed(2)}:d=1.3[m]`, ...chains,
     `[m]${sfx.map((_, i) => `[s${i}]`).join('')}amix=inputs=${sfx.length + 1}:normalize=0:duration=first,atrim=0:${dur.toFixed(3)},loudnorm=I=-14:TP=-1.5:LRA=9[a]`].join(';');
   execFileSync('ffmpeg', ['-y', '-v', 'error', ...inputs, '-filter_complex', fc, '-map', '[a]', '-ar', '48000', `${WORK}/mix.wav`]);
-  execFileSync('ffmpeg', ['-y', '-v', 'error', '-framerate', String(FPS), '-i', `${dir}/%04d.jpg`, '-i', `${WORK}/mix.wav`, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS),
-    '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', `${OUT}/brag.mp4`]);
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-framerate', String(FPS), '-i', `${dir}/%04d.jpg`, '-i', `${WORK}/mix.wav`, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-maxrate', '5200k', '-bufsize', '10400k', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-frames:v', String(N),
+    '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', `${OUT}/brag.mp4`]); // capped near 5 Mb/s: about 15 MB, under WhatsApp's 16 MB (crf 17 alone gave 52 MB); -shortest dropped the last frame
   console.log('wrote', `${OUT}/brag.mp4`, `${OUT}/brag.jpg`);
 }
 main().catch(e => { console.error(e); process.exit(1); });
