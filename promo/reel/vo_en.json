@@ -1,0 +1,99 @@
+{
+ "_": "The English story reel (ElevenLabs eleven_v3, a free stock voice): 'el' is what is said, with acting directions in [brackets]; 'cap' the caption (' | ' = new line). Cues as in vo.json.",
+ "endLine": "Now on Google Play!",
+ "name": "en",
+ "lines": [
+  {
+   "id": "l1",
+   "at": "start",
+   "el": "[dramatic, deep voice] Every Sohrai... one angry bull.",
+   "cap": "Every Sohrai... | one angry bull."
+  },
+  {
+   "id": "l2",
+   "at": "crane",
+   "el": "[suspenseful] And on the post? [excited] Hot pitha!",
+   "cap": "And on the post? | Hot PITHA!"
+  },
+  {
+   "id": "l3",
+   "at": "gogo",
+   "el": "[softly] Mother said... first, keep the festival.",
+   "cap": "Gogo said: | \"First, keep | the festival.\""
+  },
+  {
+   "id": "l4",
+   "at": "days",
+   "el": "[warm] Five days. Paint on the walls. Alpana at the door. The whole village... together.",
+   "cap": "Five days. | The whole village | together.",
+   "tempo": 1.1
+  },
+  {
+   "id": "l5a",
+   "at": "drum",
+   "el": "[energetic] Beat the drum!",
+   "cap": "Beat the tamak!"
+  },
+  {
+   "id": "l5b",
+   "at": "bow",
+   "el": "[energetic] Draw the bow!",
+   "cap": "Draw the bow!"
+  },
+  {
+   "id": "l5c",
+   "at": "fish",
+   "el": "[energetic] Catch the fish!",
+   "cap": "Catch the fish!"
+  },
+  {
+   "id": "l5d",
+   "at": "reap",
+   "el": "[energetic] Reap the paddy!",
+   "cap": "Reap the paddy!"
+  },
+  {
+   "id": "l6a",
+   "at": "round",
+   "capOnly": true,
+   "cap": "Then came | KHUNTAU!"
+  },
+  {
+   "id": "l6b",
+   "at": "hide",
+   "el": "[whispers] Show him the dried hide... and wait...",
+   "cap": "Show the dried hide... | and wait...",
+   "tempo": 1.15
+  },
+  {
+   "id": "l6d",
+   "at": "grab",
+   "el": "[excited] NOW! Grab the pitha!",
+   "cap": "NOW! | GRAB THE PITHA!"
+  },
+  {
+   "id": "l7",
+   "at": "cheer",
+   "el": "[excited] The whole village roared... JOHAR!",
+   "cap": "JOHAR!"
+  },
+  {
+   "id": "l8",
+   "at": "end",
+   "el": "[dramatic] Sohrai. Now on Google Play.",
+   "cap": ""
+  },
+  {
+   "id": "l9",
+   "at": "end2",
+   "el": "Free. And it works offline.",
+   "cap": ""
+  },
+  {
+   "id": "l10",
+   "at": "end3",
+   "el": "[excited] Download it now!",
+   "cap": ""
+  }
+ ]
+}

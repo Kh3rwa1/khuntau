@@ -70,10 +70,11 @@
   {
    "id": "l6b",
    "at": "hide",
-   "hi": "कपड़ा दिखाओ, और रुको...",
-   "cap": "Kapda dikhao... | ruko...",
-   "el": "[whispers] कपड़ा दिखाओ... रुको...",
-   "tempo": 1.15
+   "hi": "सूखी चमड़ी दिखाओ, और रुको...",
+   "cap": "Sookhi chamdi dikhao... | ruko...",
+   "el": "[whispers] सूखी चमड़ी दिखाओ... रुको...",
+   "tempo": 1.2,
+   "_": "the player waves a dried hide, not a cloth (Dulor, 26 Nov)"
   },
   {
    "id": "l6c",

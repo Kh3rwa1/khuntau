@@ -41,11 +41,11 @@ const sceneOf = shot => scenes.find(s => s.shot === shot);
 const vt = (shot, clipFrame) => { const s = sceneOf(shot); return (s.f0 + (clipFrame - s.in)) / FPS; }; // video second of a clip moment
 
 // ---- the voice: each line at its cue, never on top of the one before ----
-const VO = JSON.parse(fs.readFileSync('promo/reel/vo.json', 'utf8')).lines;
+const VOF = JSON.parse(fs.readFileSync(process.env.VO || 'promo/reel/vo.json', 'utf8')), VO = VOF.lines, NAME = VOF.name ? `sohrai-reel-${VOF.name}` : 'sohrai-reel'; // VO=promo/reel/vo_en.json: the English reel
 const dur = f => Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString());
 const bonkT = vt('S34', ev('S34', 'bonk')), snatchT = vt('S34', ev('S34', 'snatch')), hideT = vt('S34', ev('S34', 'tap-hide')), grabT = vt('S34', ev('S34', 'tap-grab'));
 const CUE = { start: 0.15, crane: T_(4) + 0.55, gogo: T_(8) + 0.2, days: T_(12) + 0.1, drum: T_(20) + 0.08, bow: T_(22) + 0.08, fish: T_(24) + 0.08, reap: T_(26) + 0.08,
-  round: T_(26) + 1.1 /* leads into the ring: a J-cut over the last of the paddy */, hide: hideT, bonk: bonkT + 0.1, grab: bonkT + 0.15, cheer: snatchT + 1.6, end: T_(40) + 0.15, end2: T_(40) + 2.9, end3: T_(40) + 5.6 };
+  round: T_(26) + 1.1 /* leads into the ring: a J-cut over the last of the paddy */, hide: hideT - 0.3 /* 'show it' comes just before the tap */, bonk: bonkT + 0.1, grab: bonkT + 0.15, cheer: snatchT + 1.6, end: T_(40) + 0.15, end2: T_(40) + 2.9, end3: T_(40) + 5.6 };
 const vo = []; let free = 0;
 for (const ln of VO) { if (ln.skip) continue;
   if (ln.capOnly) { const at = Math.max(CUE[ln.at], free + 0.08); vo.push({ ...ln, file: null, sec: at, end: at + 1.4 }); continue; } // a caption with no voice: takes no time from the next line
@@ -72,7 +72,7 @@ const E = T_(40);
 bands.push({ t0: E, t1: N / FPS + 1, y0: 230, y1: 1130, a: 0.42 });
 line('ᱥᱚᱦᱨᱟᱭ', E, 99, 330, OL(64), { color: SAFFRON, shadow: false });
 say('SOHRAI', E, 99, 500, 210, {});
-line('Ab Google Play pe available!', E + 0.35, 99, 680, BL(64), { color: SAFFRON, shadowColor: INK });
+line(VOF.endLine || 'Ab Google Play pe available!', E + 0.35, 99, 680, BL(64), { color: SAFFRON, shadowColor: INK });
 cards.push({ src: '/promo/reel/google-play-badge.png', t0: E + 0.75, t1: 99, x: 540, y: 845, w: 620 }); // the badge as Google gives it: not recoloured, not cropped
 line('Free · Offline · English & Hindi', E + 1.3, 99, 1010, BL(46), { shadowColor: INK });
 // taps on the real buttons
@@ -111,7 +111,7 @@ async function main() {
   }
   await browser.close(); server.close();
   if (stills) return console.log('stills in', dir);
-  const posterF = N - 15; fs.copyFileSync(`${dir}/${String(posterF).padStart(4, '0')}.jpg`, `${OUT}/sohrai-reel.jpg`); fs.copyFileSync(`${OUT}/sohrai-reel.jpg`, `${dir}/0000.jpg`); // the poster (end card with the badge) is also frame 0
+  const posterF = N - 15; fs.copyFileSync(`${dir}/${String(posterF).padStart(4, '0')}.jpg`, `${OUT}/${NAME}.jpg`); fs.copyFileSync(`${OUT}/${NAME}.jpg`, `${dir}/0000.jpg`); // the poster (end card with the badge) is also frame 0
   const D = N / FPS, inputs = ['-ss', String(MUSIC_IN), '-t', String(D + 0.5), '-i', 'promo/trailer/music/sohrai.mp3'], ch = [];
   const said = vo.filter(v => v.file);
   said.forEach((v, i) => { inputs.push('-i', v.file); ch.push(`[${i + 1}:a]aformat=sample_rates=48000:channel_layouts=stereo,${v.tempo ? `atempo=${v.tempo},` : ''}volume=4dB,adelay=${Math.round(v.sec * 1000)}|${Math.round(v.sec * 1000)}[v${i}]`); });
@@ -124,7 +124,7 @@ async function main() {
     `[m][voice]${sfx.map((_, i) => `[s${i}]`).join('')}amix=inputs=${sfx.length + 2}:normalize=0:duration=first,atrim=0:${D.toFixed(3)},loudnorm=I=-14:TP=-1.5:LRA=11[a]`].join(';');
   execFileSync('ffmpeg', ['-y', '-v', 'error', ...inputs, '-filter_complex', fc, '-map', '[a]', '-ar', '48000', `${OUT}/mix.wav`]);
   execFileSync('ffmpeg', ['-y', '-v', 'error', '-framerate', String(FPS), '-i', `${dir}/%04d.jpg`, '-i', `${OUT}/mix.wav`, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-maxrate', '5200k', '-bufsize', '10400k',
-    '-pix_fmt', 'yuv420p', '-r', String(FPS), '-frames:v', String(N), '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', `${OUT}/sohrai-reel.mp4`]); // about 27 MB: quality for Instagram and YouTube (WhatsApp re-encodes whatever it gets)
-  console.log('wrote', `${OUT}/sohrai-reel.mp4`, `${OUT}/sohrai-reel.jpg`);
+    '-pix_fmt', 'yuv420p', '-r', String(FPS), '-frames:v', String(N), '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', `${OUT}/${NAME}.mp4`]); // about 27 MB: quality for Instagram and YouTube (WhatsApp re-encodes whatever it gets)
+  console.log('wrote', `${OUT}/${NAME}.mp4`, `${OUT}/${NAME}.jpg`);
 }
 main().catch(e => { console.error(e); process.exit(1); });
