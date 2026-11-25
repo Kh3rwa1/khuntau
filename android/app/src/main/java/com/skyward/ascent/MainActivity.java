@@ -109,6 +109,7 @@ public class MainActivity extends Activity {
         root.addView(cover, new FrameLayout.LayoutParams(-1, -1));
         splash = cover;
         setContentView(root);
+        if (Build.VERSION.SDK_INT >= 33) Back33.hook(this);
         immersive();
         ui.postDelayed(() -> { if (!gameUp) ota.report(false); hideSplash(); }, 25000);
 
@@ -216,11 +217,28 @@ public class MainActivity extends Activity {
     }
 
     /** Back pauses (or resumes) the game; with nothing to close it puts the game in the background. Never loses a round. */
-    @SuppressWarnings("deprecation")
-    @Override
-    public void onBackPressed() {
+    void back() {
         web.evaluateJavascript("(function(){try{return window.__appBack&&window.__appBack()?1:0}catch(e){return 0}})()",
                 r -> { if (!"1".equals(r)) moveTaskToBack(true); });
+    }
+
+    /** Android 12 and older (and any phone where the callback below is not used) still call this. */
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onBackPressed() { back(); }
+
+    /**
+     * Android 13 and up hand the back gesture to a registered callback. An app that targets Android 16 (API 36, which
+     * Google Play requires since 31 Aug 2026) no longer gets onBackPressed() at all on such phones: without this the
+     * gesture would close the game in the middle of a round. Kept in a class of its own so that older phones never
+     * load the android.window classes.
+     */
+    @android.annotation.TargetApi(33)
+    static final class Back33 {
+        static void hook(MainActivity a) {
+            a.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, a::back);
+        }
     }
 
     @Override

@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, 'main-*'] # was only main-y500hu, an earlier session's branch: pushes to main built no app from 24 Nov morning on
-    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh', 'tools/apk-sign.sh', 'public/**', 'twa/twa-manifest.json']
+    paths: ['.github/workflows/apk.yml', 'android/**', 'tools/apk-smoke.sh', 'tools/apk-smoke16.sh', 'tools/apk-sign.sh', 'public/**', 'twa/twa-manifest.json']
 permissions:
   contents: read
 concurrency:
@@ -73,6 +73,19 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: sh tools/apk-smoke.sh
+      # The app targets Android 16 (API 36: Google Play takes nothing lower since 31 Aug 2026). What that changes only
+      # shows on an Android 16 phone, above all the back gesture: so the release build is started there too.
+      - name: Boot the release build offline on Android 16
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: sh tools/apk-smoke16.sh
       - name: Hand the build to the publish job
         uses: actions/upload-artifact@v4
         with: { name: out, path: out, retention-days: 3, if-no-files-found: error }
