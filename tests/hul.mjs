@@ -36,7 +36,8 @@ const aimAt = (page, role = 'soldier') => page.evaluate(async (role) => { const 
   let s = await state(page);
   check(s.mode === 'play' && s.stage === 1 && s.left === 5 && s.arrows === 12, `laptop: game starts (5 soldiers, 12 arrows): ${JSON.stringify({ mode: s.mode, left: s.left, arrows: s.arrows })}`);
   check(await page.evaluate(() => __h.player.crouch && __h.BUSHES.some(b => Math.hypot(b.x - __h.player.pos.x, b.z - __h.player.pos.z) < b.r * 0.9)), 'starts crouched inside a bush');
-  check(await page.evaluate(() => { const p = __h.player, f = p.bone('FootL').getWorldPosition(p.pos.clone()); return Math.abs(f.y - p.pos.y) < 0.12; }), 'crouched: feet on the ground, not sunk or floating');
+  await gwait(page, 0.5); // a GPU-less runner draws ~1 frame a second: let the crouch pose settle before reading the bones
+  check(await page.evaluate(() => { const p = __h.player; p.wrap.updateMatrixWorld(true); const f = p.bone('FootL').getWorldPosition(p.pos.clone()); return Math.abs(f.y - p.pos.y) < 0.12; }), 'crouched: feet on the ground, not sunk or floating');
   check(await page.evaluate(() => getComputedStyle(document.getElementById('eye')).borderColor) !== '', 'detection eye shown');
   await page.screenshot({ path: 'tests/out/hul-lap-start.jpg', quality: 75 });
   // walk with real keys: W moves her toward where the camera looks
@@ -54,7 +55,7 @@ const aimAt = (page, role = 'soldier') => page.evaluate(async (role) => { const 
     let clear = false; for (let w = 0; w < 30 && !clear; w++) { if (!(await aimAt(page))) break; clear = await page.evaluate(() => { const r = __h.aimProbe(); return r === 'redcoat' || r === 'sepoy'; }); if (!clear) { if (w % 3 === 2) { await page.keyboard.down('KeyW'); await gwait(page, 1.0); await page.keyboard.up('KeyW'); } else await gwait(page, 0.8); } } // no clear line: wait, then walk toward him like a player would
     if (!clear) break;
     await page.mouse.down(); await sleep(150); if (k === 0) await page.screenshot({ path: 'tests/out/hul-lap-draw0.jpg', quality: 75 });
-    await gwait(page, 0.75); await aimAt(page); if (k === 0) { await page.screenshot({ path: 'tests/out/hul-lap-aim.jpg', quality: 75 }); check(await page.evaluate(() => document.getElementById('xh').classList.contains('on')), 'crosshair turns red on a soldier'); }
+    await gwait(page, 0.75); await aimAt(page); if (k === 0) { await page.screenshot({ path: 'tests/out/hul-lap-aim.jpg', quality: 75 }); check(await page.waitForFunction(() => document.getElementById('xh').classList.contains('on'), { timeout: 20000, polling: 100 }).then(() => true, () => false), 'crosshair turns red on a soldier'); } // waits for a drawn frame: the HUD updates per frame
     await page.mouse.up(); shots++; await gwait(page, 1.4);
     if (k === 0) { s = await state(page); check(s.shots === 1 && s.arrows === 11, `release shoots one arrow (${s.shots} shot, ${s.arrows} left)`);  await page.screenshot({ path: 'tests/out/hul-lap-hit.jpg', quality: 75 }); }
   }
