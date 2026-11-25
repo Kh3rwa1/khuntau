@@ -30,7 +30,7 @@ const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.ge
 
 { // ---- a player on the first day: an empty album, a find, the day kept, the card shared ----
   const P = await open({ save: { ch: 2, w: 1, kh: 1, painted: [1, 1, 1], chosen: 1 } }), { page, ev, until } = P;
-  check(await ev(() => { const b = document.getElementById('albumBtn'); return !b.hidden && b.style.visibility !== 'hidden' && /Album: 0 of 16/.test(b.textContent); }), 'home: the album row says 0 of 16');
+  check(await ev(() => { const b = document.getElementById('albumBtn'); return !b.hidden && /Album: 0 of 16/.test(b.textContent); }), 'home: the album row says 0 of 16');
   await page.tap('#albumBtn');
   check(await P.shown('#album') && await ev(() => document.querySelectorAll('#album .alb-day').length === 6 && document.querySelectorAll('#album .alb-find').length === 10), 'it opens: five days, the keepsake and ten things to find');
   check(await ev(() => [...document.querySelectorAll('#album .alb-card')].every(c => c.classList.contains('no') && c.disabled) && [...document.querySelectorAll('#album .alb-card i')].every(i => getComputedStyle(i).backgroundImage === 'none')), 'nothing kept yet: every card is empty, no painting is given away');
@@ -149,7 +149,7 @@ for (const [w, h, tag] of [[780, 390, 'landscape'], [1280, 720, 'laptop'], [360,
   await page.setRequestInterception(true); page.on('request', r => /\/album\.js/.test(r.url()) ? r.abort() : r.continue());
   await page.goto('http://127.0.0.1:8791/?debug&q=low', { waitUntil: 'domcontentloaded' }); await page.waitForFunction(() => window.__k && document.getElementById('startBtn').dataset.village === 'ready', { timeout: 90000 });
   const ev = (f, ...a) => page.evaluate(f, ...a);
-  check(await ev(() => { const b = document.getElementById('albumBtn'); return !__k.album && b.style.visibility === 'hidden' && b.getBoundingClientRect().height > 10; }), 'without album.js: the album row is not shown (its place stays, unseen, so nothing else moves)');
+  check(await ev(() => !__k.album && document.getElementById('albumBtn').hidden), 'without album.js: no album row on the home screen');
   await ev(() => document.getElementById('startBtn').click()); await page.waitForFunction(() => __k.game.mode === 'story', { timeout: 30000 }); await sleep(2200);
   await ev(() => { const d = __k.story.debug; d.S.dlg = null; document.getElementById('dlg').hidden = true; d.S.mode = 'walk'; const q = d.W.finds.tortoise; __k.game.p.pos.set(q.x + 0.9, 0, q.z + 0.6); });
   check(await page.waitForFunction(() => (__k.story.debug.save.seen || {}).tortoise === 1, { timeout: 8000 }).then(() => true, () => false), 'a find is still noted');

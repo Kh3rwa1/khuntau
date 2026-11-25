@@ -80,7 +80,7 @@ export function initAlbum(C) {
   const A = { open: false, view: null, fresh: null, urls: {}, stampT: 0 };
   const cell = (i) => `${(i % COLS) * (100 / (COLS - 1))}% ${Math.floor(i / COLS) * (100 / (ROWS - 1))}%`;
   const count = () => { const d = data(); return { have: d.days.filter(q => q.done).length + (d.fin ? 1 : 0) + d.sights.filter(q => q.seen).length, all: d.days.length + 1 + d.sights.length }; };
-  function refresh() { const b = $('albumBtn'); if (!b) return; const c = count(); if (!c.all || c.all < 2) return; /* the story is not in yet: the row keeps its place, unseen (index.html) */ b.hidden = false; b.style.visibility = ''; $('albumLine').textContent = t('line')(c.have, c.all); b.querySelector('u').textContent = t('open'); }
+  function refresh() { const b = $('albumBtn'); if (!b) return; const c = count(); if (!c.all || c.all < 2) { b.hidden = true; return; } b.hidden = false; $('albumLine').textContent = t('line')(c.have, c.all); b.querySelector('u').textContent = t('open'); }
 
   function paint() {
     const d = data(), c = count(); h2.textContent = t('album'); cnt.textContent = t('of')(c.have, c.all); x.setAttribute('aria-label', t('close'));

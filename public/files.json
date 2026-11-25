@@ -1,7 +1,7 @@
 {
- "v": "4e28f12da2",
+ "v": "e542108b3f",
  "files": {
-  "album.js": "04d9fd3450e03e4edf0a8cd5c2179945903b3c26fff19b5755d5bc92a941266e",
+  "album.js": "7986ac39f59b240c778cc027bac03c33e94805db0987afcc94b2420f95256003",
   "art/card.webp": "7cebcd5c9c8cacb0fd835ed85a22a0cb6274f335800f6d4c4983e61ff506f716",
   "art/complete.webp": "c11cf6306fd006d3197a32f926accbfcd32c08bcf9e7cfd36257a4c8e4b3d371",
   "art/day1.webp": "b2c562ba65af3f559cd030aa55723e5b23985389d0d08876b85467b1c38b7ce8",
@@ -71,7 +71,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "53a1ea54eb34be1ed279221128a00475439a95bff97648b3b6b7402780d61be9",
+  "index.html": "5ad54d6f4add7c48e0f80959810767134769be21c7badbaa3bfcdb9ff51e2032",
   "life.js": "dbc9aac62a2125808ed03c01acfb1aed245c7c19275371456cf298728d315ac1",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
