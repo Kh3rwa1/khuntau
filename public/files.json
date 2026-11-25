@@ -1,5 +1,5 @@
 {
- "v": "9b39ee429c",
+ "v": "942681b5fc",
  "files": {
   "album.js": "7986ac39f59b240c778cc027bac03c33e94805db0987afcc94b2420f95256003",
   "art/card.webp": "7cebcd5c9c8cacb0fd835ed85a22a0cb6274f335800f6d4c4983e61ff506f716",
@@ -71,7 +71,7 @@
   "icon-192.png": "fdace877920dbf16eb5dbf88222f2be24dc0acadada1f801abe322a369d83c44",
   "icon-512.png": "6cb783592cc5ac41153eba360c73dcffc1e40c7203012c190a4ac546d6610283",
   "icon-maskable-512.png": "721ffb7fa1f80b53d67c2a7b60685b21472b5f5bb0499f87d0902e788d3c89de",
-  "index.html": "bd3373ee4ca5d7309c1023a84e667a3d6ddd5cb6018bff2f802616946858c863",
+  "index.html": "a6bb77712e7e9daf35d0cbef4efa6ff72cd26a8e16842f4c4754db1b59998390",
   "life.js": "dbc9aac62a2125808ed03c01acfb1aed245c7c19275371456cf298728d315ac1",
   "manifest.webmanifest": "d5e9e5fd7851940bd2d4a4bca38887f2ca362884775d99014314d928557baad6",
   "models/bull.json": "2e113ce4e4fb204e1971e8ec087dec2682ec31fb54cefbfe7948bf4ec8f361e9",
@@ -80,9 +80,10 @@
   "models/cow.json": "5ce93eeed0eb99b8f9993f758cab288a74fb4852a683b04f3673b37d9a0ba136",
   "models/worker_female.json": "af5df0ccfdce570d29fb6f623b5d51500e613eeacad90baa58d1d8a2a19aa2a5",
   "og.jpg": "eb0e5474364d3817d13413e2250dbe67e69155e188fd3fe859fc3dc77c44412c",
+  "photo.js": "13dbf6c07d07045e6b35e734949e015fd64fa35ef57a175c35e1597b6cf7dd8a",
   "privacy.html": "9ab1c476a21ffb1d84fbd44d7a88355dc2333f13fa2a4085328a0110450fcf74",
   "stats.html": "6899fe012fbbf38c9fa6a226c53c562b6869694fe4da654d0d179a54bf659e3c",
-  "story.js": "045109f79ae3da7a62844f8545cc454b5e2e4b2e98ff647fd6f34a4be43cd224",
+  "story.js": "da3c05db7babdc996a7171b89b3184dced010d2cbeecebb52aedacb4d50c2d54",
   "talk.js": "978a3a1cb2bb6864bb365f204f8166e61a521bf3b5ad6c7c4c1445cf087076f5",
   "vendor/three/LICENSE": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
   "vendor/three/build/three.module.min.js": "08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb13c39e7",

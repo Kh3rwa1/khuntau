@@ -9,7 +9,7 @@ const ROUND_SECS = 120, MAX_PLAYERS = 6;
 const COLORS = ["#e8b33c", "#d9472b", "#3d8bd9", "#4caf50", "#b05cd6", "#f2f2f2"];
 const SHIRT_COLORS = ["#ffb347", "#3f8a4f", "#c8372d", "#2f5fa8", "#e8b33c"];
 const ANIMS = new Set(["Idle", "Walk", "Run", "Roll", "Jump", "RecieveHit", "Death", "Victory", "Defeat", "SwordSlash", "Shoot_OneHanded", "PickUp", "SitDown", "StandUp", "Punch", "Walk_Carry", "Run_Carry"]);
-const VILLAGE_R = 31; // friends walking the village together between rounds (v: 1 outside, 2 inside the house)
+const VILLAGE_R = 46.5; // friends walking the village together between rounds (v: 1 outside, 2 inside the house); the land grew from 30.5 to 46 m on 25 Nov
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -403,7 +403,7 @@ const DISTRICTS = new Set(["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "E
   "Bankura", "Birbhum", "Purulia", "Jhargram", "Paschim Medinipur", "Paschim Bardhaman", "Purba Bardhaman", "Dakshin Dinajpur", "Uttar Dinajpur", "Malda", "Hooghly", "Murshidabad",
   "Mayurbhanj", "Balasore", "Keonjhar", "Sundargarh", "Banka", "Bhagalpur", "Jamui", "Katihar", "Purnia", "Kokrajhar", "Chirang", "Udalguri", "Sonitpur"]);
 // the only step names the counter accepts (anything else is dropped)
-const EV_KEY = /^(keep\.(show|share|open)|album\.(open|view)|fm\.(free|walk|out)|coach\.(1|2|3|4|done|hit)|lang\.(en|hi|sat)|talk\.(open|say|quick|report|spot|bubble)|mercy|leave|temper|help|found|duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|wa|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
+const EV_KEY = /^(keep\.(show|share|open)|album\.(open|view)|fm\.(free|walk|out)|coach\.(1|2|3|4|done|hit)|lang\.(en|hi|sat)|talk\.(open|say|quick|report|spot|bubble)|jump|cut\.(grass|paddy|load)|set\.(look|snd|mus)|how\.open|photo\.(open|shot|share)|mercy|leave|temper|help|found|duet|village\.shared|rebuke|stage\.[2-5]|fest\.[1-5]|open|open\.(challenge|room|app|wa|photo|new|return)|ret\.(d1|d2_3|d7)|ready\.(lt3|3_6|6_10|10_20|gt20)|play|play\.(khunt|quick|link)|village|story|round_end|score\.(0|1_4|5_14|15_29|30p)|share\.(score|room)|room\.(create|join|ask)|online\.play|ch\.[1-5]|daily\.(arch|fish|jale|drum)|vil\.(set|tab|ask)|share\.vil)$/;
 const okPid = (v) => typeof v === "string" && /^[a-z0-9]{10,24}$/.test(v);
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));

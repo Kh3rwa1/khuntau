@@ -76,7 +76,12 @@ const setV = (p, name, dist = 'Dumka') => j('/api/village', { pid: p, name, dist
   await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: ['keep.show', 'keep.share', 'keep.open', 'album.open', 'album.view', 'keep.steal', 'album.', 'open.wa'] }) });
   const t2 = (await j('/api/stats?days=1')).d.days[today] || {};
   check(['keep.show', 'keep.share', 'keep.open', 'album.open', 'album.view'].every(k => t2[k] >= 1) && !('keep.steal' in t2) && !('album.' in t2), 'the album\'s steps are counted, and nothing else under their names');
-  check(t2['open.wa'] >= 1, 'a visit through a WhatsApp poster\'s link is counted (open.wa)'); }
+  check(t2['open.wa'] >= 1, 'a visit through a WhatsApp poster\'s link is counted (open.wa)');
+  // 25 Nov: the jump, the sickle, the settings and photo mode
+  const NEW = ['jump', 'cut.grass', 'cut.paddy', 'cut.load', 'set.look', 'set.snd', 'set.mus', 'how.open', 'photo.open', 'photo.shot', 'photo.share', 'open.photo'];
+  await fetch(BASE + '/api/ev', { method: 'POST', body: JSON.stringify({ k: [...NEW, 'cut.tree', 'set.', 'photo.steal'] }) });
+  const t3 = (await j('/api/stats?days=1')).d.days[today] || {};
+  check(NEW.every(k => t3[k] >= 1) && !('cut.tree' in t3) && !('set.' in t3) && !('photo.steal' in t3), 'the jump, the sickle, the settings and the photo steps are counted (' + NEW.filter(k => !(t3[k] >= 1)).join(' ') + '), and nothing else under their names'); }
 
 // ---------- abuse limits (per IP; Cloudflare sets cf-connecting-ip, the local run trusts the header) ----------
 const jip = async (ip, path, body) => (await fetch(BASE + path, { method: 'POST', headers: { 'cf-connecting-ip': ip }, body: JSON.stringify(body) })).status;

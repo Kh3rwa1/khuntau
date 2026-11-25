@@ -97,7 +97,7 @@ const bullShape = (page) => page.evaluate(() => { let r = null; __k.bull.root.tr
   const r = await page.evaluate(() => ({ aa: __k.renderer.getContext().getContextAttributes().antialias, shadows: __k.sun.castShadow, lambert: __k.charMat.type }));
   check(!r.aa && !r.shadows && r.lambert === 'MeshLambertMaterial' && await page.evaluate(() => __k.fx === null), `budget phones keep the cheap path (no MSAA, no shadows, no screen effects, ${r.lambert})`);
   check(await page.evaluate(() => __k.wallMat.userData.fx.eave && __k.charMat.userData.fx.ao > 0), 'budget phones still get the contact shading (it needs no shadows)');
-  check(await page.evaluate(() => { let n = -1; __k.scene.traverse(o => { if (o.isInstancedMesh && o.userData.grass) n = o.count; }); return n > 100 && n <= 450; }), 'budget phones get a thin scatter of grass, not the full field');
+  check(await page.evaluate(() => { let n = -1; __k.scene.traverse(o => { if (o.isInstancedMesh && o.userData.grass) n = o.count; }); return n > 100 && n <= 560; }), 'budget phones get a thin scatter of grass, not the full field'); // 450 until the land grew to 46 m (25 Nov)
   const b = await bullShape(page);
   check(b.zebu && b.hump > b.back + 0.1, `budget phones get the same zebu bull (${b.zebu}, hump ${b.hump.toFixed(2)} vs ${b.back.toFixed(2)})`);
   await page.evaluate(() => document.getElementById('quickBtn').click()); await sleep(3000);

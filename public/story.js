@@ -122,7 +122,18 @@ export function initStory(C) {
     'Tap to cast': 'काँटा डालने के लिए दबाओ', 'Wait for the bite…': 'मछली का इंतज़ार…', 'PULL!': 'खींचो!', 'Too early': 'बहुत जल्दी', 'It got away': 'निकल गई', 'Got one!': 'पकड़ ली!', '# fish': '# मछली', 'A good catch': 'अच्छा शिकार', 'Fishing': 'मछली पकड़ना',
     'Listen…': 'सुनो…', 'Your turn': 'अब तुम', 'The women sing it back': 'औरतें गीत दोहराती हैं', 'The road dances with you': 'पूरी सड़क तुम्हारे साथ नाचती है', 'The song goes down the road': 'गीत सड़क पर आगे बढ़ता है', 'Sarpa enej sung': 'सरपा एनेज गा लिया', 'Tamak played': 'तामाक बजा लिया',
     'Today: archery contest': 'आज: तीरंदाज़ी', 'Today: catch fish at the pond': 'आज: तालाब में मछली पकड़ो', 'Today: Sarpa enej on the village road (#/#)': 'आज: गाँव की सड़क पर सरपा एनेज (#/#)', 'Today: beat the tamak': 'आज: तामाक बजाओ', 'All done today. Come back tomorrow': 'आज का सब पूरा। कल फिर आना',
-    'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Tap to begin': 'शुरू करने के लिए टैप करें', 'TALK': 'बात करो', 'Village talk': 'गाँव की बातचीत', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
+    'Tie this one to the khunt': 'इसे खूँटे से बाँधो', 'Paused': 'रुका हुआ', 'Resume': 'खेल जारी रखो', 'Online rounds keep going while this menu is open.': 'यह मेन्यू खुला रहने पर भी ऑनलाइन खेल चलता रहता है।', 'Look speed': 'देखने की गति', 'Sound': 'आवाज़', 'Music': 'संगीत', 'Language': 'भाषा', 'Full screen': 'पूरी स्क्रीन', 'On': 'चालू', 'Off': 'बंद',
+    'How to play': 'कैसे खेलें', 'Photo': 'फ़ोटो', 'Quit to menu': 'मेन्यू पर लौटो', 'Leave room': 'कमरा छोड़ो',
+    'Drag the left side to walk, the right side to look around': 'चलने के लिए बायाँ हिस्सा खींचो, चारों ओर देखने के लिए दायाँ', 'Pinch with two fingers to zoom': 'पास या दूर देखने के लिए दो उँगलियों से चुटकी लो', 'JUMP hops over a garden fence': 'कूदो: बाड़ी की बाड़ फाँदो',
+    'The big button does what is near: talk, drink, paint, cut grass and paddy': 'बड़ा बटन पास का काम करता है: बात करो, पियो, रँगो, घास और धान काटो',
+    'WASD or arrow keys: walk. Drag the mouse: look. Wheel: zoom': 'WASD या तीर के बटन: चलो। माउस खींचो: देखो। पहिया: पास या दूर', 'Space: jump (over a garden fence)': 'Space: कूदो (बाड़ी की बाड़ फाँदो)', 'E: do what is near (talk, drink, paint, cut grass and paddy)': 'E: पास का काम (बात, पीना, रँगना, घास और धान काटना)', 'Esc: this menu': 'Esc: यह मेन्यू',
+    'HIDE: wave the hide so he charges': 'खाल: खाल हिलाओ ताकि वह दौड़े', 'ROLL: jump aside when he runs at you': 'लुढ़को: जब वह तुम्हारी ओर दौड़े, बगल में कूदो', 'GRAB: snatch a pitha at the post while he is dizzy': 'झपटो: जब वह चकराया हो, खूँटे से पीठा झपटो', 'LEAVE: walk out with a bonus, from 3 points': 'निकलो: 3 अंक के बाद बोनस लेकर बाहर आओ', 'Drag the right side to turn the camera': 'कैमरा घुमाने के लिए दायाँ हिस्सा खींचो',
+    'WASD or arrow keys: move': 'WASD या तीर के बटन: चलो', 'Q: wave the hide. Space: roll aside': 'Q: खाल हिलाओ। Space: बगल में लुढ़को', 'E: grab a pitha at the post while he is dizzy': 'E: जब वह चकराया हो, खूँटे से पीठा झपटो', 'L: leave with a bonus, from 3 points': 'L: 3 अंक के बाद बोनस लेकर निकलो',
+    'Drag to turn the camera, pinch to zoom': 'कैमरा घुमाने के लिए खींचो, पास-दूर के लिए चुटकी लो', 'Drag to turn the camera, wheel to zoom': 'कैमरा घुमाने के लिए खींचो, पास-दूर के लिए पहिया घुमाओ', 'Back': 'वापस', 'Take the photo': 'फ़ोटो लो', 'Share': 'भेजो', 'Save': 'सहेजो', 'Another': 'एक और',
+    'To keep the picture, take a screenshot of it': 'फ़ोटो रखने के लिए इसका स्क्रीनशॉट लो', 'Saved to your downloads': 'डाउनलोड में सहेज दी गई', 'Could not share it. Take a screenshot instead': 'भेज नहीं पाए। इसका स्क्रीनशॉट ले लो',
+    'This is as far as the village land goes': 'गाँव की ज़मीन यहीं तक है',
+    'A fence. Tap JUMP to get over it': 'बाड़ है। फाँदने के लिए कूदो दबाओ', 'A fence. Press Space to jump over it': 'बाड़ है। फाँदने के लिए Space दबाओ',
+    'JUMP': 'कूदो', 'CUT': 'काटो', 'Cut the paddy': 'धान काटो', 'Cut the grass': 'घास काटो', 'Sheaves cut today: #': 'आज काटे पूले: #', 'Five sheaves: a good load': 'पाँच पूले: अच्छी ढुलाई', 'This plot is reaped': 'यह खेत कट गया', 'Paddy cut': 'धान कटा', 'A good load of paddy': 'धान की अच्छी ढुलाई', 'Bringing…': 'ला रहे हैं…', 'Done': 'हो गया', 'Tap to begin': 'शुरू करने के लिए टैप करें', 'TALK': 'बात करो', 'Village talk': 'गाँव की बातचीत', 'Leave': 'छोड़ो', 'TAMAK': 'तामाक', 'TUMDAK': 'तुमदाक', 'Tap to go on': 'आगे के लिए दबाओ', 'Tap to close': 'बंद करने के लिए दबाओ', 'Enter to go on': 'Enter: आगे', 'Enter to close': 'Enter: बंद',
     // the ring finale (lines that live in index.html, translated while the story's ring runs)
     'Stage 2: The Feint': 'चरण 2: झाँसा', 'He fakes now. Wait for the real charge!': 'अब वह झाँसा देता है। असली हमले का इंतज़ार करो!', 'Stage 3: Twice': 'चरण 3: दो बार', 'He can charge twice in a row!': 'वह लगातार दो बार दौड़ सकता है!',
     'Stage 4: The Hunter': 'चरण 4: शिकारी', 'His charge bends toward you. Roll late!': 'उसकी दौड़ तुम्हारी ओर मुड़ती है। देर से लुढ़को!', 'Stage 5: Sohrai Legend': 'चरण 5: सोहराय वीर', 'Everything he has. Hold on!': 'उसकी पूरी ताक़त। डटे रहो!',
@@ -193,6 +204,7 @@ export function initStory(C) {
   function applyLang() {
     $('pickOk').textContent = tr('Tie this one to the khunt'); $('padDone').textContent = tr('Done'); $('tapQuit').textContent = tr('Leave');
     $('padT').firstElementChild.firstChild.nodeValue = tr('TAMAK'); $('padU').firstElementChild.firstChild.nodeValue = tr('TUMDAK');
+    if ($('jumpBtn')) $('jumpBtn').textContent = tr('JUMP');
     $('langBtn').textContent = langName(LANGS[(LANGS.indexOf(LANG) + 1) % LANGS.length]); document.documentElement.classList.toggle('lang-sat', LANG === 'sat'); S.objKey = ''; S.label = '\u0000';
   }
   $('langBtn').addEventListener('click', () => { LANG = LANGS[(LANGS.indexOf(LANG) + 1) % LANGS.length]; try { localStorage.setItem('khuntau-lang', LANG); } catch (e) {} applyLang(); });
@@ -213,7 +225,8 @@ export function initStory(C) {
   const ARCH = polar(gap(1.5), 18.5), TARGET = polar(gap(1.5), 25.5), POND = polar(gap(4.5), 24.6), FSTAND = polar(gap(4.5), 20.7);
   const JALE = [2, 5, 8].map(i => { const h = C.houses[i], f = h.d / 2 + 1.1; return { stand: V(h.x + Math.sin(h.rot) * f, 0, h.z + Math.cos(h.rot) * f), yaw: h.rot + Math.PI }; });
   const RING_SPOT = V(0, 0, -3.5);
-  const VILLAGE_R = 30.5;
+  const JUMP_V = 5.0, JUMP_G = 14; // up at 5 m/s, down at 14 m/s2: 0.89 m high, 0.71 s in the air
+  const VILLAGE_R = 46; // the walkable land: the village and, since 25 Nov, the first ring of paddy plots round it (it was 30.5)
 
   /* ---------- state ---------- */
   const S = { on: false, built: false, tap: false, mode: 'walk', inside: false, camYaw: 0, lookT: -9, lock: 0, dlg: null, near: null, act: false, tipsy: 0, boost: 0, focus: null, label: '', objKey: '', bullReact: 0, sat: 0 };
@@ -669,6 +682,28 @@ export function initStory(C) {
 
   function setChapter(n) { if (n > save.ch && C.track) C.track('ch.' + n); save.ch = n; persist(); S.objKey = ''; applyPaint(false); festCheck(); }
 
+  /* ---------- the sickle: cut the grass, reap the paddy ---------- */
+  // CUT bends you down with the sickle and reaps what stands in front of you. A few tufts of paddy make a sheaf, laid
+  // where you stand; sheaves count for the day (a little XP, a word of praise at five). Grass is cut for the pleasure of it.
+  const CUT_R = 1.25, CUT_FWD = 0.75, SHEAF = [4, 6, 7][C.QUALITY] || 6; // tufts to a sheaf: the paddy is planted thinner on a budget phone, so a sheaf is about the same patch of field everywhere
+  function sickle() { if (W.sickle) return W.sickle; const g = new THREE.Group(), steel = C.Mat({ color: 0xc8ccd0, roughness: 0.35, metalness: 0.6 }), wood = C.Mat({ color: 0x6a4a2c, roughness: 0.9 });
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.16, 6), wood); h.position.y = 0.02; g.add(h);
+    const bl = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.011, 4, 12, Math.PI * 1.15), steel); bl.position.set(0.12, 0.12, 0); bl.rotation.z = Math.PI * 0.42; bl.scale.z = 0.5; g.add(bl);
+    g.visible = false; scene.add(g); return (W.sickle = g); }
+  function cutGo() { if (S.cut) return; const pl = C.player(); S.cut = { t: 0, done: false }; S.lock = 0.46; game.p.vel.set(0, 0, 0);
+    pl.play('PickUp', { once: true, fade: 0.06, ts: 2.1 }); sickle().visible = true; }
+  function cutUpdate(dt) { const c = S.cut; if (!c) return; c.t += dt; const p = game.p, pl = C.player(), g = sickle();
+    const hand = pl.root.getObjectByName('FistR') || pl.root.getObjectByName('Fist.R'); if (hand) hand.getWorldPosition(g.position); else g.position.copy(p.pos).setY(0.6);
+    g.rotation.set(0, p.yaw + 1.2 - c.t * 5, -0.9); // the blade sweeps across in front of you
+    if (!c.done && c.t > 0.17) { c.done = true; const x = p.pos.x + Math.sin(p.yaw) * CUT_FWD, z = p.pos.z + Math.cos(p.yaw) * CUT_FWD, r = C.cut.cut(x, z, CUT_R), n = r.grass + r.paddy;
+      if (C.sfx.sickle) C.sfx.sickle(); if (n) { C.buzz(18); for (let k = 0; k < Math.min(7, 2 + n); k++) C.emit(C.dustPool, V(x + rand(-0.5, 0.5), 0.25, z + rand(-0.5, 0.5)), { life: 0.4, vel: V(rand(-0.6, 0.6), rand(0.5, 1.3), rand(-0.6, 0.6)), size: 0.16, grow: 0.5 }); }
+      if (r.paddy) { const td = today(); td.reap = (td.reap || 0) + r.paddy; const before = Math.floor((td.reap - r.paddy) / SHEAF), now2 = Math.floor(td.reap / SHEAF);
+        for (let k = before; k < now2; k++) { C.cut.sheaf(p.pos.x - Math.sin(p.yaw) * 0.5 + rand(-0.4, 0.4), p.pos.z - Math.cos(p.yaw) * 0.5 + rand(-0.4, 0.4), rand(0, 3.1)); if (k < 25) C.addXp(1, 'Paddy cut'); }
+        if (now2 > before) { hint('Sheaves cut today: ' + now2, 2200); if (C.sfx.thud) C.sfx.thud(0.5); if (before < 5 && now2 >= 5) setTimeout(() => { pop('+10 XP', 'Five sheaves: a good load'); C.addXp(10, 'A good load of paddy'); if (C.track) C.track('cut.load'); }, 900); }
+        if (r.plots.length) setTimeout(() => hint('This plot is reaped', 2600), 1400); persist(); }
+      if (n && C.track) C.track(r.paddy ? 'cut.paddy' : 'cut.grass'); }
+    if (c.t > 0.46) { S.cut = null; g.visible = false; if (pl.curName === 'PickUp') pl.play('Idle', { fade: 0.12 }); } }
+
   /* ---------- things you can do ---------- */
   function interactions() {
     const p = game.p.pos, list = [];
@@ -699,6 +734,9 @@ export function initStory(C) {
       { const d = Math.hypot(p.x, p.z); if (d < 10.6) list.push(save.ch === 4 ? { d: 0.5, label: 'START', text: 'Start the Khuntau', go: () => rebuke(3, 'the Khuntau', startRing) } // the story's finale: 3 pitha
         : { d: 0.5, label: 'RING', text: 'Play a round at the khunt', go: villageRound }); } // any other time: a normal scored round
     }
+    // nothing else to do here, and grass or standing paddy in front of you: the sickle
+    if (!list.length && !S.inside && C.cut && C.cut.reach && !(S.jy > 0)) { const r = C.cut.reach(p.x + Math.sin(game.p.yaw) * CUT_FWD, p.z + Math.cos(game.p.yaw) * CUT_FWD, CUT_R);
+      if (r.n) list.push({ d: 9, label: 'CUT', text: r.paddy ? 'Cut the paddy' : 'Cut the grass', go: cutGo }); }
     list.sort((a, b) => a.d - b.d); return list[0] || null;
   }
 
@@ -912,7 +950,7 @@ export function initStory(C) {
     S.tap = true; });
   // archery: the crosshair follows the drag (so the thumb never covers the target), letting go shoots
   $('tapzone').addEventListener('pointermove', (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return;
-    const g = 1 / Math.max(arch.ppm || 120, 20); arch.u = clamp(d.u + (e.clientX - d.x) * g, -1.8, 1.8); arch.v = clamp(d.v - (e.clientY - d.y) * g, -1.4, 1.4); });
+    const g = (C.sens ? C.sens() : 1) / Math.max(arch.ppm || 120, 20); arch.u = clamp(d.u + (e.clientX - d.x) * g, -1.8, 1.8); arch.v = clamp(d.v - (e.clientY - d.y) * g, -1.4, 1.4); });
   const archRelease = (e) => { const d = arch.drag; if (S.mode !== 'aim' || !d || d.id !== e.pointerId) return; arch.drag = null; arch.rel = { u: arch.u + (arch.su || 0), v: arch.v + (arch.sv || 0) }; S.tap = true; }; // the shot goes where the crosshair was when you let go
   $('tapzone').addEventListener('pointerup', archRelease); $('tapzone').addEventListener('pointercancel', (e) => { if (arch.drag && arch.drag.id === e.pointerId) arch.drag = null; });
   const reticle = document.createElement('div'); reticle.id = 'reticle'; reticle.hidden = true;
@@ -1136,9 +1174,31 @@ export function initStory(C) {
     for (const c of dancers) if (c.wrap.visible) circ.push([c.wrap.position.x, c.wrap.position.z, 0.35]);
     for (const o of C.props || []) circ.push([o.x, o.z, o.r]); // hand pump, cart, clothesline, trees // hidden dancers (slow phones) don't block
     for (const [cx, cz, r] of circ) pushOut(p, cx, cz, r + 0.32, v, step);
-    const pr = Math.hypot(p.x, p.z); if (pr > VILLAGE_R) { p.x *= VILLAGE_R / pr; p.z *= VILLAGE_R / pr; }
+    fenceBlock(p);
+    const pr = Math.hypot(p.x, p.z); if (pr > VILLAGE_R) { p.x *= VILLAGE_R / pr; p.z *= VILLAGE_R / pr; if (!S.edgeTold && S.mode === 'walk') { S.edgeTold = true; hint('This is as far as the village land goes', 2600); } }
     p.y = 0;
   }
+  // Fences: lines nobody walks through (the palings round the kitchen gardens, from index.html, and the cattle shed's
+  // back wall and side rail). You get into a garden by jumping its fence: while you are high enough the fence is not
+  // there. The step from where you stood to where you are is tested against each line, because on a slow frame a
+  // step is longer than a fence is thick; then you are kept half a body off the rails and round the end posts.
+  const FENCE_R = 0.34; let fenceList = null, fenceFrom = null;
+  function fences() { if (fenceList) return fenceList; if (!W.gR) return C.fences || [];
+    const at = (x, z) => t4.copy(GOHAL).addScaledVector(W.gR, x).addScaledVector(W.gF, z), seg = (x0, z0, x1, z1) => { const a = at(x0, z0), ax = a.x, az = a.z, b = at(x1, z1); return { ax, az, bx: b.x, bz: b.z, h: 99, goda: 1 }; };
+    return (fenceList = (C.fences || []).concat([seg(-2.1, -1.7, 2.1, -1.7), seg(-2.1, -1.7, -2.1, 1.7)])); } // the wattle wall and the rail: too tall to jump
+  function fenceBlock(p) {
+    const prev = fenceFrom && Math.hypot(p.x - fenceFrom.x, p.z - fenceFrom.z) < 2.5 ? fenceFrom : null; // further than a step: you were put here, you did not walk
+    for (const f of fences()) { if ((S.jy || 0) > f.h * 0.62) continue; // over it
+      const ex = f.bx - f.ax, ez = f.bz - f.az, L2 = ex * ex + ez * ez, L = Math.sqrt(L2), nx = -ez / L, nz = ex / L, side = (p.x - f.ax) * nx + (p.z - f.az) * nz;
+      if (prev) { const ps = (prev.x - f.ax) * nx + (prev.z - f.az) * nz;
+        if (ps * side < 0) { const k = ps / (ps - side), cx = prev.x + (p.x - prev.x) * k, cz = prev.z + (p.z - prev.z) * k, tc = ((cx - f.ax) * ex + (cz - f.az) * ez) / L2; // where the step met the line
+          if (tc > -FENCE_R / L && tc < 1 + FENCE_R / L) { const want = (ps < 0 ? -1 : 1) * (FENCE_R + 0.001); p.x += nx * (want - side); p.z += nz * (want - side); fenceBump(f); continue; } } }
+      const t = clamp(((p.x - f.ax) * ex + (p.z - f.az) * ez) / L2, 0, 1), qx = f.ax + ex * t, qz = f.az + ez * t, dx = p.x - qx, dz = p.z - qz, d = Math.hypot(dx, dz);
+      if (d < FENCE_R) { if (d < 1e-4) { p.x = qx + nx * FENCE_R; p.z = qz + nz * FENCE_R; } else { p.x = qx + dx / d * FENCE_R; p.z = qz + dz / d * FENCE_R; } if (d < FENCE_R - 0.02) fenceBump(f); } }
+    (fenceFrom || (fenceFrom = V())).copy(p);
+  }
+  // the first time a garden fence stops you, you are told how to get over it
+  function fenceBump(f) { if (f.garden == null || S.fenceTold || S.mode !== 'walk' || S.jy > 0 || S.dlg) return; S.fenceTold = true; hint(C.isTouch ? 'A fence. Tap JUMP to get over it' : 'A fence. Press Space to jump over it', 3200); }
 
   // the pond moves: wavelets drift, ducks paddle round with small wakes, a fish rises now and then, ripples spread
   const pondM = new THREE.Matrix4(), pondQ = new THREE.Quaternion(), pondS = V(), pondP = V(), pondE = new THREE.Euler(), pondC = new THREE.Color();
@@ -1159,7 +1219,7 @@ export function initStory(C) {
       seen[id] = 1; persist(); const n = SIGHTS.filter(s => seen[s[0]]).length; C.addXp(5, 'Seen in the village'); { const al = C.album && C.album(); if (al) al.stamp(id); } C.hint(tr('Seen:') + ' ' + tr(name) + ' (' + n + '/' + SIGHTS.length + ')', 3000); /* the hint bubble wraps; the big toast ran off both edges of a phone */ C.sfx.clink && C.sfx.clink(0.8); C.buzz(25); if (C.track) C.track('found');
       if (n === SIGHTS.length) setTimeout(() => { C.addXp(30, 'You know this village'); pop('+30 XP', 'You know every corner of this village'); C.crowdCheer(0.5); }, 2800); seenUi(); break; } }
   function seenUi() { const b = $('seenBtn'), l = $('seenList'); if (!b || !l) return; const seen = save.seen || {}, n = SIGHTS.filter(s => seen[s[0]]).length;
-    b.hidden = !S.on; b.textContent = tr('Seen in the village:') + ' ' + n + '/' + SIGHTS.length; l.innerHTML = ''; for (const [id, name, clue] of SIGHTS) { const li = document.createElement('li'); li.className = seen[id] ? '' : 'no'; li.textContent = seen[id] ? '✓ ' + tr(name) : '? ' + tr(clue); l.appendChild(li); } }
+    b.hidden = !S.on; b.textContent = tr('Seen:') + ' ' + n + '/' + SIGHTS.length; /* short: it shares a row with Photo in the pause menu */ l.innerHTML = ''; for (const [id, name, clue] of SIGHTS) { const li = document.createElement('li'); li.className = seen[id] ? '' : 'no'; li.textContent = seen[id] ? '✓ ' + tr(name) : '? ' + tr(clue); l.appendChild(li); } }
   if ($('seenBtn')) $('seenBtn').addEventListener('click', () => { const al = C.album && C.album(); if (al) { al.open('pause'); return; } seenUi(); $('seenList').hidden = !$('seenList').hidden; });
   function pondUpdate(dt, tn) {
     sightsCheck(dt);
@@ -1217,15 +1277,20 @@ export function initStory(C) {
     const camF = t1.copy(p.pos).sub(camera.position).setY(0).normalize(), camR = t2.crossVectors(camF, UP).normalize();
     const mv = t3.set(0, 0, 0).addScaledVector(camF, -input.y).addScaledVector(camR, input.x); let mag = Math.min(mv.length(), 1);
     if (!free) mag = 0;
+    // a hop, high enough to clear a garden fence (JUMP on a phone, Space on a laptop)
+    { const can = free && !S.inside && !S.rest; if (S.jumpShown !== can) { S.jumpShown = can; const jb = $('jumpBtn'); if (jb) jb.hidden = !can; }
+      if (S.jumpAsk) { S.jumpAsk = false; if (can && !(S.jy > 0)) { S.jy = 0.001; S.jvy = JUMP_V; pl.play('Jump', { once: true, fade: 0.06, ts: 1.3 }); if (C.sfx.hop) C.sfx.hop(); if (C.track) C.track('jump'); } }
+      if (S.jy > 0) { S.jvy -= JUMP_G * dt; S.jy += S.jvy * dt; if (S.jy <= 0) { S.jy = 0; S.jvy = 0; C.sfx.step(1, false); pl.play(mag > 0.08 ? (mag > 0.55 ? 'Run' : 'Walk') : 'Idle', { fade: 0.1 }); } } }
+    const air = S.jy > 0;
     if (mag > 0.08) {
       const sp = (S.inside ? 3.4 : 5.4) * mag * (S.boost > 0 ? 1.15 : 1);
       p.vel.copy(mv).setLength(sp); p.yaw = C.turnTo(p.yaw, Math.atan2(mv.x, mv.z), 11, dt);
-      S.stepD = (S.stepD || 0) + sp * dt; if (S.stepD > (mag > 0.55 ? 0.95 : 0.7)) { S.stepD = 0; C.sfx.step(S.inside ? 0.6 : 0.9, S.inside); }
-      pl.play(mag > 0.55 ? 'Run' : 'Walk', { ts: (mag > 0.55 ? 1 : 1.2) * (S.inside ? 0.8 : 1) });
+      S.stepD = (S.stepD || 0) + sp * dt; if (!air && S.stepD > (mag > 0.55 ? 0.95 : 0.7)) { S.stepD = 0; C.sfx.step(S.inside ? 0.6 : 0.9, S.inside); }
+      if (!air) pl.play(mag > 0.55 ? 'Run' : 'Walk', { ts: (mag > 0.55 ? 1 : 1.2) * (S.inside ? 0.8 : 1) });
       p.pos.addScaledVector(p.vel, dt);
-    } else { p.vel.set(0, 0, 0); if (free && (pl.curName === 'Run' || pl.curName === 'Walk')) pl.play('Idle'); }
+    } else { p.vel.set(0, 0, 0); if (free && !air && (pl.curName === 'Run' || pl.curName === 'Walk')) pl.play('Idle'); }
     collide(p.pos, p.vel, dt);
-    pl.wrap.position.copy(p.pos); pl.wrap.rotation.y = p.yaw; pl.wrap.visible = true;
+    pl.wrap.position.copy(p.pos); if (air) pl.wrap.position.y += S.jy; pl.wrap.rotation.y = p.yaw; pl.wrap.visible = true;
     if (S.rest && S.rest.t >= 0) { // lying on the khatia, chest rising and falling
       const r = S.rest; r.t += dt; const a = W.inside.restAt;
       pl.wrap.position.set(a.x, a.y + 0.6 + Math.sin(r.t * 1.9) * 0.008, a.z); pl.wrap.quaternion.copy(REST_Q);
@@ -1235,11 +1300,12 @@ export function initStory(C) {
     }
     input.roll = input.grab = input.tease = false;
 
+    cutUpdate(dt);
     // the nearest thing to do
     const it = free ? interactions() : null; S.near = it;
     const label = it ? it.label : '';
-    if (label !== S.label) {
-      S.label = label; const b = $('actBtn'); b.textContent = tr(label) || '·'; b.classList.toggle('off', !label); b.classList.toggle('coach-on', save.ch === 0 && label === 'DRINK');
+    if (label !== S.label || (it && it.text !== S.nearText)) { S.nearText = it ? it.text : '';
+      S.label = label; const b = $('actBtn'); b.textContent = tr(label) || '·'; b.classList.toggle('off', !label); b.classList.toggle('coach-on', save.ch === 0 && label === 'DRINK'); b.classList.toggle('soft', label === 'CUT'); /* the sickle is always at hand: green and still, so orange keeps meaning 'something is here' */
       const pr = $('prompt'); pr.hidden = !label; if (label) pr.innerHTML = '<kbd>E</kbd>' + tr(it.text);
     }
     if (S.act) { S.act = false; if (it) it.go(); }
@@ -1424,7 +1490,7 @@ export function initStory(C) {
   addEventListener('pointermove', (e) => {
     if (e.pointerId === look.id2) { look.x2 = e.clientX; look.y2 = e.clientY; }
     else if (e.pointerId === look.id) {
-      if (look.id2 === null) { S.camYaw -= (e.clientX - look.x) * 0.0075; S.camPitch = clamp((S.camPitch ?? camPitchDef(camera.aspect < 1)) + (e.clientY - look.y) * 0.005, 0.08, 1.05); }
+      if (look.id2 === null) { const k = C.sens ? C.sens() : 1; /* look speed, set in the pause menu */ S.camYaw -= (e.clientX - look.x) * 0.0075 * k; S.camPitch = clamp((S.camPitch ?? camPitchDef(camera.aspect < 1)) + (e.clientY - look.y) * 0.005 * k, 0.08, 1.05); }
       look.x = e.clientX; look.y = e.clientY; }
     else return;
     if (look.id2 !== null) S.camZoom = clamp(look.z0 * look.d0 / (Math.hypot(look.x2 - look.x, look.y2 - look.y) || 1), 0.6, 1.5);
@@ -1434,6 +1500,7 @@ export function initStory(C) {
   addEventListener('pointerup', lookEnd); addEventListener('pointercancel', lookEnd);
 
   $('actBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); if (S.on && S.label) S.act = true; });
+  if ($('jumpBtn')) $('jumpBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); if (S.on) S.jumpAsk = true; });
   function key(e) {
     const k = e.code;
     if (S.dlg) { if (k === 'Enter' || k === 'Space' || k === 'KeyE') { e.preventDefault(); nextLine(); } return; }
@@ -1442,7 +1509,8 @@ export function initStory(C) {
       if (mv) { e.preventDefault(); arch.u = clamp(arch.u + mv[0], -1.8, 1.8); arch.v = clamp(arch.v + mv[1], -1.4, 1.4); return; } }
     if (S.mode === 'aim' || S.mode === 'fish') { if (e.repeat) return; if (k === 'Space' || k === 'Enter' || k === 'KeyE') { e.preventDefault(); S.tap = true; } return; }
     if (S.mode === 'drum' || S.mode === 'echo') { if (e.repeat) return; if (k === 'KeyF' || k === 'KeyD' || k === 'ArrowLeft') strike('T', evTime(e)); else if (k === 'KeyJ' || k === 'KeyK' || k === 'ArrowRight') strike('U', evTime(e)); else if (drum.free && (k === 'Enter' || k === 'KeyE')) drumStop(); return; }
-    if (k === 'KeyE' || k === 'Enter' || k === 'Space') { e.preventDefault(); S.act = true; }
+    if (k === 'Space') { e.preventDefault(); if (!e.repeat) S.jumpAsk = true; return; } // Space did what E does; since 25 Nov it jumps
+    if (k === 'KeyE' || k === 'Enter') { e.preventDefault(); S.act = true; }
   }
 
   return {
@@ -1455,12 +1523,14 @@ export function initStory(C) {
     setLang: (l) => { if (!LANGS.includes(l) || l === LANG) return; LANG = l; try { localStorage.setItem('khuntau-lang', LANG); } catch (e) {} applyLang(); },
     wantsControls: () => S.mode === 'walk' && !S.dlg && !pick.on,
     seenUi, // the journal of things seen, for the pause menu
+    photo: (on) => { if (!W.marker) return; if (on) { S.markerWas = W.marker.visible; W.marker.visible = false; } else if (S.markerWas != null) { W.marker.visible = S.markerWas; S.markerWas = null; } }, // no objective beam in a photo
+    sight: (p, c) => sightClear(p, c), // photo mode: is the line from you to the camera free of houses, stacks and trees
     // for album.js: which festival days are kept (the day in hand counts once its part is done) and which things are seen
     albumData: () => { const seen = save.seen || {}, d = festDay(), split = (n) => { const s = tr('Day ' + n + ' of Sohrai: ' + FEST[n - 1][0]), i = s.lastIndexOf(': '); return i > 0 ? s.slice(i + 2) : FEST[n - 1][0]; };
       return { lang: LANG, fin: !!F.fin, days: FEST.map((f, i) => ({ n: i + 1, name: split(i + 1), ol: OLD[i], task: tr(f[1]), done: !!F.fin || i + 1 < d || (i + 1 === d && !!F.on), next: i < 4 ? tr('Day ' + (i + 2) + ' (' + FEST[i + 1][0] + ') opens tomorrow') : '' })),
         sights: SIGHTS.map(([id, name, clue]) => ({ id, name: tr(name), clue: tr(clue), seen: !!seen[id] })) }; },
     dayOl: () => GATED && !F.fin && !festWaiting() ? OLD[festDay() - 1] : '', // the festival day's name in Ol Chiki, for the home screen
     label: () => GATED && !F.fin ? (festWaiting() ? `Into the village · Day ${F.day + 1} opens tomorrow` : `Into the village · Sohrai Day ${festDay()} of 5: ${FEST[festDay() - 1][0]}`) : save.done ? `Into the village · ${doneToday()}/4 done today` : save.ch > 0 ? `Into the village · Sohrai Day ${save.ch}/5` : 'Into the village · Sohrai Day',
-    debug: { dayCard, SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
+    debug: { fences, collide, VILLAGE_R, SHEAF, enterHouse, leaveHouse, dayCard, SIGHTS, sightAt, seenUi, ringHelp, villageRound, rebuke, scolded, fest: F, festDay, festWaiting, festCheck, FEST, GATED, calib: () => calib, S, save, dance, drum, W, arch, fish, echo, today, strike, setChapter, persist, placeAnimal, snapCam, say },
   };
 }
