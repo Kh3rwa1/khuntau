@@ -41,9 +41,9 @@ export async function open() {
   const sel = (cls, list) => list.split(', ').map(x => `html.${cls} ${x}`).join(', ');
   await page.addStyleTag({ content: `
     #toast, #hint, #pop, #stageBanner, #prompt, #tapHint, #dayCard, #dlg, #talkToast, #talkBubble, #rivalChip, #fpsMeter, .judge, #stamp, .stamp { display: none !important; }
-    ${sel('film-clean', hud)} { visibility: hidden !important; }
-    ${sel('film-ring', '#pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #joyGhost, #leaveBtn, #pads')} { visibility: hidden !important; }
-    ${sel('film-pads', '#controls, #pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #hudScore, #joyGhost, #tapzone, #reticle')} { visibility: hidden !important; }
+    ${sel('film-clean', hud)} { display: none !important; }
+    ${sel('film-ring', '#pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #joyGhost, #leaveBtn, #pads')} { display: none !important; }
+    ${sel('film-pads', '#controls, #pauseBtn, #muteBtn, #fsBtn, #micBtn, #talkHud, #hudStory, #hudScore, #joyGhost, #tapzone, #reticle')} { display: none !important; } /* display, not visibility: a child with visibility: visible (the objective arrow) shows through a hidden parent */
     html.film-nobars div[style*="background:#000"], html.film-nobars div[style*="background: rgb(0, 0, 0)"] { display: none !important; } /* the cinematic letterbox bars (Chrome rewrites #000 as rgb) */
     #padDone { visibility: hidden !important; }` });
   // a shot may set window.__cam(camera, t) to place the camera itself; it runs just before the game draws

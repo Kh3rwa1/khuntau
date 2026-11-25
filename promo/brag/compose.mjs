@@ -33,6 +33,7 @@ cut('S7', F(20), F(22), ev('S7', 'land') - 14);
 const cuts = evp('S8', 'cut-'); cut('S8', F(22), F(24), (cuts[1] ?? 20) - 2);
 // bar 7: the crane up over the village, the title, the end
 cut('S9', F(24), N, 6);
+for (const s of scenes) if (['S5', 'S6', 'S7', 'S8', 'S9'].includes(s.shot) && !(M[s.shot].fixedHud)) s.patch = true; // filmed before the objective arrow was hidden with display: none
 const sceneOf = shot => scenes.find(s => s.shot === shot);
 const videoFrame = (shot, clipFrame) => { const s = sceneOf(shot); return s.f0 + (clipFrame - s.in); }; // where a clip moment lands
 const bonkF = videoFrame('S34', ev('S34', 'bonk')), snatchF = videoFrame('S34', ev('S34', 'snatch'));

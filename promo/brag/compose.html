@@ -54,7 +54,9 @@ window.frame = async (f, T) => {
   const n = Math.min(sc.in + (f - sc.f0), sc.last), src = `/brag-output/work/frames/${sc.shot}/${String(n + 1).padStart(4, '0')}.jpg`;
   const im = await img(src);
   const k = clamp((f - sc.f0) / 8), z = sc.punch === false ? 1 : 1 + 0.07 * (1 - easeOut(k)); // zoom punch on the cut
-  g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.translate(W / 2, H / 2); g.scale(z * (sc.zoom || 1), z * (sc.zoom || 1)); g.drawImage(im, -W / 2, -H / 2, W, H); g.restore();
+  g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.translate(W / 2, H / 2); g.scale(z * (sc.zoom || 1), z * (sc.zoom || 1)); g.drawImage(im, -W / 2, -H / 2, W, H);
+  if (sc.patch) g.drawImage(im, 96, 26, 46, 62, -W / 2 + 46, -H / 2 + 26, 46, 62); // paints over the objective arrow left in the village shots with the sky beside it
+  g.restore();
   if (sc.flash) { const a = clamp(1 - (f - sc.f0) / 5) * sc.flash; if (a > 0) { g.fillStyle = `rgba(255,236,200,${a})`; g.fillRect(0, 0, W, H); } }
   for (const b of T.bands) shade(t, b);
   for (const tp of T.taps) tap(t, tp);
