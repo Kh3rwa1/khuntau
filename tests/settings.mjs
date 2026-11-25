@@ -104,9 +104,9 @@ const card = (ev) => ev(() => { const c = document.querySelector('.pcard').getBo
   // archery: the crosshair follows the same setting
   { await ev(() => { const a = 0.35 + 0.698132 * 1.5; __k.game.p.pos.set(Math.cos(a) * 18.5, 0, Math.sin(a) * 18.5); }); const got = await until(() => document.getElementById('actBtn').textContent === 'SHOOT', 8000); if (got) { await page.tap('#actBtn'); await until(() => __k.story.debug.S.mode === 'aim', 8000); await sleep(1600); }
     const pull = () => ev(() => { const a = __k.story.debug.arch, z = document.getElementById('tapzone'), fire = (t, x, y) => z.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 9, pointerType: 'touch', clientX: x, clientY: y, isPrimary: true }));
-      a.u = 0; a.v = 0; fire('pointerdown', 200, 500); const u0 = a.u; fire('pointermove', 240, 500); const du = a.u - u0; fire('pointercancel', 240, 500); return du * a.ppm; });
-    const a1 = got ? await pull() : 0; await ev(() => { __k.SET.look = 2.5; }); const a2 = got ? await pull() : 0; await ev(() => { __k.SET.look = 1; });
-    check(got && Math.abs(a1 - 40) < 2 && Math.abs(a2 - 100) < 4, `archery: a 40 px drag moves the crosshair ${a1.toFixed(0)} px at 100% and ${a2.toFixed(0)} px at 250%`);
+      a.u = 0; a.v = 0; fire('pointerdown', 200, 500); const u0 = a.u; fire('pointermove', 212, 500); const du = a.u - u0; fire('pointercancel', 212, 500); return { px: du * a.ppm, room: 1.8 * a.ppm }; }); // a short drag: the crosshair stops 1.8 m from the middle, and on a slow machine the target is drawn small (CI run 248: 40 px at 250% asked for 100 px where only 94 were left)
+    const a1 = got ? await pull() : { px: 0, room: 0 }; await ev(() => { __k.SET.look = 2.5; }); const a2 = got ? await pull() : { px: 0, room: 0 }; await ev(() => { __k.SET.look = 1; });
+    check(got && a2.room > 34 && Math.abs(a1.px - 12) < 0.6 && Math.abs(a2.px - 30) < 1.5, `archery: a 12 px drag moves the crosshair ${a1.px.toFixed(1)} px at 100% and ${a2.px.toFixed(1)} px at 250% (${a2.room.toFixed(0)} px of travel to its limit)`);
     await ev(() => document.getElementById('tapQuit').click()); await sleep(600); }
 
   // photo indoors: the room lies under the ground beneath the house, where the village's sight test calls every direction blocked
