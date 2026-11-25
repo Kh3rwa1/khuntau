@@ -52,5 +52,6 @@ else
 fi
 A shell dumpsys activity activities | grep -m1 -i "ResumedActivity" > out/a16-resumed.txt || true
 A logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat-a16.txt
+if grep -q 'bridge: ready' out/logcat-a16.txt; then echo 'bridge: ok in the release build' >> out/a16-install.txt; else echo 'bridge: NOT SEEN in the release build' >> out/a16-install.txt; fi
 cat out/a16-install.txt out/a16-resumed.txt
 exit 0

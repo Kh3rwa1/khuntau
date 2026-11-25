@@ -8,18 +8,31 @@ android {
         applicationId 'com.skyward.ascent'
         minSdk 24
         targetSdk 36
-        versionCode((project.findProperty('vc') ?: '4') as int)
-        versionName(project.findProperty('vn') ?: '1.3.0')
+        versionCode((project.findProperty('vc') ?: '5') as int)
+        versionName(project.findProperty('vn') ?: '1.3.1')
     }
-    buildTypes { release { minifyEnabled false } }
+    buildTypes {
+        release {
+            // R8: shrinks and obfuscates the app's own code and drops unused resources. The mapping file goes into the
+            // bundle, so Play can turn crash reports back into readable ones (Play warned it was missing, 25 Nov).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     sourceSets { main { assets.srcDirs = [layout.buildDirectory.dir('webassets').get().asFile] } }
-    androidResources { noCompress 'mp3', 'woff2', 'jpg', 'png' }
+    androidResources { noCompress 'mp3', 'woff2', 'jpg', 'png', 'webp' } // already compressed: stored as they are, read without unpacking
     lint { abortOnError false; checkReleaseBuilds false }
 }
 tasks.register('copyWeb', Copy) {
     from '../../public'
     into layout.buildDirectory.dir('webassets/www')
     exclude '.well-known/**'
+    // Files of the website the app never asks for (about 680 KB): the link-preview picture, the web app's icons and
+    // the stats page; sw.js (the app answers /sw.js with 404 itself); the title font's accented-letter cut (the page
+    // fetches it only for an accented letter, and online it still comes from the site). They stay in files.json with
+    // their hashes, so the app's over-the-air update counts them as present and does not download them.
+    exclude 'og.jpg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'stats.html', 'sw.js', 'fonts/rubik-dirt-latin-ext.woff2'
 }
 preBuild.dependsOn 'copyWeb'

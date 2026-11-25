@@ -65,6 +65,8 @@ if [ -f /tmp/rehearsal/sohrai.apk ]; then
   sleep 90
   adb exec-out screencap -p > out/5-release-build-offline-home.png
   adb logcat -d -s SohraiJS:V AndroidRuntime:E > out/logcat-release.txt
+  # the release build is shrunk by R8: the page must still reach the app through window.SohraiApp
+  if grep -q 'bridge: ready' out/logcat-release.txt; then echo 'bridge: ok in the release build' >> out/release-install.txt; else echo 'bridge: NOT SEEN in the release build' >> out/release-install.txt; fi
   adb shell dumpsys package com.skyward.ascent | grep -i -m2 "versionCode\|versionName" >> out/release-install.txt || true
   cat out/release-install.txt
 fi

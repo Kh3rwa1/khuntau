@@ -257,6 +257,7 @@ public class MainActivity extends Activity {
         /** The page calls this when the Play button is live. */
         @JavascriptInterface
         public void ready() {
+            Log.i(TAG, "bridge: ready"); // the emulator checks look for this line: the page reached the app through the bridge
             ui.post(() -> {
                 if (!gameUp) { gameUp = true; ota.report(true); }
                 hideSplash();

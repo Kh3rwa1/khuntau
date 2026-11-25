@@ -39,6 +39,7 @@ jobs:
           mkdir -p out
           "$BT/zipalign" -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk out/sohrai-unsigned-aligned.apk
           cp android/app/build/outputs/bundle/release/app-release.aab out/sohrai-unsigned.aab
+          cp android/app/build/outputs/mapping/release/mapping.txt out/mapping.txt # R8's map (also packed inside the bundle for Play)
           cp "$BT/lib/apksigner.jar" out/
           sed -n 3p public/sw.js > out/web-version.txt
           ls -la out
