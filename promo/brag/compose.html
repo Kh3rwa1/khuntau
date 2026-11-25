@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  @font-face { font-family: 'Rubik Dirt'; src: url(/public/fonts/rubik-dirt-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Baloo 2'; font-weight: 400 800; src: url(/public/fonts/baloo-2-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Noto Sans Ol Chiki'; font-weight: 400 700; src: url(/public/fonts/noto-sans-ol-chiki-ol-chiki.woff2) format('woff2'); }
+  html, body { margin: 0; background: #000; } canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// Draws one frame of the promo as a pure function of the frame number: the filmed game frame of the scene playing,
+// a short zoom punch on each cut, the taps on the real buttons, and the words. compose.mjs calls frame(f).
+const c = document.getElementById('c'), g = c.getContext('2d'), W = 1080, H = 1920, FPS = 30;
+const PASTE = '#f6eedd', SAFFRON = '#ffb347', OCHRE = '#b5462a', INK = '#140a06';
+const cache = new Map();
+function img(src) {
+  if (cache.has(src)) return cache.get(src);
+  const p = new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('no ' + src)); i.src = src; });
+  cache.set(src, p); if (cache.size > 40) cache.delete(cache.keys().next().value); return p;
+}
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const easeOut = t => 1 - Math.pow(1 - t, 3), smooth = t => t * t * (3 - 2 * t);
+
+function word(it, t) { // one line of type: slams in (big words) or rises in (small lines), and leaves upward
+  const p = clamp((t - it.t0) / (it.kind === 'slam' ? 0.2 : 0.32)), q = clamp((it.t1 - t) / 0.16);
+  if (p <= 0 || q <= 0) return;
+  let a = Math.min(clamp(p * 5), q), s = 1, dy = -(1 - q) * 36, rot = it.rot || 0;
+  if (it.kind === 'slam') { s = 1 + 0.55 * Math.pow(1 - p, 3); rot += (1 - p) * 0.06; }
+  else dy += (1 - easeOut(p)) * 34;
+  g.save(); g.globalAlpha = a; g.translate(it.x, it.y + dy); g.rotate(rot); g.scale(s, s);
+  g.font = it.font; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (it.ls) g.letterSpacing = it.ls + 'px';
+  const size = parseFloat(it.font.match(/(\d+)px/)[1]);
+  if (it.glow !== false) { g.shadowColor = 'rgba(20,10,6,.55)'; g.shadowBlur = size * 0.35; g.fillStyle = 'rgba(0,0,0,0)'; }
+  if (it.shadow !== false) { g.fillStyle = it.shadowColor || OCHRE; g.fillText(it.text, 0, size * 0.065); g.shadowBlur = 0; }
+  g.fillStyle = it.color || PASTE; g.fillText(it.text, 0, 0);
+  g.restore();
+}
+function shade(t, band) { // darkens the picture behind the words so they read on a bright sky
+  const a = clamp((t - band.t0) / 0.2) * clamp((band.t1 - t) / 0.2) * (band.a || 0.42);
+  if (a <= 0) return;
+  const gr = g.createLinearGradient(0, band.y0, 0, band.y1);
+  gr.addColorStop(0, 'rgba(20,10,6,0)'); gr.addColorStop(0.35, `rgba(20,10,6,${a})`); gr.addColorStop(0.65, `rgba(20,10,6,${a})`); gr.addColorStop(1, 'rgba(20,10,6,0)');
+  g.fillStyle = gr; g.fillRect(0, band.y0, W, band.y1 - band.y0);
+}
+function tap(t, tp) { // a finger on a real button: a pressed dot, then a ring spreading from it
+  const k = (t - tp.t) / 0.42; if (k < -0.08 || k > 1) return;
+  const r = tp.r;
+  if (k < 0.25) { g.save(); g.globalAlpha = 0.55 * (1 - clamp(k / 0.25)); g.fillStyle = '#fff'; g.beginPath(); g.arc(tp.x, tp.y, r * 0.62, 0, 7); g.fill(); g.restore(); }
+  if (k >= 0) { g.save(); g.globalAlpha = 0.9 * (1 - k); g.strokeStyle = '#fff'; g.lineWidth = 7 * (1 - k) + 2; g.beginPath(); g.arc(tp.x, tp.y, r * (0.7 + 0.75 * easeOut(k)), 0, 7); g.stroke(); g.restore(); }
+}
+window.frame = async (f, T) => {
+  const t = f / FPS, sc = T.scenes.find(s => f >= s.f0 && f < s.f1) || T.scenes[T.scenes.length - 1];
+  const n = Math.min(sc.in + (f - sc.f0), sc.last), src = `/brag-output/work/frames/${sc.shot}/${String(n + 1).padStart(4, '0')}.jpg`;
+  const im = await img(src);
+  const k = clamp((f - sc.f0) / 8), z = sc.punch === false ? 1 : 1 + 0.07 * (1 - easeOut(k)); // zoom punch on the cut
+  g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.translate(W / 2, H / 2); g.scale(z * (sc.zoom || 1), z * (sc.zoom || 1)); g.drawImage(im, -W / 2, -H / 2, W, H); g.restore();
+  if (sc.flash) { const a = clamp(1 - (f - sc.f0) / 5) * sc.flash; if (a > 0) { g.fillStyle = `rgba(255,236,200,${a})`; g.fillRect(0, 0, W, H); } }
+  for (const b of T.bands) shade(t, b);
+  for (const tp of T.taps) tap(t, tp);
+  for (const it of T.words) word(it, t);
+  return c.toDataURL('image/jpeg', 0.93);
+};
+window.ready = async () => { await Promise.all([document.fonts.load('140px "Rubik Dirt"'), document.fonts.load('800 50px "Baloo 2"'), document.fonts.load('700 60px "Noto Sans Ol Chiki"', 'ᱥᱚᱦᱨᱟᱭ')]); return document.fonts.check('140px "Rubik Dirt"') && document.fonts.check('700 60px "Noto Sans Ol Chiki"', 'ᱥᱚᱦᱨᱟᱭ'); };
+</script></body></html>

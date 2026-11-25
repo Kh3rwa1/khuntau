@@ -17,3 +17,4 @@ promo/**/*.m4a
 twa/app-release*
 twa/app/
 __pycache__/
+brag-output/
