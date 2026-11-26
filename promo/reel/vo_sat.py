@@ -51,7 +51,7 @@ def speak(voice='Sibu', style='advertisements'):
     for l in json.load(open(SAT))['lines']:
         if l.get('capOnly') or l.get('skip'): continue
         if os.path.exists(f"{out}/{l['id']}.wav") and not os.environ.get('REDO'): continue  # already voiced (REDO=1 voices again)
-        wav = post('/audio/speech', {'model': 'indic-speak', 'input': l['sat'], 'voice': voice, 'instructions': json.dumps({'lang': 'sat', 'style': style})}, raw=True)
+        wav = post('/audio/speech', {'model': 'indic-speak', 'input': l['sat'], 'voice': voice, 'instructions': json.dumps({'lang': 'sat', 'style': l.get('style') or style})}, raw=True)
         open(f"{out}/{l['id']}.raw.wav", 'wb').write(wav)
         subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', f"{out}/{l['id']}.raw.wav", '-af', 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse', f"{out}/{l['id']}.wav"], check=True)
         d = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f"{out}/{l['id']}.wav"], capture_output=True, text=True).stdout.strip()

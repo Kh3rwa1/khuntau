@@ -9,7 +9,8 @@
    "sat": "ᱡᱚᱛᱚ ᱥᱳᱦᱨᱟᱭ...ᱢᱤᱫᱴᱟᱝ ᱨᱟᱹᱜᱤ ᱰᱟᱝᱜᱽᱨᱟ ᱾",
    "cap": "Every Sohrai... | one angry bull.",
    "en": "Every Sohrai... one angry bull.",
-   "hi": "हर सोहराय पे, ये गुस्सैल बैल खूँटे से बँधता है।"
+   "hi": "हर सोहराय पे, ये गुस्सैल बैल खूँटे से बँधता है।",
+   "style": "fear"
   },
   {
    "id": "l2",
@@ -17,7 +18,9 @@
    "sat": "ᱟᱨ ᱠᱷᱩᱱᱴᱤ ᱪᱮᱛᱟᱱ ᱨᱮ ? ᱞᱚᱞᱚ ᱯᱤᱴᱷᱟ !",
    "cap": "And on the post? | Hot PITHA!",
    "en": "And on the post? Hot pitha!",
-   "hi": "और खूँटे के ऊपर? गरम-गरम पीठा!"
+   "hi": "और खूँटे के ऊपर? गरम-गरम पीठा!",
+   "style": "advertisements",
+   "_style": "the surprise/storyteller takes measured flatter than this one (26 Nov), so this line keeps the advertisements take"
   },
   {
    "id": "l3",
@@ -26,7 +29,9 @@
    "cap": "Gogo said: | \"First, keep | the festival.\"",
    "en": "Mother said... first, keep the festival.",
    "hi": "गोगो बोली, बेटा, पहले त्योहार तो मनाओ!",
-   "tempo": 1.1
+   "tempo": 1.1,
+   "style": "advertisements",
+   "_style": "the surprise/storyteller takes measured flatter than this one (26 Nov), so this line keeps the advertisements take"
   },
   {
    "id": "l4",
@@ -34,15 +39,19 @@
    "sat": "ᱢᱚᱬᱮ ᱫᱤᱱ᱾ ᱠᱟᱸᱛ-ᱨᱮ ᱨᱚᱝ ᱞᱟᱜᱟᱣ᱾ ᱥᱤᱧᱠᱷᱟᱹ ᱨᱮ ᱟᱞᱯᱟᱱᱟ᱾ ᱜᱚᱴᱟ ᱟᱛᱳ... ᱢᱤᱫ ᱥᱟᱶᱛᱮ᱾",
    "cap": "Five days. | The whole village | together.",
    "en": "Five days. Paint on the walls. Alpana at the door. The whole village... together.",
-   "hi": "पाँच दिन। दीवार पे रंग, आँगन में अल्पना, पूरा गाँव एक साथ।"
+   "hi": "पाँच दिन। दीवार पे रंग, आँगन में अल्पना, पूरा गाँव एक साथ।",
+   "style": "single person narration audiobook",
+   "tempo": 1.1
   },
   {
    "id": "l5a",
    "at": "drum",
-   "sat": "ᱰᱨᱟᱢ ᱵᱟᱡᱟᱣ ᱢᱮ !",
+   "sat": "ᱴᱟᱢᱟᱠ ᱵᱟᱡᱟᱣ ᱢᱮ !",
    "cap": "Beat the tamak!",
    "en": "Beat the drum!",
-   "hi": "तमाक बजाओ!"
+   "hi": "तमाक बजाओ!",
+   "_": "tamak, not the English 'drum' (Dulor, 26 Nov)",
+   "style": "happy"
   },
   {
    "id": "l5b",
@@ -50,7 +59,8 @@
    "sat": "ᱟᱜ ᱵᱮᱱᱟᱣ ᱢᱮ !",
    "cap": "Draw the bow!",
    "en": "Draw the bow!",
-   "hi": "तीर चलाओ!"
+   "hi": "तीर चलाओ!",
+   "style": "happy"
   },
   {
    "id": "l5c",
@@ -58,7 +68,8 @@
    "sat": "ᱦᱟᱠᱩ ᱥᱟᱵᱽ ᱢᱮ !",
    "cap": "Catch the fish!",
    "en": "Catch the fish!",
-   "hi": "मछली पकड़ो!"
+   "hi": "मछली पकड़ो!",
+   "style": "happy"
   },
   {
    "id": "l5d",
@@ -66,7 +77,8 @@
    "sat": "ᱦᱳᱲᱳ ᱤᱨ ᱢᱮ",
    "cap": "Reap the paddy!",
    "en": "Reap the paddy!",
-   "hi": "धान काटो!"
+   "hi": "धान काटो!",
+   "style": "happy"
   },
   {
    "id": "l6a",
@@ -86,7 +98,8 @@
    "cap": "Show the dried hide... | and wait...",
    "en": "Show him the dried hide... and wait...",
    "hi": "सूखी चमड़ी दिखाओ, और रुको...",
-   "tempo": 1.25
+   "tempo": 1.25,
+   "style": "fear"
   },
   {
    "id": "l6d",
@@ -94,7 +107,8 @@
    "sat": "ᱱᱤᱛᱚᱜ! ᱯᱤᱴᱷᱟ ᱛᱤᱭᱳᱜ ᱢᱮ!",
    "cap": "NOW! | GRAB THE PITHA!",
    "en": "NOW! Grab the pitha!",
-   "hi": "अब! पीठा छीनो!"
+   "hi": "अब! पीठा छीनो!",
+   "style": "anger"
   },
   {
    "id": "l7",
@@ -102,7 +116,8 @@
    "sat": "ᱜᱚᱴᱟ ᱟᱛᱳ ᱦᱚᱲᱠᱚ ᱞᱮᱭ ᱠᱮᱫᱟ...ᱡᱳᱦᱟᱨ !",
    "cap": "JOHAR!",
    "en": "The whole village roared... JOHAR!",
-   "hi": "पूरा गांव बोला, जोहार!"
+   "hi": "पूरा गांव बोला, जोहार!",
+   "style": "happy"
   },
   {
    "id": "l8",
@@ -110,7 +125,8 @@
    "sat": "ᱥᱳᱦᱨᱟᱭ᱾ ᱱᱤᱛᱚᱜ ᱜᱩᱜᱚᱞ ᱯᱞᱮ ᱨᱮ᱾",
    "cap": "",
    "en": "Sohrai. Now on Google Play.",
-   "hi": "सोहराय। अब गूगल प्ले पे अवेलेबल।"
+   "hi": "सोहराय। अब गूगल प्ले पे अवेलेबल।",
+   "style": "TV style news"
   },
   {
    "id": "l9",
@@ -119,7 +135,8 @@
    "cap": "",
    "en": "Free. And it works offline.",
    "hi": "फ़्री है, ऑफ़ लाइन भी चलता है।",
-   "tempo": 1.2
+   "tempo": 1.2,
+   "style": "advertisements"
   },
   {
    "id": "l10",
@@ -127,7 +144,9 @@
    "sat": "ᱱᱤᱛᱚᱜ ᱰᱟᱣᱩᱱᱞᱳᱰ ᱢᱮ !",
    "cap": "",
    "en": "Download it now!",
-   "hi": "अभी डाउनलोड करो!"
+   "hi": "अभी डाउनलोड करो!",
+   "style": "happy"
   }
- ]
+ ],
+ "_style": "'style' = Bodhan's emotion style for that line (its 14 styles: fear, surprise, anger, happy, sad, news, advertisements, children's stories, single person narration audiobook, ...): the drama comes from these"
 }
