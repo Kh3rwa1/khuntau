@@ -54,7 +54,8 @@ const over = vo.filter(v => v.end > N / FPS - 0.3); if (over.length) throw new E
 
 // ---- the words: captions follow the voice (Rubik Dirt, the game's textured face); the end card names the Play badge ----
 const words = [], bands = [], cards = [], taps = [];
-const say = (text, t0, t1, y, px, o = {}) => words.push({ text, t0, t1, x: 540, y, font: RD(px), kind: 'slam', rot: -0.02, ...o });
+const OLC = /[\u1C50-\u1C7F]/; // Ol Chiki: Rubik Dirt and Baloo 2 have no Ol Chiki letters, so those lines are set in Noto Sans Ol Chiki
+const say = (text, t0, t1, y, px, o = {}) => words.push({ text, t0, t1, x: 540, y, font: OLC.test(text) ? OL(Math.round(px * 0.8)) : RD(px), kind: 'slam', rot: -0.02, ...o });
 const line = (text, t0, t1, y, font, o = {}) => words.push({ text, t0, t1, x: 540, y, font, kind: 'rise', ...o });
 const capY = { l1: 600, l2: 620, l3: 1330, l4: 1260, l6a: 600, l6b: 640, l6d: 620, l7: 600 }; // over the paintings the words sit low, clear of the faces
 const hot = { l2: 1, l5a: 1, l5b: 1, l5c: 1, l5d: 1, l6d: 1, l7: 1 };
@@ -72,7 +73,7 @@ const E = T_(40);
 bands.push({ t0: E, t1: N / FPS + 1, y0: 230, y1: 1130, a: 0.42 });
 line('ᱥᱚᱦᱨᱟᱭ', E, 99, 330, OL(64), { color: SAFFRON, shadow: false });
 say('SOHRAI', E, 99, 500, 210, {});
-line(VOF.endLine || 'Ab Google Play pe available!', E + 0.35, 99, 680, BL(64), { color: SAFFRON, shadowColor: INK });
+line(VOF.endLine || 'Ab Google Play pe available!', E + 0.35, 99, 680, OLC.test(VOF.endLine || '') ? OL(60) : BL(64), { color: SAFFRON, shadowColor: INK });
 cards.push({ src: '/promo/reel/google-play-badge.png', t0: E + 0.75, t1: 99, x: 540, y: 845, w: 620 }); // the badge as Google gives it: not recoloured, not cropped
 line('Free · Offline · English & Hindi', E + 1.3, 99, 1010, BL(46), { shadowColor: INK });
 // taps on the real buttons
