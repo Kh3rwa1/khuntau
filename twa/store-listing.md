@@ -17,7 +17,7 @@ Sohrai: Santal Festival Game
 Sohrai, the Santal harvest festival game: dodge the bull and grab the pitha!
 ```
 
-**Full description** (2306/4000)
+**Full description** (2299/4000)
 
 ```
 Sohrai is the harvest festival of the Santal (Santhal) people of Jharkhand, West Bengal, Odisha, Bihar and Assam. Sohrai: Santal Festival Game lets you live it in a painted Santal village: oil your bull's horns, beat the tamak at the akhra, and on Khuntau day snatch the pitha from the post while a tied bull charges at you.
@@ -37,7 +37,7 @@ LIVE THE FIVE DAYS OF SOHRAI
 • Khuntau: garland your animal, drum at the akhra, face the bull
 • Jale: the Sarpa enej goes from house to house
 • Hako Katkom: catch fish at the pond
-Each day of the festival opens on the next real day. Nothing is locked, but do the right thing on the wrong day and the Majhi will tell you off.
+Each day of the festival opens on the next real day. Nothing is locked, but do a thing on the wrong day and the Majhi will tell you off.
 
 A SANTAL VILLAGE THAT IS ALIVE
 • Houses painted like real Santal walls: white lime, black band, red earth
@@ -57,7 +57,7 @@ MADE FOR INDIAN PHONES
 • English and Hindi
 • Free, with no accounts and no purchases
 
-Made by Dulor (Tumdah), with his own Khuntau music. Johar!
+Made by Dulor (Tumdah), with Khuntau music by Dulor. Johar!
 ```
 
 ## Hindi listing (hi-IN): Main store listing > Manage translations
