@@ -8,11 +8,14 @@
 # Then: VOICE=sibu VO=promo/reel/vo_sat.json node promo/reel/compose.mjs  -> brag-output/reel/sohrai-reel-sat.mp4
 import json, os, re, sys, subprocess, urllib.request
 
-KEY, BASE = os.environ['BODHAN_API_KEY'], 'https://api.bodhan.ai/v1'
+BASE = 'https://api.bodhan.ai/v1'
+KEY = os.environ.get('BODHAN_API_KEY', '')
+KEYS = {'translate': os.environ.get('BODHAN_TRANSLATE_KEY') or KEY, 'speak': os.environ.get('BODHAN_SPEAK_KEY') or KEY} # a key may be allowed one model only
 EN, SAT = 'promo/reel/vo_en.json', 'promo/reel/vo_sat.json'
 
 def post(path, body, raw=False):
-    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), headers={'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json'})
+    k = KEYS['translate'] if 'chat' in path else KEYS['speak']
+    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), headers={'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json'})
     with urllib.request.urlopen(req, timeout=120) as r: return r.read() if raw else json.load(r)
 
 def plain(s): return re.sub(r'\[[^\]]*\]\s*', '', s).strip()  # the English script without its acting directions
@@ -52,7 +55,7 @@ def check(voice='Sibu'):  # Santali speech-to-text (OpenAI-style multipart uploa
         if not os.path.exists(f): continue
         b = uuid.uuid4().hex; body = (f'--{b}\r\nContent-Disposition: form-data; name="model"\r\n\r\nindic-transcribe\r\n--{b}\r\nContent-Disposition: form-data; name="language"\r\n\r\nsat\r\n'
             f'--{b}\r\nContent-Disposition: form-data; name="file"; filename="a.wav"\r\nContent-Type: audio/wav\r\n\r\n').encode() + open(f, 'rb').read() + f'\r\n--{b}--\r\n'.encode()
-        req = urllib.request.Request(BASE + '/audio/transcriptions', data=body, headers={'Authorization': 'Bearer ' + KEY, 'Content-Type': 'multipart/form-data; boundary=' + b})
+        req = urllib.request.Request(BASE + '/audio/transcriptions', data=body, headers={'Authorization': 'Bearer ' + KEYS['speak'], 'Content-Type': 'multipart/form-data; boundary=' + b})
         with urllib.request.urlopen(req, timeout=120) as r: print(l['id'], '\n  said:', l['sat'], '\n  heard:', json.load(r).get('text'))
 
 if __name__ == '__main__':
