@@ -6,14 +6,22 @@
 #                                                               (Sibu male, Phulmani female) -> brag-output/reel/vo/<voice>/<id>.wav
 #   BODHAN_API_KEY=sk-... python3 promo/reel/vo_sat.py check [voice]          Bodhan's Santali speech-to-text reads each line back
 # Then: VOICE=sibu VO=promo/reel/vo_sat.json node promo/reel/compose.mjs  -> brag-output/reel/sohrai-reel-sat.mp4
-import json, os, re, sys, subprocess, urllib.request
+import json, os, re, sys, subprocess, urllib.request, urllib.error
 
 BASE = 'https://api.bodhan.ai/v1'
 KEY = os.environ.get('BODHAN_API_KEY', '')
 KEYS = {'translate': os.environ.get('BODHAN_TRANSLATE_KEY') or KEY, 'speak': os.environ.get('BODHAN_SPEAK_KEY') or KEY} # a key may be allowed one model only
 EN, SAT = 'promo/reel/vo_en.json', 'promo/reel/vo_sat.json'
 
-def post(path, body, raw=False):
+def post(path, body, raw=False, tries=8):
+    import time
+    for i in range(tries):  # Bodhan rate-limits per minute: wait and try again
+        try: return _post(path, body, raw)
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or i == tries - 1 or b'Budget' in (msg := e.read()): raise
+            time.sleep(20 * (i + 1))
+
+def _post(path, body, raw=False):
     k = KEYS['translate'] if 'chat' in path else KEYS['speak']
     req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), headers={'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json'})
     with urllib.request.urlopen(req, timeout=120) as r: return r.read() if raw else json.load(r)
@@ -42,6 +50,7 @@ def speak(voice='Sibu', style='advertisements'):
     out = f'brag-output/reel/vo/{voice.lower()}'; os.makedirs(out, exist_ok=True)
     for l in json.load(open(SAT))['lines']:
         if l.get('capOnly') or l.get('skip'): continue
+        if os.path.exists(f"{out}/{l['id']}.wav") and not os.environ.get('REDO'): continue  # already voiced (REDO=1 voices again)
         wav = post('/audio/speech', {'model': 'indic-speak', 'input': l['sat'], 'voice': voice, 'instructions': json.dumps({'lang': 'sat', 'style': style})}, raw=True)
         open(f"{out}/{l['id']}.raw.wav", 'wb').write(wav)
         subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', f"{out}/{l['id']}.raw.wav", '-af', 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse', f"{out}/{l['id']}.wav"], check=True)

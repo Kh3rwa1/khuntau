@@ -1,46 +1,46 @@
 {
- "_": "Santali (Ol Chiki) script of the story reel. DRAFTED BY BODHAN indic-translate from the English: Dulor corrects every line before it is voiced. \"sat\" = what is said, \"cap\" = the caption (\" | \" = new line), \"en\"/\"hi\" = the meaning.",
+ "_": "Santali (Ol Chiki) script of the story reel: Bodhan's draft, corrected by Dulor on 26 Nov in the editor page. 'sat' is spoken (Bodhan voice Phulmani); 'cap' is the on-screen caption, in English (Dulor: English on screen).",
  "name": "sat",
- "endLine": "ᱱᱤᱛᱚᱜ Google Play ᱨᱮ",
+ "endLine": "Now on Google Play!",
  "lines": [
   {
    "id": "l1",
    "at": "start",
    "sat": "ᱡᱚᱛᱚ ᱥᱳᱦᱨᱟᱭ...ᱢᱤᱫᱴᱟᱝ ᱨᱟᱹᱜᱤ ᱰᱟᱝᱜᱽᱨᱟ ᱾",
-   "cap": "ᱡᱚᱛᱚ ᱥᱳᱦᱨᱟᱭ...ᱢᱤᱫᱴᱟᱝ ᱨᱟᱹᱜᱤ ᱰᱟᱝᱜᱽᱨᱟ ᱾",
+   "cap": "Every Sohrai... | one angry bull.",
    "en": "Every Sohrai... one angry bull.",
    "hi": "हर सोहराय पे, ये गुस्सैल बैल खूँटे से बँधता है।"
   },
   {
    "id": "l2",
    "at": "crane",
-   "sat": "ᱟᱨ ᱯᱳᱥᱴ ᱪᱮᱛᱟᱱ ᱨᱮ ? ᱞᱚᱞᱚ ᱯᱤᱴᱷᱟ !",
-   "cap": "ᱟᱨ ᱯᱳᱥᱴ ᱪᱮᱛᱟᱱ ᱨᱮ ? ᱞᱚᱞᱚ ᱯᱤᱴᱷᱟ !",
+   "sat": "ᱟᱨ ᱠᱷᱩᱱᱴᱤ ᱪᱮᱛᱟᱱ ᱨᱮ ? ᱞᱚᱞᱚ ᱯᱤᱴᱷᱟ !",
+   "cap": "And on the post? | Hot PITHA!",
    "en": "And on the post? Hot pitha!",
    "hi": "और खूँटे के ऊपर? गरम-गरम पीठा!"
   },
   {
    "id": "l3",
    "at": "gogo",
-   "sat": "ᱟᱭᱳ ᱮ ᱢᱮᱱ ᱠᱮᱫᱟ... ᱯᱩᱭᱞᱩ ᱨᱮ, ᱯᱚᱨᱚᱵᱽ ᱫᱚᱦᱚᱭ ᱢᱮ᱾",
-   "cap": "ᱟᱭᱳ ᱮ ᱢᱮᱱ ᱠᱮᱫᱟ... ᱯᱩᱭᱞᱩ ᱨᱮ, ᱯᱚᱨᱚᱵᱽ ᱫᱚᱦᱚᱭ ᱢᱮ᱾",
+   "sat": "ᱟᱭᱳ ᱮ ᱢᱮᱱ ᱠᱮᱫᱟ... ᱯᱩᱭᱞᱩ ᱨᱮ, ᱯᱚᱨᱚᱵᱽ ᱢᱟᱱᱟᱣ ᱢᱮ᱾",
+   "cap": "Gogo said: | \"First, keep | the festival.\"",
    "en": "Mother said... first, keep the festival.",
-   "hi": "गोगो बोली, बेटा, पहले त्योहार तो मनाओ!"
+   "hi": "गोगो बोली, बेटा, पहले त्योहार तो मनाओ!",
+   "tempo": 1.1
   },
   {
    "id": "l4",
    "at": "days",
-   "sat": "ᱢᱚᱬᱮ ᱫᱤᱱ᱾ ᱠᱟᱸᱛᱷᱟᱨᱮ ᱨᱚᱝ ᱞᱟᱜᱟᱣ᱾ ᱥᱤᱧᱠᱷᱟᱹ ᱨᱮ ᱟᱞᱯᱟᱱᱟ᱾ ᱜᱚᱴᱟ ᱟᱛᱳ... ᱢᱤᱫ ᱥᱟᱶᱛᱮ᱾",
-   "cap": "ᱢᱚᱬᱮ ᱫᱤᱱ᱾ ᱠᱟᱸᱛᱷᱟᱨᱮ ᱨᱚᱝ ᱞᱟᱜᱟᱣ᱾ ᱥᱤᱧᱠᱷᱟᱹ ᱨᱮ ᱟᱞᱯᱟᱱᱟ᱾ ᱜᱚᱴᱟ ᱟᱛᱳ... ᱢᱤᱫ ᱥᱟᱶᱛᱮ᱾",
+   "sat": "ᱢᱚᱬᱮ ᱫᱤᱱ᱾ ᱠᱟᱸᱛ-ᱨᱮ ᱨᱚᱝ ᱞᱟᱜᱟᱣ᱾ ᱥᱤᱧᱠᱷᱟᱹ ᱨᱮ ᱟᱞᱯᱟᱱᱟ᱾ ᱜᱚᱴᱟ ᱟᱛᱳ... ᱢᱤᱫ ᱥᱟᱶᱛᱮ᱾",
+   "cap": "Five days. | The whole village | together.",
    "en": "Five days. Paint on the walls. Alpana at the door. The whole village... together.",
-   "hi": "पाँच दिन। दीवार पे रंग, आँगन में अल्पना, पूरा गाँव एक साथ।",
-   "tempo": 1.1
+   "hi": "पाँच दिन। दीवार पे रंग, आँगन में अल्पना, पूरा गाँव एक साथ।"
   },
   {
    "id": "l5a",
    "at": "drum",
    "sat": "ᱰᱨᱟᱢ ᱵᱟᱡᱟᱣ ᱢᱮ !",
-   "cap": "ᱰᱨᱟᱢ ᱵᱟᱡᱟᱣ ᱢᱮ !",
+   "cap": "Beat the tamak!",
    "en": "Beat the drum!",
    "hi": "तमाक बजाओ!"
   },
@@ -48,7 +48,7 @@
    "id": "l5b",
    "at": "bow",
    "sat": "ᱟᱜ ᱵᱮᱱᱟᱣ ᱢᱮ !",
-   "cap": "ᱟᱜ ᱵᱮᱱᱟᱣ ᱢᱮ !",
+   "cap": "Draw the bow!",
    "en": "Draw the bow!",
    "hi": "तीर चलाओ!"
   },
@@ -56,15 +56,15 @@
    "id": "l5c",
    "at": "fish",
    "sat": "ᱦᱟᱠᱩ ᱥᱟᱵᱽ ᱢᱮ !",
-   "cap": "ᱦᱟᱠᱩ ᱥᱟᱵᱽ ᱢᱮ !",
+   "cap": "Catch the fish!",
    "en": "Catch the fish!",
    "hi": "मछली पकड़ो!"
   },
   {
    "id": "l5d",
    "at": "reap",
-   "sat": "ᱫᱟᱠᱟ ᱨᱚᱦᱚᱭ ᱢᱮ !",
-   "cap": "ᱫᱟᱠᱟ ᱨᱚᱦᱚᱭ ᱢᱮ !",
+   "sat": "ᱦᱳᱲᱳ ᱤᱨ ᱢᱮ",
+   "cap": "Reap the paddy!",
    "en": "Reap the paddy!",
    "hi": "धान काटो!"
   },
@@ -72,33 +72,35 @@
    "id": "l6a",
    "at": "round",
    "sat": "ᱚᱱᱟ ᱛᱟᱭᱚᱢ ᱦᱮᱡ ᱮᱱᱟ ᱠᱷᱩᱱᱴᱟᱣ !",
-   "cap": "ᱚᱱᱟ ᱛᱟᱭᱚᱢ ᱦᱮᱡ ᱮᱱᱟ ᱠᱷᱩᱱᱴᱟᱣ !",
+   "cap": "Then came | KHUNTAU!",
    "en": "Then came KHUNTAU!",
    "hi": "फिर आया खुंटाऊ का दिन।",
-   "capOnly": true
+   "capOnly": true,
+   "skip": true,
+   "_": "left out: the hide line starts as the ring opens, so this caption would show for one frame"
   },
   {
    "id": "l6b",
-   "at": "hide",
-   "sat": "ᱩᱱᱤ ᱨᱚᱦᱚᱲ ᱪᱟᱢᱲᱟᱭ ᱩᱫᱩᱜ ᱮᱢᱟᱭᱟ ᱾ ᱟᱨ ᱛᱟᱺᱜᱤ ᱢᱮ ᱾",
-   "cap": "ᱩᱱᱤ ᱨᱚᱦᱚᱲ ᱪᱟᱢᱲᱟᱭ ᱩᱫᱩᱜ ᱮᱢᱟᱭᱟ ᱾ ᱟᱨ ᱛᱟᱺᱜᱤ ᱢᱮ ᱾",
+   "at": "ring",
+   "sat": "ᱩᱱᱤ ᱨᱚᱦᱚᱲ ᱦᱟᱨᱛᱟ ᱩᱫᱩᱜ ᱢᱮ ᱾ ᱟᱨ ᱛᱟᱺᱜᱤ ᱢᱮ ᱾",
+   "cap": "Show the dried hide... | and wait...",
    "en": "Show him the dried hide... and wait...",
    "hi": "सूखी चमड़ी दिखाओ, और रुको...",
-   "tempo": 1.15
+   "tempo": 1.25
   },
   {
    "id": "l6d",
    "at": "grab",
-   "sat": "ᱱᱤᱛᱚᱜ! ᱯᱤᱴᱷᱟ ᱦᱟᱛᱟᱣ ᱢᱮ!",
-   "cap": "ᱱᱤᱛᱚᱜ! ᱯᱤᱴᱷᱟ ᱦᱟᱛᱟᱣ ᱢᱮ!",
+   "sat": "ᱱᱤᱛᱚᱜ! ᱯᱤᱴᱷᱟ ᱛᱤᱭᱳᱜ ᱢᱮ!",
+   "cap": "NOW! | GRAB THE PITHA!",
    "en": "NOW! Grab the pitha!",
    "hi": "अब! पीठा छीनो!"
   },
   {
    "id": "l7",
    "at": "cheer",
-   "sat": "ᱜᱚᱴᱟ ᱟᱛᱳ ᱨᱮᱭᱟᱜ ᱦᱚᱦᱚ ᱨᱟᱠᱟᱵ ᱞᱮᱱᱟ...ᱡᱳᱦᱟᱨ !",
-   "cap": "ᱜᱚᱴᱟ ᱟᱛᱳ ᱨᱮᱭᱟᱜ ᱦᱚᱦᱚ ᱨᱟᱠᱟᱵ ᱞᱮᱱᱟ...ᱡᱳᱦᱟᱨ !",
+   "sat": "ᱜᱚᱴᱟ ᱟᱛᱳ ᱦᱚᱲᱠᱚ ᱞᱮᱭ ᱠᱮᱫᱟ...ᱡᱳᱦᱟᱨ !",
+   "cap": "JOHAR!",
    "en": "The whole village roared... JOHAR!",
    "hi": "पूरा गांव बोला, जोहार!"
   },
@@ -106,7 +108,7 @@
    "id": "l8",
    "at": "end",
    "sat": "ᱥᱳᱦᱨᱟᱭ᱾ ᱱᱤᱛᱚᱜ ᱜᱩᱜᱚᱞ ᱯᱞᱮ ᱨᱮ᱾",
-   "cap": "ᱥᱳᱦᱨᱟᱭ᱾ ᱱᱤᱛᱚᱜ ᱜᱩᱜᱚᱞ ᱯᱞᱮ ᱨᱮ᱾",
+   "cap": "",
    "en": "Sohrai. Now on Google Play.",
    "hi": "सोहराय। अब गूगल प्ले पे अवेलेबल।"
   },
@@ -114,15 +116,16 @@
    "id": "l9",
    "at": "end2",
    "sat": "ᱵᱤᱱᱟᱹ ᱜᱚᱱᱚᱝ᱾ ᱟᱨ ᱱᱚᱣᱟ ᱫᱚ ᱚᱯᱷᱞᱟᱭᱤᱱ ᱨᱮᱦᱚᱸ ᱠᱟᱹᱢᱤᱭᱟᱭ᱾",
-   "cap": "ᱵᱤᱱᱟᱹ ᱜᱚᱱᱚᱝ᱾ ᱟᱨ ᱱᱚᱣᱟ ᱫᱚ ᱚᱯᱷᱞᱟᱭᱤᱱ ᱨᱮᱦᱚᱸ ᱠᱟᱹᱢᱤᱭᱟᱭ᱾",
+   "cap": "",
    "en": "Free. And it works offline.",
-   "hi": "फ़्री है, ऑफ़ लाइन भी चलता है।"
+   "hi": "फ़्री है, ऑफ़ लाइन भी चलता है।",
+   "tempo": 1.2
   },
   {
    "id": "l10",
    "at": "end3",
    "sat": "ᱱᱤᱛᱚᱜ ᱰᱟᱣᱩᱱᱞᱳᱰ ᱢᱮ !",
-   "cap": "ᱱᱤᱛᱚᱜ ᱰᱟᱣᱩᱱᱞᱳᱰ ᱢᱮ !",
+   "cap": "",
    "en": "Download it now!",
    "hi": "अभी डाउनलोड करो!"
   }

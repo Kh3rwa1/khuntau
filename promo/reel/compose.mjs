@@ -45,7 +45,7 @@ const VOF = JSON.parse(fs.readFileSync(process.env.VO || 'promo/reel/vo.json', '
 const dur = f => Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString());
 const bonkT = vt('S34', ev('S34', 'bonk')), snatchT = vt('S34', ev('S34', 'snatch')), hideT = vt('S34', ev('S34', 'tap-hide')), grabT = vt('S34', ev('S34', 'tap-grab'));
 const CUE = { start: 0.15, crane: T_(4) + 0.55, gogo: T_(8) + 0.2, days: T_(12) + 0.1, drum: T_(20) + 0.08, bow: T_(22) + 0.08, fish: T_(24) + 0.08, reap: T_(26) + 0.08,
-  round: T_(26) + 1.1 /* leads into the ring: a J-cut over the last of the paddy */, hide: hideT - 0.3 /* 'show it' comes just before the tap */, bonk: bonkT + 0.1, grab: bonkT + 0.15, cheer: snatchT + 1.6, end: T_(40) + 0.15, end2: T_(40) + 2.9, end3: T_(40) + 5.6 };
+  round: T_(26) + 1.1 /* leads into the ring: a J-cut over the last of the paddy */, ring: T_(28) + 0.1 /* the ring scene opens: a long line can start here and still end before the slam */, hide: hideT - 0.3 /* 'show it' comes just before the tap */, bonk: bonkT + 0.1, grab: bonkT + 0.15, cheer: snatchT + 1.6, end: T_(40) + 0.15, end2: T_(40) + 2.9, end3: T_(40) + 5.6 };
 const vo = []; let free = 0;
 for (const ln of VO) { if (ln.skip) continue;
   if (ln.capOnly) { const at = Math.max(CUE[ln.at], free + 0.08); vo.push({ ...ln, file: null, sec: at, end: at + 1.4 }); continue; } // a caption with no voice: takes no time from the next line
