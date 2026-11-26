@@ -11,48 +11,53 @@ Images are in `design/brand/` and `design/brand/store/` (redo the screenshots wi
 Sohrai: Santal Festival Game
 ```
 
-**Short description** (77/80)
+**Short description** (76/80)
 
 ```
-Live five days of Sohrai in a Santal village. Dodge the bull, grab the pitha.
+Sohrai, the Santal harvest festival game: dodge the bull and grab the pitha!
 ```
 
-**Full description** (1725/4000)
+**Full description** (2306/4000)
 
 ```
-Sohrai is the harvest festival of the Santal people. This game lets you live it: wake in a mud house, paint the wall, oil your animal's horns, beat the tamak at the akhra, and on Khuntau day step into the ring with a tied bull and snatch the pitha from the post before he gets you.
+Sohrai is the harvest festival of the Santal (Santhal) people of Jharkhand, West Bengal, Odisha, Bihar and Assam. Sohrai: Santal Festival Game lets you live it in a painted Santal village: oil your bull's horns, beat the tamak at the akhra, and on Khuntau day snatch the pitha from the post while a tied bull charges at you.
 
-LIVE THE FIVE DAYS
-• Um Hilok: wake up, drink handi, paint the wall, choose your animal and oil its horns
+A free Adivasi game made by a Santal creator. English and Hindi, festival names in Ol Chiki, and it works offline on budget Android phones.
+
+KHUNTAU: THE BULL AND THE PITHA
+• Wave the dried hide to make the bull charge, roll aside, and grab the pitha while he is dizzy
+• Five stages: he learns to feint, to charge twice and to bend his run toward you
+• Three diya lamps are your lives; a handi pot gives one back
+• Golden pitha, combos, slow motion and a crowd that cheers JOHAR with you
+• Five animals, each with its own temper: brown, white and black bull, red and white cow
+
+LIVE THE FIVE DAYS OF SOHRAI
+• Um Hilok: wake in the mud house, paint the wall, choose your animal and oil its horns
 • Dakay Din: draw the alpana before your door
-• Khuntau: garland the animal, drum at the akhra, face the bull
+• Khuntau: garland your animal, drum at the akhra, face the bull
 • Jale: the Sarpa enej goes from house to house
 • Hako Katkom: catch fish at the pond
-Each day opens on the next real day. Nothing is locked, but do the wrong thing on the wrong day and the Majhi will tell you off.
+Each day of the festival opens on the next real day. Nothing is locked, but do the right thing on the wrong day and the Majhi will tell you off.
 
-THE RING
-• Hide to make the bull charge, roll aside, grab the pitha while he is stunned
-• Five stages: he learns to feint, to charge twice and to bend his run toward you
-• Three lamps are your lives. A handi pot gives one back
-• Golden pitha, combos, slow motion and a crowd that flinches with you
+A SANTAL VILLAGE THAT IS ALIVE
+• Houses painted like real Santal walls: white lime, black band, red earth
+• Tamak and tumdak rhythm game with dancers who answer every beat
+• Archery at a banana-trunk target, fishing with a bamboo rod, a sickle to reap the golden paddy
+• Chickens, goats, ducks, sleeping dogs, a pork stall and cooking smoke over the roofs
+• Ten things to find and an album of painted festival cards to keep and share
 
-A VILLAGE THAT IS ALIVE
-• Drummers and dancers, a pork stall, a woman carrying water, chickens, goats, ducks and sleeping dogs
-• Archery at a banana-trunk target, fishing with a bamboo rod, a tamak and tumdak rhythm game
-• Paddy fields in evening light all round the village
-
-PLAY WITH FRIENDS
+PLAY WITH FRIENDS AND YOUR VILLAGE
 • Open a room, walk the village together and start a round at the khunt
-• Voice chat if you want it
+• Voice chat if you want it, and a village talk for everyone who plays
 • Daily leaderboard, and village against village: play for your own village and district
 
-MADE FOR PHONES
-• Runs on budget Android phones and adjusts its own quality
-• Works offline after the first load
+MADE FOR INDIAN PHONES
+• Runs on budget Android phones and sets its own quality
+• Works offline after the first start
 • English and Hindi
-• Free. No ads, no accounts, no purchases
+• Free, with no accounts and no purchases
 
-Made by Dulor (Tumdah), with music by Dulor. Johar!
+Made by Dulor (Tumdah), with his own Khuntau music. Johar!
 ```
 
 ## Hindi listing (hi-IN): Main store listing > Manage translations
